@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}View All Data - Dashboard Performance Highlights SME{% endblock %}
+
+{% block page_title %}View All Data{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Loan Data Snapshot</span>
+        <small class="text-muted">Menampilkan maksimal 100 baris terbaru</small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        {% for column, label in headers %}
+                            <th scope="col">{{ label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if rows %}
+                        {% for row in rows %}
+                            <tr>
+                                {% for value in row %}
+                                    <td>
+                                        {% if value is None or value == '' %}
+                                            <span class="text-muted">-</span>
+                                        {% else %}
+                                            {{ value }}
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="{{ headers|length }}" class="text-center text-muted py-4">
+                                Belum ada data pinjaman yang tersedia.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

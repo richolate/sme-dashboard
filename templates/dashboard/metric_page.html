@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Dashboard Performance Highlights SME{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="card-subtitle text-muted mb-2">{{ section }}</h6>
+        {% if description %}
+            <p class="mb-0">{{ description }}</p>
+        {% else %}
+            <p class="mb-0 text-muted">Placeholder halaman dashboard. Integrasikan metrik dan visualisasi sesuai kebutuhan bisnis.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if tables %}
+    {% for table_title in tables %}
+        <div class="card mb-4">
+            <div class="card-header">{{ table_title }}</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Kolom 1</th>
+                                <th scope="col">Kolom 2</th>
+                                <th scope="col">Kolom 3</th>
+                                <th scope="col">Kolom 4</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    Placeholder tabel. Silakan hubungkan dengan data aktual sesuai judul tabel.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">
+        Belum ada konfigurasi tabel khusus untuk halaman ini. Gunakan area ini untuk menampilkan ringkasan atau visualisasi sesuai kebutuhan.
+    </div>
+{% endif %}
+{% endblock %}

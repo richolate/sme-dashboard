@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard OS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Dashboard OS (Outstanding)</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            Halaman ini akan menampilkan data Outstanding. Saat ini masih dalam tahap pengembangan.
+        </div>
+        
+        <!-- Placeholder untuk konten dashboard -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Total Outstanding</h6>
+                        <h3>-</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Jumlah Nasabah</h6>
+                        <h3>-</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">OS Bulan Ini</h6>
+                        <h3>-</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Perubahan</h6>
+                        <h3>-</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <canvas id="osChart" height="80"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Placeholder untuk chart
+    const ctx = document.getElementById('osChart').getContext('2d');
+    const osChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+            datasets: [{
+                label: 'Outstanding',
+                data: [0, 0, 0, 0, 0, 0],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard Performance Highlights SME{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary-color: #0d6efd;
+            --sidebar-bg: #212529;
+            --sidebar-hover: #2c3034;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            padding-top: 20px;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .brand {
+            padding: 15px 20px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            margin: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: var(--sidebar-hover);
+            color: white;
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .sidebar .nav-link-toggle {
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+        }
+
+        .sidebar .nav-link-toggle .chevron {
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar .nav-link-toggle.collapsed .chevron {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar .submenu {
+            padding-left: 10px;
+        }
+
+        .sidebar .submenu .nav-link {
+            padding-left: 45px;
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.75);
+        }
+
+        .sidebar .submenu .nav-link.active,
+        .sidebar .submenu .nav-link:hover {
+            color: #ffffff;
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        
+        .top-navbar {
+            background-color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .content-area {
+            padding: 0 30px 30px 30px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 2px solid #f0f0f0;
+            font-weight: 600;
+            padding: 15px 20px;
+        }
+        
+        .badge-role {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fas fa-chart-line"></i> SME Dashboard
+        </div>
+        
+        <nav class="nav flex-column">
+            {% for item in dashboard_menu %}
+                {% if item.children %}
+                    <a class="nav-link nav-link-toggle d-flex justify-content-between align-items-center {% if not item.open %}collapsed{% endif %} {% if item.active %}active{% endif %}"
+                       data-bs-toggle="collapse" href="#{{ item.collapse_id }}" role="button"
+                       aria-expanded="{{ item.open|yesno:'true,false' }}" aria-controls="{{ item.collapse_id }}">
+                        <span><i class="{{ item.icon }}"></i> {{ item.label }}</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </a>
+                    <div class="collapse submenu {% if item.open %}show{% endif %}" id="{{ item.collapse_id }}">
+                        <nav class="nav flex-column">
+                            {% for child in item.children %}
+                                <a class="nav-link {% if child.active %}active{% endif %}" href="{{ child.url }}">
+                                    {{ child.label }}
+                                </a>
+                            {% endfor %}
+                        </nav>
+                    </div>
+                {% else %}
+                    <a class="nav-link {% if item.active %}active{% endif %}" href="{{ item.url }}">
+                        <i class="{{ item.icon }}"></i> {{ item.label }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </nav>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <div class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h5>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">{{ user.get_full_name|default:user.username }}</div>
+                        <div style="font-size: 0.85rem; color: #6c757d;">
+                            <span class="badge badge-role {% if user.is_admin %}bg-danger{% else %}bg-secondary{% endif %}">
+                                {{ user.get_role_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger ms-3">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Messages -->
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    {% else %}
+    {% block login_content %}{% endblock %}
+    {% endif %}
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery (optional) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

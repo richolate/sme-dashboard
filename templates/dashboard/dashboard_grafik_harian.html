@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard Grafik Harian{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-line"></i> Dashboard Grafik Harian</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            Halaman ini akan menampilkan grafik trend harian. Saat ini masih dalam tahap pengembangan.
+        </div>
+        
+        <!-- Filter tanggal -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Dari Tanggal</label>
+                <input type="date" class="form-control" id="dateFrom">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Sampai Tanggal</label>
+                <input type="date" class="form-control" id="dateTo">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label><br>
+                <button class="btn btn-primary">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+            </div>
+        </div>
+        
+        <!-- Chart -->
+        <div class="mt-4">
+            <canvas id="dailyChart" height="80"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Placeholder untuk chart
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    const dailyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
+            datasets: [{
+                label: 'Jumlah Transaksi',
+                data: [0, 0, 0, 0, 0, 0, 0],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

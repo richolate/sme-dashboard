@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Upload Data{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-upload"></i> Upload Data Pinjaman</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Perhatian:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Pastikan format file sesuai dengan template yang tersedia</li>
+                        <li>File maksimal 100MB</li>
+                        <li>Format yang didukung: .xlsx, .xls, .csv</li>
+                        <li>Data akan diproses dan disimpan ke database PostgreSQL</li>
+                    </ul>
+                </div>
+                
+                {% crispy form %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informasi</h6>
+            </div>
+            <div class="card-body">
+                <h6>Struktur File:</h6>
+                <p class="small text-muted">
+                    File harus memiliki kolom-kolom berikut (38 kolom total):
+                </p>
+                <ul class="small text-muted">
+                    <li>customer_id</li>
+                    <li>loan_id</li>
+                    <li>loan_date</li>
+                    <li>amount</li>
+                    <li>status</li>
+                    <li>... dan kolom lainnya</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Download Template:</h6>
+                <button class="btn btn-sm btn-outline-primary w-100">
+                    <i class="fas fa-download"></i> Download Template Excel
+                </button>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-clock"></i> Upload Terakhir</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Belum ada data upload</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

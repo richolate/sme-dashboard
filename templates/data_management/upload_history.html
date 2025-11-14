@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block page_title %}History Data{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="fas fa-history"></i> History Data Upload</h5>
+        <a href="{% url 'data_management:upload_data' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Upload Baru
+        </a>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama File</th>
+                        <th>Diupload Oleh</th>
+                        <th>Tanggal Upload</th>
+                        <th>Total Baris</th>
+                        <th>Sukses</th>
+                        <th>Gagal</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in page_obj %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <i class="fas fa-file-excel text-success"></i>
+                            {{ upload.file_name }}
+                        </td>
+                        <td>{{ upload.uploaded_by.username }}</td>
+                        <td>{{ upload.created_at|date:"d M Y H:i" }}</td>
+                        <td>{{ upload.total_rows|default:"-" }}</td>
+                        <td><span class="badge bg-success">{{ upload.successful_rows|default:"0" }}</span></td>
+                        <td><span class="badge bg-danger">{{ upload.failed_rows|default:"0" }}</span></td>
+                        <td>
+                            {% if upload.status == 'completed' %}
+                                <span class="badge bg-success">Selesai</span>
+                            {% elif upload.status == 'processing' %}
+                                <span class="badge bg-warning">Proses</span>
+                            {% elif upload.status == 'failed' %}
+                                <span class="badge bg-danger">Gagal</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-info" title="Detail">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Belum ada riwayat upload</p>
+            <a href="{% url 'data_management:upload_data' %}" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Upload Data Sekarang
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

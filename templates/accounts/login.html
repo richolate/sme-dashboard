@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Dashboard Performance Highlights SME{% endblock %}
+
+{% block login_content %}
+<div class="container-fluid" style="height: 100vh;">
+    <div class="row h-100">
+        <!-- Left Side - Branding -->
+        <div class="col-md-6 d-none d-md-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="text-center text-white">
+                <i class="fas fa-chart-line" style="font-size: 80px; margin-bottom: 20px;"></i>
+                <h1 class="display-4 fw-bold">Dashboard Performance</h1>
+                <h2 class="h3">Highlights SME</h2>
+                <p class="lead mt-3">Sistem Monitoring dan Analisis Data Pinjaman SME</p>
+            </div>
+        </div>
+        
+        <!-- Right Side - Login Form -->
+        <div class="col-md-6 d-flex align-items-center justify-content-center">
+            <div class="w-100" style="max-width: 400px; padding: 20px;">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold">Selamat Datang</h3>
+                    <p class="text-muted">Silakan login untuk melanjutkan</p>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <form method="post" action="{% url 'accounts:login' %}">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           placeholder="Masukkan username" required autofocus>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           placeholder="Masukkan password" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="remember">
+                                <label class="form-check-label" for="remember">
+                                    Ingat saya
+                                </label>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sign-in-alt"></i> Login
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3 text-muted">
+                    <small>&copy; 2025 BRI - Dashboard Performance Highlights SME</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard Summary{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Dashboard Summary</h5>
+    </div>
+    <div class="card-body">
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-4" id="summaryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if active_tab == 'medium_only' %}active{% endif %}" 
+                        id="medium-tab" data-bs-toggle="tab" data-bs-target="#medium" 
+                        type="button" role="tab">
+                    <i class="fas fa-circle"></i> Summary Medium Only
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if active_tab == 'konsol' %}active{% endif %}" 
+                        id="konsol-tab" data-bs-toggle="tab" data-bs-target="#konsol" 
+                        type="button" role="tab">
+                    <i class="fas fa-circle"></i> Summary Konsol
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if active_tab == 'only' %}active{% endif %}" 
+                        id="only-tab" data-bs-toggle="tab" data-bs-target="#only" 
+                        type="button" role="tab">
+                    <i class="fas fa-circle"></i> Summary Only
+                </button>
+            </li>
+        </ul>
+        
+        <!-- Tab Content -->
+        <div class="tab-content" id="summaryTabsContent">
+            <!-- Summary Medium Only -->
+            <div class="tab-pane fade {% if active_tab == 'medium_only' %}show active{% endif %}" 
+                 id="medium" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Summary Medium Only - Dalam Pengembangan
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">Total Medium</h6>
+                                <h3>-</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Konsol -->
+            <div class="tab-pane fade {% if active_tab == 'konsol' %}show active{% endif %}" 
+                 id="konsol" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Summary Konsol - Dalam Pengembangan
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">Total Konsol</h6>
+                                <h3>-</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Only -->
+            <div class="tab-pane fade {% if active_tab == 'only' %}show active{% endif %}" 
+                 id="only" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Summary Only - Dalam Pengembangan
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">Total Summary</h6>
+                                <h3>-</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
