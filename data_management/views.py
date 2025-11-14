@@ -123,7 +123,7 @@ def delete_data_view(request):
 
 @admin_required
 def view_all_data_view(request):
-    """Display an overview of loan data for administrators."""
+    """Display an overview of LW321 for administrators."""
 
     loans = LoanData.objects.all().order_by('-periode', 'kanca', 'nomor_rekening')[:100]
     columns = [

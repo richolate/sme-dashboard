@@ -195,7 +195,7 @@ def get_dashboard_grafik_harian_data(date_from=None, date_to=None):
     if not date_from or not date_to:
         date_from, date_to = get_date_range('last_30_days')
     
-    # Daily loan data
+    # Daily LW321
     daily_data = LoanData.objects.filter(
         tgl_realisasi__range=[date_from, date_to]
     ).annotate(
@@ -267,7 +267,7 @@ def get_dashboard_grafik_harian_data(date_from=None, date_to=None):
 # CONTOH 4: Proses Upload Data
 # ============================================================================
 
-def process_loan_data_row(row):
+def process_LW321_row(row):
     """
     Contoh fungsi untuk memproses satu baris data
     
@@ -372,7 +372,7 @@ def process_loan_data_row(row):
             'pn_rm_crr': parse_string(take('pn_rm_crr', 'PN RM CRR')),
         }
 
-        loan_data, created = LoanData.objects.update_or_create(
+        LW321, created = LoanData.objects.update_or_create(
             nomor_rekening=nomor_rekening,
             defaults=defaults
         )
@@ -380,7 +380,7 @@ def process_loan_data_row(row):
         return {
             'success': True,
             'error': '',
-            'data': loan_data,
+            'data': LW321,
             'created': created
         }
         

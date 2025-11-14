@@ -76,11 +76,11 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Loan Data',
-                'verbose_name_plural': 'Loan Data',
-                'db_table': 'loan_data',
+                'verbose_name': 'LW321',
+                'verbose_name_plural': 'LW321',
+                'db_table': 'LW321',
                 'ordering': ['-periode', 'kanca', 'nomor_rekening'],
-                'indexes': [models.Index(fields=['periode', 'kanca'], name='loan_data_periode_db8448_idx'), models.Index(fields=['periode', 'kolektibilitas_macet'], name='loan_data_periode_6df3a4_idx'), models.Index(fields=['nomor_rekening'], name='loan_data_nomor_r_aaa7d0_idx')],
+                'indexes': [models.Index(fields=['periode', 'kanca'], name='LW321_periode_db8448_idx'), models.Index(fields=['periode', 'kolektibilitas_macet'], name='LW321_periode_6df3a4_idx'), models.Index(fields=['nomor_rekening'], name='LW321_nomor_r_aaa7d0_idx')],
             },
         ),
     ]

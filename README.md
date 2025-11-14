@@ -266,7 +266,7 @@ psql -U postgres -d sme_dashboard
 \d nama_tabel
 
 # Hitung jumlah data
-SELECT COUNT(*) FROM loan_data;
+SELECT COUNT(*) FROM LW321;
 ```
 
 ## 📊 Upload Data

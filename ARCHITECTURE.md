@@ -41,7 +41,7 @@
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  Tables:                                                  │  │
 │  │  • users            (authentication + roles)             │  │
-│  │  • loan_data        (data pinjaman 10 juta+ rows)        │  │
+│  │  • LW321        (data pinjaman 10 juta+ rows)        │  │
 │  │  • processed_data   (hasil olahan untuk dashboard)       │  │
 │  │  • upload_history   (tracking uploads)                   │  │
 │  └──────────────────────────────────────────────────────────┘  │
@@ -331,7 +331,7 @@ Performance Highlight SME Dashboard/
 └──────────────┴──────────────┴─────────┴────────────┘
 ```
 
-### Table: loan_data
+### Table: LW321
 
 | Column                              | Type                | Null | Key     |
 |-------------------------------------|---------------------|------|---------|

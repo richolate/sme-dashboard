@@ -49,9 +49,9 @@ class LoanData(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'loan_data'
-        verbose_name = 'Loan Data'
-        verbose_name_plural = 'Loan Data'
+        db_table = 'LW321'
+        verbose_name = 'LW321 data'
+        verbose_name_plural = 'LW321 data'
         ordering = ['-periode', 'kanca', 'nomor_rekening']
         indexes = [
             models.Index(fields=['periode', 'kanca']),

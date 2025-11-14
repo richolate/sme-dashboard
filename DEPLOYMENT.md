@@ -354,10 +354,10 @@ X_FRAME_OPTIONS = 'DENY'
 
 ```sql
 -- Create indexes
-CREATE INDEX CONCURRENTLY idx_periode_kanca ON loan_data(periode, kanca);
-CREATE INDEX CONCURRENTLY idx_periode_kolektibilitas_macet ON loan_data(periode, kolektibilitas_macet);
-CREATE UNIQUE INDEX CONCURRENTLY idx_nomor_rekening ON loan_data(nomor_rekening);
-CREATE INDEX CONCURRENTLY idx_cif_no ON loan_data(cif_no);
+CREATE INDEX CONCURRENTLY idx_periode_kanca ON LW321(periode, kanca);
+CREATE INDEX CONCURRENTLY idx_periode_kolektibilitas_macet ON LW321(periode, kolektibilitas_macet);
+CREATE UNIQUE INDEX CONCURRENTLY idx_nomor_rekening ON LW321(nomor_rekening);
+CREATE INDEX CONCURRENTLY idx_cif_no ON LW321(cif_no);
 
 -- Vacuum and analyze
 VACUUM ANALYZE;

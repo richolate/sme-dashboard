@@ -88,7 +88,7 @@ Selamat datang! Ini adalah halaman index untuk semua dokumentasi project.
 12. **`create_sample_data.py`**
     - Script generate sample data
     - Create test users
-    - Create test loan data
+    - Create test LW321
 
 13. **`setup.ps1`**
     - PowerShell script untuk automated setup

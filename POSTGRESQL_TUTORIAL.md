@@ -200,7 +200,7 @@ Running migrations:
 1. Expand "Databases" → "sme_dashboard" → "Schemas" → "public" → "Tables"
 2. Anda akan melihat tabel-tabel:
    - `users`
-   - `loan_data`
+   - `LW321`
    - `processed_data`
    - `upload_history`
    - dll.
@@ -214,7 +214,7 @@ psql -U sme_admin -d sme_dashboard
 
 # Lihat struktur tabel
 \d users
-\d loan_data
+\d LW321
 
 # Keluar
 \q
@@ -325,16 +325,16 @@ Django sudah membuat index otomatis, tapi Anda bisa tambahkan:
 
 ```sql
 -- Index untuk analisis periode per kanca
-CREATE INDEX idx_periode_kanca ON loan_data(periode, kanca);
+CREATE INDEX idx_periode_kanca ON LW321(periode, kanca);
 
 -- Index untuk monitoring kolektibilitas macet per periode
-CREATE INDEX idx_periode_kolektibilitas_macet ON loan_data(periode, kolektibilitas_macet);
+CREATE INDEX idx_periode_kolektibilitas_macet ON LW321(periode, kolektibilitas_macet);
 
 -- Index unik nomor rekening (sudah di model, ulangi jika perlu)
-CREATE UNIQUE INDEX idx_nomor_rekening ON loan_data(nomor_rekening);
+CREATE UNIQUE INDEX idx_nomor_rekening ON LW321(nomor_rekening);
 
 -- Index tambahan untuk pencarian CIF
-CREATE INDEX idx_cif_no ON loan_data(cif_no);
+CREATE INDEX idx_cif_no ON LW321(cif_no);
 ```
 
 ### Vacuum Database (Maintenance)

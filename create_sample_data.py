@@ -45,8 +45,8 @@ def create_sample_users():
         print(f"✅ Created regular user: {user.username}")
 
 
-def create_sample_loan_data(num_records=100):
-    """Buat sample loan data"""
+def create_sample_LW321(num_records=100):
+    """Buat sample LW321"""
     print(f"\nCreating {num_records} sample loan records...")
     
     periodes = ['2023-12', '2024-01', '2024-02', '2024-03']
@@ -137,13 +137,13 @@ def show_statistics():
     print(f"  Regular users: {user_count}")
     print(f"  Total users: {admin_count + user_count}")
     
-    # Loan Data
+    # LW321
     total_loans = LoanData.objects.count()
     total_amount = LoanData.objects.aggregate(
         total=django.db.models.Sum('plafon')
     )['total'] or 0
     
-    print(f"\nLoan Data:")
+    print(f"\nLW321:")
     print(f"  Total records: {total_loans}")
     print(f"  Total plafon: Rp {total_amount:,.0f}")
     
@@ -179,5 +179,5 @@ if __name__ == "__main__":
     print("=" * 60)
     
     create_sample_users()
-    create_sample_loan_data(100)  # Buat 100 sample records
+    create_sample_LW321(100)  # Buat 100 sample records
     show_statistics()
