@@ -12,7 +12,7 @@ import random
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from dashboard.models import LoanData
+from dashboard.models import LW321
 from accounts.models import User
 
 
@@ -72,7 +72,7 @@ def create_sample_LW321(num_records=100):
             tgl_jatuh_tempo = tgl_realisasi + timedelta(days=30 * (jangka_waktu // 12))
             tunggakan_multiplier = Decimal(random.choice([0, 0, 0, 5, 10, 15]))
 
-            LoanData.objects.create(
+            LW321.objects.create(
                 periode=random.choice(periodes),
                 kanca=random.choice(kanca_list),
                 kode_uker=f"UK{str(random.randint(1, 999)).zfill(3)}",
@@ -138,8 +138,8 @@ def show_statistics():
     print(f"  Total users: {admin_count + user_count}")
     
     # LW321
-    total_loans = LoanData.objects.count()
-    total_amount = LoanData.objects.aggregate(
+    total_loans = LW321.objects.count()
+    total_amount = LW321.objects.aggregate(
         total=django.db.models.Sum('plafon')
     )['total'] or 0
     
@@ -148,14 +148,14 @@ def show_statistics():
     print(f"  Total plafon: Rp {total_amount:,.0f}")
     
     if total_loans > 0:
-        by_kanca = LoanData.objects.values('kanca').annotate(
+        by_kanca = LW321.objects.values('kanca').annotate(
             count=django.db.models.Count('id')
         )
         print(f"\n  By Kanca:")
         for item in by_kanca:
             print(f"    - {item['kanca']}: {item['count']} records")
         
-        by_flag = LoanData.objects.values('flag_restruk').annotate(
+        by_flag = LW321.objects.values('flag_restruk').annotate(
             count=django.db.models.Count('id')
         )
         print(f"\n  By Flag Restruk:")

@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class LoanData(models.Model):
+class LW321(models.Model):
     """
     Model untuk menyimpan data pinjaman nasabah dengan 38 kolom sesuai kebutuhan
     """

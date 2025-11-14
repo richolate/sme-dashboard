@@ -5,7 +5,7 @@ Selamat! Base project **Dashboard Performance Highlights SME** sudah berhasil di
 ## ✅ Yang Sudah Selesai
 
 1. ✅ Struktur project Django lengkap
-2. ✅ Database models (User, LoanData, ProcessedData, UploadHistory)
+2. ✅ Database models (User, LW321, ProcessedData, UploadHistory)
 3. ✅ Authentication & Authorization (role-based)
 4. ✅ UI Templates (Login, Dashboard, Upload, History)
 5. ✅ PostgreSQL integration
@@ -14,7 +14,7 @@ Selamat! Base project **Dashboard Performance Highlights SME** sudah berhasil di
 
 ## 🔴 PENTING! Yang Harus Disesuaikan
 
-### 1. Model LoanData - Verifikasi dengan 38 Kolom Asli
+### 1. Model LW321 - Verifikasi dengan 38 Kolom Asli
 
 File: `dashboard/models.py`
 

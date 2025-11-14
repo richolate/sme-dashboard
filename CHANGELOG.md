@@ -27,7 +27,7 @@
 
 #### Database
 - ✅ PostgreSQL integration
-- ✅ Models untuk data pinjaman (LoanData)
+- ✅ Models untuk data pinjaman (LW321)
 - ✅ Models untuk processed data (ProcessedData)
 - ✅ Upload history tracking (UploadHistory)
 - ✅ Database indexing untuk performance

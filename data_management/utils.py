@@ -1,7 +1,7 @@
 import pandas as pd
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
-from dashboard.models import LoanData
+from dashboard.models import LW321
 
 
 COLUMN_FIELD_MAP = {
@@ -177,7 +177,7 @@ def process_uploaded_file(upload_history):
                 defaults = record.copy()
                 defaults.pop('nomor_rekening', None)
 
-                LoanData.objects.update_or_create(
+                LW321.objects.update_or_create(
                     nomor_rekening=nomor_rekening,
                     defaults=defaults,
                 )

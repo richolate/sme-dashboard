@@ -6,7 +6,7 @@ from django.utils import timezone
 from .models import UploadHistory
 from .forms import UploadDataForm
 from .utils import process_uploaded_file
-from dashboard.models import LoanData
+from dashboard.models import LW321
 
 
 def admin_required(view_func):
@@ -125,7 +125,7 @@ def delete_data_view(request):
 def view_all_data_view(request):
     """Display an overview of LW321 for administrators."""
 
-    loans = LoanData.objects.all().order_by('-periode', 'kanca', 'nomor_rekening')[:100]
+    loans = LW321.objects.all().order_by('-periode', 'kanca', 'nomor_rekening')[:100]
     columns = [
         'periode',
         'kanca',

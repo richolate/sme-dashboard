@@ -1,9 +1,9 @@
 from django.contrib import admin
-from .models import LoanData, ProcessedData
+from .models import LW321, ProcessedData
 
 
-@admin.register(LoanData)
-class LoanDataAdmin(admin.ModelAdmin):
+@admin.register(LW321)
+class LW321Admin(admin.ModelAdmin):
     list_display = (
         'nomor_rekening',
         'nama_debitur',

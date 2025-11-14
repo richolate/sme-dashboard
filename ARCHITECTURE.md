@@ -30,7 +30,7 @@
 │                           ▼                                     │
 │  ┌───────────────────────────────────────────────────────────┐ │
 │  │                    MODELS (ORM)                           │ │
-│  │  • User          • LoanData      • UploadHistory         │ │
+│  │  • User          • LW321      • UploadHistory         │ │
 │  │  • ProcessedData                                          │ │
 │  └────────────────────────┬──────────────────────────────────┘ │
 └───────────────────────────┼────────────────────────────────────┘
@@ -103,7 +103,7 @@ Upload Handler
                  │   │
                  │   ├─► Validate data
                  │   │
-                 │   ├─► Save to LoanData table
+                 │   ├─► Save to LW321 table
                  │   │
                  │   └─► Update success/fail count
                  │
@@ -128,7 +128,7 @@ Dashboard View
   │
   ├─► Query database
   │   │
-  │   ├─► Get LoanData (dengan filter)
+   │   ├─► Get LW321 (dengan filter)
   │   │
   │   └─► Get ProcessedData (jika ada)
   │
@@ -183,7 +183,7 @@ Dashboard View
                                  ▼
                           ┌──────────────┐
                           │ Save to DB   │
-                          │ (LoanData)   │
+                          │ (LW321)   │
                           └──────┬───────┘
                                  │
                                  │
@@ -230,7 +230,7 @@ Performance Highlight SME Dashboard/
 ├── dashboard/                       # Dashboard App
 │   ├── migrations/
 │   ├── __init__.py
-│   ├── models.py                   # LoanData, ProcessedData
+│   ├── models.py                   # LW321, ProcessedData
 │   ├── views.py                    # Dashboard views
 │   ├── urls.py                     # dashboard/ URLs
 │   ├── admin.py
@@ -421,7 +421,7 @@ Indexes:
    ↓
 5. View function:
    - Checks user authentication (@login_required)
-   - Queries LoanData from database
+   - Queries LW321 from database
    - Processes data for metrics/charts
    - Prepares context dictionary
    ↓

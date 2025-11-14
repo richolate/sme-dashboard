@@ -340,7 +340,7 @@ Performance Highlight SME Dashboard/
 │   ├── urls.py
 │   └── admin.py
 ├── dashboard/                   # App untuk dashboard
-│   ├── models.py               # LoanData, ProcessedData models
+│   ├── models.py               # LW321, ProcessedData models
 │   ├── views.py                # Dashboard views
 │   ├── urls.py
 │   └── admin.py
@@ -401,12 +401,12 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
 ## 📝 Customization
 
-### Menambahkan Kolom di Model LoanData
+### Menambahkan Kolom di Model LW321
 
 Edit `dashboard/models.py`:
 
 ```python
-class LoanData(models.Model):
+class LW321(models.Model):
     # ... kolom existing ...
     
     # Tambahkan kolom baru sesuai kebutuhan (total 38 kolom)

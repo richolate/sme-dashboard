@@ -51,7 +51,7 @@ Semua template sudah dibuat dengan Bootstrap 5:
    - Phone number
    - Timestamps
 
-2. **LoanData**
+2. **LW321**
    - 38 kolom sesuai kebutuhan bisnis (periode, kanca, kode_uker, nomor_rekening, cif_no, plafon, kolektibilitas, dsb.)
    - Fokus pada atribusi kredit, informasi restrukturisasi, dan penanggung jawab PN
    - Indexed di `periode`, `kanca`, `kolektibilitas_macet`, serta unique `nomor_rekening`
@@ -165,7 +165,7 @@ Lihat file `QUICKSTART.md` untuk panduan lengkap step-by-step.
 
 ### 🔴 Priority High - Fungsi Inti
 
-1. **Sesuaikan Model LoanData dengan 38 Kolom Asli**
+1. **Sesuaikan Model LW321 dengan 38 Kolom Asli**
    - Edit `dashboard/models.py`
    - Tambahkan semua kolom sesuai data real
    - Run migrations: `python manage.py makemigrations`
@@ -250,7 +250,7 @@ Edit `templates/base.html`:
 
 ```python
 # dashboard/models.py
-class LoanData(models.Model):
+class LW321(models.Model):
     # ... existing fields ...
     new_field = models.CharField(max_length=100)
 ```

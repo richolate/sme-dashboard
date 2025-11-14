@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 from django.db.models import Sum, Count, Avg, Q, F, Case, When, IntegerField
 from django.db.models.functions import TruncDate, TruncMonth, ExtractWeekDay
-from dashboard.models import LoanData, ProcessedData
+from dashboard.models import LW321, ProcessedData
 from dashboard.utils import (
     get_date_range, calculate_growth_rate, format_currency,
     format_number, chunk_queryset
@@ -34,7 +34,7 @@ def get_dashboard_os_data(date_from=None, date_to=None):
         date_from, date_to = get_date_range('this_month')
     
     # Query data pinjaman
-    loans = LoanData.objects.filter(
+    loans = LW321.objects.filter(
         tgl_realisasi__range=[date_from, date_to]
     )
 
@@ -69,7 +69,7 @@ def get_dashboard_os_data(date_from=None, date_to=None):
     last_month_from = date_from - timedelta(days=30)
     last_month_to = date_to - timedelta(days=30)
 
-    last_month_os = LoanData.objects.filter(
+    last_month_os = LW321.objects.filter(
         tgl_realisasi__range=[last_month_from, last_month_to]
     ).aggregate(total=Sum('plafon'))['total'] or 0
     
@@ -110,7 +110,7 @@ def get_dashboard_summary_data(sub_type='medium_only', date_from=None, date_to=N
         date_from, date_to = get_date_range('this_month')
     
     # Base query
-    base_query = LoanData.objects.filter(
+    base_query = LW321.objects.filter(
         tgl_realisasi__range=[date_from, date_to]
     )
     
@@ -196,7 +196,7 @@ def get_dashboard_grafik_harian_data(date_from=None, date_to=None):
         date_from, date_to = get_date_range('last_30_days')
     
     # Daily LW321
-    daily_data = LoanData.objects.filter(
+    daily_data = LW321.objects.filter(
         tgl_realisasi__range=[date_from, date_to]
     ).annotate(
         date=TruncDate('tgl_realisasi')
@@ -222,7 +222,7 @@ def get_dashboard_grafik_harian_data(date_from=None, date_to=None):
     avg_daily_amount = sum(amounts) / total_days if total_days > 0 else 0
     
     # Day of week analysis
-    loans_with_weekday = LoanData.objects.filter(
+    loans_with_weekday = LW321.objects.filter(
         tgl_realisasi__range=[date_from, date_to]
     ).annotate(
         weekday=ExtractWeekDay('tgl_realisasi')
@@ -275,7 +275,7 @@ def process_LW321_row(row):
         row: Pandas Series (satu baris dari DataFrame)
     
     Returns:
-        dict: {'success': True/False, 'error': '...', 'data': LoanData object}
+        dict: {'success': True/False, 'error': '...', 'data': LW321 object}
     """
     
     try:
@@ -372,7 +372,7 @@ def process_LW321_row(row):
             'pn_rm_crr': parse_string(take('pn_rm_crr', 'PN RM CRR')),
         }
 
-        LW321, created = LoanData.objects.update_or_create(
+        LW321_obj, created = LW321.objects.update_or_create(
             nomor_rekening=nomor_rekening,
             defaults=defaults
         )
@@ -380,7 +380,7 @@ def process_LW321_row(row):
         return {
             'success': True,
             'error': '',
-            'data': LW321,
+            'data': LW321_obj,
             'created': created
         }
         
@@ -502,7 +502,7 @@ def export_dashboard_data(dashboard_type, date_from, date_to, format='excel'):
 # ============================================================================
 
 """
-DAFTAR KOLOM LOANDATA (38 KOLOM) - SESUAIKAN DENGAN SUMBER DATA ANDA
+DAFTAR KOLOM LW321 (38 KOLOM) - SESUAIKAN DENGAN SUMBER DATA ANDA
 ====================================================================
 
 1.  periode
@@ -545,5 +545,5 @@ DAFTAR KOLOM LOANDATA (38 KOLOM) - SESUAIKAN DENGAN SUMBER DATA ANDA
 38. pn_rm_crr
 
 Pastikan pipeline upload, proses agregasi, dokumentasi, dan visualisasi Anda
-menggunakan nama field di atas agar konsisten dengan model `LoanData`.
+menggunakan nama field di atas agar konsisten dengan model `LW321`.
 """
