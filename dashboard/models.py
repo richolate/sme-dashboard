@@ -49,7 +49,7 @@ class LW321(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'LW321'
+        db_table = 'lw321'
         verbose_name = 'LW321 data'
         verbose_name_plural = 'LW321 data'
         ordering = ['-periode', 'kanca', 'nomor_rekening']

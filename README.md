@@ -351,6 +351,7 @@ Performance Highlight SME Dashboard/
 │   ├── utils.py                # Data processing utilities
 │   ├── urls.py
 │   └── admin.py
+├── drizzle/                    # Drizzle Studio helper project untuk eksplorasi DB
 ├── templates/                  # HTML templates
 │   ├── base.html              # Base template
 │   ├── accounts/

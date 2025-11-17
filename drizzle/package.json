@@ -1,0 +1,21 @@
+{
+  "name": "sme-dashboard-drizzle",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "drizzle:studio": "drizzle-kit studio --config ./drizzle.config.ts",
+    "drizzle:introspect": "drizzle-kit introspect --config ./drizzle.config.ts",
+    "drizzle:schema": "drizzle-kit studio --config ./drizzle.config.ts --verbose"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "drizzle-kit": "^0.31.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.7",
+    "postgres": "^3.4.7"
+  }
+}

@@ -31,6 +31,7 @@ def test_database_connection():
     print(f"  Host     : {db_config['HOST']}")
     print(f"  Port     : {db_config['PORT']}")
     print(f"  Password : {'*' * len(db_config['PASSWORD'])}")
+    print(f"  Password : {db_config['PASSWORD']}")
     
     # Test connection
     try:
