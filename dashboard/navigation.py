@@ -25,16 +25,47 @@ TOP_LEVEL_LINKS = [
         "icon": "fas fa-home",
         "url_name": "dashboard:home",
     },
-    {
-        "key": "grafik-harian",
-        "label": "Grafik Harian",
-        "icon": "fas fa-chart-line",
-        "url_name": "dashboard:dashboard_grafik_harian",
-    },
 ]
 
 
 METRIC_GROUPS = [
+    {
+        "key": "timeseries",
+        "label": "Timeseries",
+        "icon": "fas fa-chart-line",
+        "pages": [
+            {
+                "slug": "timeseries-bulanan",
+                "title": "Timeseries Bulanan",
+                "tables": [],
+                "description": "Visualisasi tren bulanan untuk metrik utama.",
+            },
+            {
+                "slug": "timeseries-baki-debit-uker",
+                "title": "Timeseries Baki Debit UKER",
+                "tables": [],
+                "description": "Pergerakan baki debet per UKER secara historis.",
+            },
+            {
+                "slug": "timeseries-os",
+                "title": "Timeseries OS",
+                "tables": [],
+                "description": "Timeseries outstanding loan secara keseluruhan.",
+            },
+            {
+                "slug": "timeseries-os-dpk-npl-lar",
+                "title": "Timeseries OS DPK NPL LAR",
+                "tables": [],
+                "description": "Gabungan OS, DPK, NPL, dan LAR dalam satu rangkaian waktu.",
+            },
+            {
+                "slug": "timeseries-harian",
+                "title": "Timeseries Harian",
+                "tables": [],
+                "description": "Detail timeseries harian untuk monitoring cepat.",
+            },
+        ],
+    },
     {
         "key": "summary",
         "label": "Summary",
@@ -70,8 +101,6 @@ METRIC_GROUPS = [
                 "title": "OS Medium",
                 "tables": [
                     "OS MEDIUM KANCA KONSOL",
-                    "OS MEDIUM KANCA ONLY",
-                    "OS MEDIUM KCP ONLY",
                 ],
             },
             {
@@ -79,8 +108,6 @@ METRIC_GROUPS = [
                 "title": "SML Medium",
                 "tables": [
                     "SML MEDIUM KANCA KONSOL",
-                    "SML MEDIUM KANCA ONLY",
-                    "SML MEDIUM KCP ONLY",
                 ],
             },
             {
@@ -88,8 +115,6 @@ METRIC_GROUPS = [
                 "title": "NPL Medium",
                 "tables": [
                     "NPL MEDIUM KANCA KONSOL",
-                    "NPL MEDIUM KANCA ONLY",
-                    "NPL MEDIUM KCP ONLY",
                 ],
             },
             {
@@ -97,8 +122,6 @@ METRIC_GROUPS = [
                 "title": "NSB Medium",
                 "tables": [
                     "NSB MEDIUM KANCA KONSOL",
-                    "NSB MEDIUM KANCA ONLY",
-                    "NSB MEDIUM KCP ONLY",
                 ],
             },
             {
@@ -106,8 +129,6 @@ METRIC_GROUPS = [
                 "title": "LR Medium",
                 "tables": [
                     "LR MEDIUM KANCA KONSOL",
-                    "LR MEDIUM KANCA ONLY",
-                    "LR MEDIUM KCP ONLY",
                 ],
             },
         ],

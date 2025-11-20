@@ -35,6 +35,22 @@
             padding-top: 20px;
             z-index: 1000;
             transition: all 0.3s;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--sidebar-bg);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: var(--sidebar-bg);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 4px;
         }
         
         .sidebar .brand {
@@ -149,6 +165,21 @@
             font-size: 0.75rem;
             padding: 4px 8px;
         }
+
+        .datetime-display {
+            font-weight: 600;
+            color: #1f2933;
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+            line-height: 1.2;
+        }
+
+        .datetime-display span {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -196,6 +227,11 @@
                 <div>
                     <h5 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h5>
                 </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="datetime-display" id="liveDatetime">
+                        <div>--:--:--</div>
+                        <span>---</span>
+                    </div>
                 <div class="user-info">
                     <div class="user-avatar">
                         {{ user.username|first|upper }}
@@ -211,6 +247,7 @@
                     <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger ms-3">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
+                </div>
                 </div>
             </div>
         </div>
@@ -241,6 +278,39 @@
     
     <!-- jQuery (optional) -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <script>
+        function updateLiveDatetime() {
+            const target = document.getElementById('liveDatetime');
+            if (!target) {
+                return;
+            }
+            
+            const now = new Date();
+            
+            const timeStringRaw = now.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+            
+            const timeStringWIB = timeStringRaw + ' WIB';
+            
+            const dateString = now.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+            });
+            
+            target.innerHTML = `<div>${timeStringWIB}</div><span>${dateString}</span>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLiveDatetime();
+            setInterval(updateLiveDatetime, 1000); 
+        });
+    </script>
     
     {% block extra_js %}{% endblock %}
 </body>
