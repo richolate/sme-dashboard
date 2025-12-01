@@ -375,27 +375,6 @@ Performance Highlight SME Dashboard/
 └── README.md
 ```
 
-## 🧮 Formulas Library
-
-Folder `dashboard/formulas/` menyimpan seluruh rumus yang sering dipakai ulang untuk segmentasi, pemetaan KANCA/UKER, normalisasi periode, dan perhitungan OS/SML/NPL/LR/LAR. Modul ini dapat langsung di-import dari manapun di project.
-
-```python
-import pandas as pd
-from dashboard.formulas import (
-    calculate_metrics,
-    calculate_metric_breakdown,
-    parse_periode_string,
-    segment_dataframe,
-)
-
-df = segment_dataframe(raw_df)
-metrics = calculate_metrics(df)
-monthly_period = parse_periode_string("202411")
-per_branch = calculate_metric_breakdown(df, ["kanca"])
-```
-
-Setiap fungsi diberikan docstring yang menjelaskan input dan output sehingga mudah dipanggil ketika membuat ETL, view Django, ataupun script Drizzle.
-
 ## 🔐 Security Notes
 
 ### Production Deployment

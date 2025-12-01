@@ -16,6 +16,1386 @@
     </div>
 </div>
 
+{% if show_chart %}
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0">Grafik Timeseries</h6>
+            
+            <!-- Filter Form -->
+            <form method="get" class="d-flex gap-2 align-items-center">
+                            
+                <!-- Segment Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="segmentDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Segment
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="segmentDropdown" style="min-width: 200px;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="segment" value="ALL" id="seg_all" 
+                                    {% if 'ALL' in filters.selected_segments %}checked{% endif %}>
+                                <label class="form-check-label" for="seg_all">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for seg in filters.segments %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="segment" value="{{ seg }}" id="seg_{{ seg }}"
+                                        {% if seg in filters.selected_segments %}checked{% endif %}>
+                                    <label class="form-check-label" for="seg_{{ seg }}">{{ seg }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Kanca Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="kancaDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Kanca
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="kancaDropdown" style="min-width: 250px; max-height: 300px; overflow-y: auto;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="kanca" value="ALL" id="kanca_all"
+                                    {% if 'ALL' in filters.selected_kancas %}checked{% endif %}>
+                                <label class="form-check-label" for="kanca_all">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for k in filters.kancas %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="kanca" value="{{ k }}" id="kanca_{{ forloop.counter }}"
+                                        {% if k in filters.selected_kancas %}checked{% endif %}>
+                                    <label class="form-check-label" for="kanca_{{ forloop.counter }}">{{ k }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </form>
+
+            <!-- SCRIPT SELECT ALL + AUTO SUBMIT -->
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const form = document.querySelector('#segmentDropdown').closest('form');
+
+                function setupSelectAll(selectAllId, selector) {
+                    const selectAll = document.getElementById(selectAllId);
+                    const items = document.querySelectorAll(selector);
+
+                    // Ketika Select All dicentang
+                    selectAll.addEventListener("change", function () {
+                        if (this.checked) {
+                            items.forEach(i => {
+                                if (i !== selectAll) i.checked = false;
+                            });
+                        }
+                        form.submit(); // Auto submit
+                    });
+
+                    // Ketika item lain dicentang
+                    items.forEach(i => {
+                        if (i !== selectAll) {
+                            i.addEventListener("change", function () {
+                                if (this.checked) {
+                                    selectAll.checked = false;
+                                }
+                                form.submit(); // Auto submit
+                            });
+                        }
+                    });
+                }
+
+                setupSelectAll("seg_all", "input[name='segment']");
+                setupSelectAll("kanca_all", "input[name='kanca']");
+            });
+            </script>
+
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Container dengan tinggi minimum agar chart tidak terlalu kecil -->
+        <div style="min-height: 500px; height: 60vh;">
+            <canvas id="metricChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('metricChart').getContext('2d');
+        const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                // Format as Billions/Trillions for readability
+                                if (value >= 1000000000000) {
+                                    return (value / 1000000000000).toFixed(1) + 'T';
+                                } else if (value >= 1000000000) {
+                                    return (value / 1000000000).toFixed(1) + 'M';
+                                }
+                                return value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+
+{% comment %}
+================================================================================
+SECTION: Stacked Bar Chart for Timeseries OS DPK NPL LAR
+================================================================================
+{% endcomment %}
+{% if show_stacked_chart %}
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0">Grafik Timeseries OS, DPK, NPL, LAR</h6>
+            
+            <!-- Filter Form -->
+            <form method="get" class="d-flex gap-2 align-items-center">
+                            
+                <!-- Segment Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="segmentDropdownStacked" data-bs-toggle="dropdown" aria-expanded="false">
+                        Segment
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="segmentDropdownStacked" style="min-width: 200px;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="segment" value="ALL" id="seg_all_stacked" 
+                                    {% if 'ALL' in filters.selected_segments %}checked{% endif %}>
+                                <label class="form-check-label" for="seg_all_stacked">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for seg in filters.segments %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="segment" value="{{ seg }}" id="seg_stacked_{{ seg }}"
+                                        {% if seg in filters.selected_segments %}checked{% endif %}>
+                                    <label class="form-check-label" for="seg_stacked_{{ seg }}">{{ seg }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Kanca Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="kancaDropdownStacked" data-bs-toggle="dropdown" aria-expanded="false">
+                        Kanca
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="kancaDropdownStacked" style="min-width: 250px; max-height: 300px; overflow-y: auto;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="kanca" value="ALL" id="kanca_all_stacked"
+                                    {% if 'ALL' in filters.selected_kancas %}checked{% endif %}>
+                                <label class="form-check-label" for="kanca_all_stacked">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for k in filters.kancas %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="kanca" value="{{ k }}" id="kanca_stacked_{{ forloop.counter }}"
+                                        {% if k in filters.selected_kancas %}checked{% endif %}>
+                                    <label class="form-check-label" for="kanca_stacked_{{ forloop.counter }}">{{ k }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </form>
+
+            <!-- SCRIPT SELECT ALL + AUTO SUBMIT for Stacked Chart -->
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const formStacked = document.querySelector('#segmentDropdownStacked').closest('form');
+
+                function setupSelectAllStacked(selectAllId, selector) {
+                    const selectAll = document.getElementById(selectAllId);
+                    const items = document.querySelectorAll(selector);
+
+                    // Ketika Select All dicentang
+                    selectAll.addEventListener("change", function () {
+                        if (this.checked) {
+                            items.forEach(i => {
+                                if (i !== selectAll) i.checked = false;
+                            });
+                        }
+                        formStacked.submit(); // Auto submit
+                    });
+
+                    // Ketika item lain dicentang
+                    items.forEach(i => {
+                        if (i !== selectAll) {
+                            i.addEventListener("change", function () {
+                                if (this.checked) {
+                                    selectAll.checked = false;
+                                }
+                                formStacked.submit(); // Auto submit
+                            });
+                        }
+                    });
+                }
+
+                setupSelectAllStacked("seg_all_stacked", "input[name='segment']");
+                setupSelectAllStacked("kanca_all_stacked", "input[name='kanca']");
+            });
+            </script>
+
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Container dengan tinggi minimum agar chart tidak terlalu kecil -->
+        <div style="min-height: 500px; height: 60vh;">
+            <canvas id="stackedMetricChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('stackedMetricChart').getContext('2d');
+        const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+        
+        // Register the datalabels plugin
+        Chart.register(ChartDataLabels);
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                // Format as Millions (M) or Trillions (T) for readability
+                                if (value >= 1000000000000) {
+                                    return (value / 1000000000000).toFixed(1) + 'T';
+                                } else if (value >= 1000000000) {
+                                    return (value / 1000000000).toFixed(1) + 'M';
+                                }
+                                return value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            // Only show label on the last (top) dataset for stacked total
+                            return context.datasetIndex === context.chart.data.datasets.length - 1;
+                        },
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: function(value, context) {
+                            // Calculate total of all stacked values for this bar
+                            let total = 0;
+                            context.chart.data.datasets.forEach(function(dataset) {
+                                total += dataset.data[context.dataIndex] || 0;
+                            });
+                            // Format as M (Millions)
+                            if (total >= 1000000000000) {
+                                return (total / 1000000000000).toFixed(2) + 'T';
+                            } else if (total >= 1000000000) {
+                                return (total / 1000000000).toFixed(2) + 'M';
+                            }
+                            return total.toLocaleString('id-ID');
+                        },
+                        color: '#333',
+                        font: {
+                            weight: 'bold',
+                            size: 10
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% comment %}
+================================================================================
+END SECTION: Stacked Bar Chart
+================================================================================
+{% endcomment %}
+
+{% comment %}
+================================================================================
+SECTION: Daily Line/Area Chart for Timeseries Baki Debit UKER
+================================================================================
+{% endcomment %}
+{% if show_daily_chart %}
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0">Time Series Harian Baki Debit</h6>
+            
+            <!-- Filter Form -->
+            <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+                
+                <!-- Year Filter (Radio Buttons) -->
+                <div class="btn-group" role="group" aria-label="Year filter">
+                    {% for yr in filters.years %}
+                        <input type="radio" class="btn-check" name="year" value="{{ yr }}" id="year_{{ yr }}" 
+                            {% if filters.selected_year == yr|stringformat:"s" %}checked{% endif %} autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="year_{{ yr }}">{{ yr }}</label>
+                    {% endfor %}
+                </div>
+                
+                <!-- Month Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="monthDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Bulan
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="monthDropdown" style="min-width: 200px; max-height: 300px; overflow-y: auto;">
+                        {% for m in filters.months %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="month" value="{{ m.value }}" id="month_{{ m.value }}"
+                                        {% if m.value|stringformat:"s" in filters.selected_months %}checked{% endif %}>
+                                    <label class="form-check-label" for="month_{{ m.value }}">{{ m.name }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Segment Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="segmentDropdownDaily" data-bs-toggle="dropdown" aria-expanded="false">
+                        Segment
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="segmentDropdownDaily" style="min-width: 200px;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="segment" value="ALL" id="seg_all_daily" 
+                                    {% if 'ALL' in filters.selected_segments %}checked{% endif %}>
+                                <label class="form-check-label" for="seg_all_daily">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for seg in filters.segments %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="segment" value="{{ seg }}" id="seg_daily_{{ seg }}"
+                                        {% if seg in filters.selected_segments %}checked{% endif %}>
+                                    <label class="form-check-label" for="seg_daily_{{ seg }}">{{ seg }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Kanca Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="kancaDropdownDaily" data-bs-toggle="dropdown" aria-expanded="false">
+                        Kanca
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="kancaDropdownDaily" style="min-width: 250px; max-height: 300px; overflow-y: auto;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="kanca" value="ALL" id="kanca_all_daily"
+                                    {% if 'ALL' in filters.selected_kancas %}checked{% endif %}>
+                                <label class="form-check-label" for="kanca_all_daily">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for k in filters.kancas %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="kanca" value="{{ k }}" id="kanca_daily_{{ forloop.counter }}"
+                                        {% if k in filters.selected_kancas %}checked{% endif %}>
+                                    <label class="form-check-label" for="kanca_daily_{{ forloop.counter }}">{{ k }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </form>
+
+            <!-- SCRIPT SELECT ALL + AUTO SUBMIT for Daily Chart -->
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const formDaily = document.querySelector('#segmentDropdownDaily').closest('form');
+
+                // Auto submit when year radio button changes
+                document.querySelectorAll('input[name="year"]').forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        formDaily.submit();
+                    });
+                });
+
+                // Auto submit when month checkbox changes
+                document.querySelectorAll('input[name="month"]').forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function() {
+                        formDaily.submit();
+                    });
+                });
+
+                function setupSelectAllDaily(selectAllId, selector) {
+                    const selectAll = document.getElementById(selectAllId);
+                    if (!selectAll) return;
+                    
+                    const items = document.querySelectorAll(selector);
+
+                    selectAll.addEventListener("change", function () {
+                        if (this.checked) {
+                            items.forEach(i => {
+                                if (i !== selectAll) i.checked = false;
+                            });
+                        }
+                        formDaily.submit(); // Auto submit
+                    });
+
+                    items.forEach(i => {
+                        if (i !== selectAll) {
+                            i.addEventListener("change", function () {
+                                if (this.checked) {
+                                    selectAll.checked = false;
+                                }
+                                formDaily.submit(); // Auto submit
+                            });
+                        }
+                    });
+                }
+
+                setupSelectAllDaily("seg_all_daily", "input[name='segment']");
+                setupSelectAllDaily("kanca_all_daily", "input[name='kanca']");
+            });
+            </script>
+
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Container dengan tinggi minimum agar chart tidak terlalu kecil -->
+        <div style="min-height: 500px; height: 60vh;">
+            <canvas id="dailyMetricChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('dailyMetricChart').getContext('2d');
+        const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+        
+        // Register the datalabels plugin
+        Chart.register(ChartDataLabels);
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tanggal',
+                            font: { weight: 'bold' }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Baki Debet (OS)',
+                            font: { weight: 'bold' }
+                        },
+                        ticks: {
+                            callback: function(value, index, values) {
+                                // Format as Millions (M) or Trillions (T) for readability
+                                if (value >= 1000000000000) {
+                                    return (value / 1000000000000).toFixed(2) + 'T';
+                                } else if (value >= 1000000000) {
+                                    return (value / 1000000000).toFixed(2) + 'M';
+                                }
+                                return value;
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return 'Tanggal ' + context[0].label;
+                            },
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            // Show labels only at specific points (every 5 days or at peaks)
+                            const index = context.dataIndex;
+                            return index % 1 === 0 || index === context.dataset.data.length - 1;
+                        },
+                        anchor: 'end',
+                        align: 'top',
+                        offset: 5,
+                        formatter: function(value, context) {
+                            if (value === null) return '';
+                            // Format as M (Millions)
+                            if (value >= 1000000000000) {
+                                return (value / 1000000000000).toFixed(2) + 'T';
+                            } else if (value >= 1000000000) {
+                                return (value / 1000000000).toFixed(2) + 'M';
+                            }
+                            return value.toLocaleString('id-ID');
+                        },
+                        color: function(context) {
+                            return context.dataset.borderColor;
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 9
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% comment %}
+================================================================================
+END SECTION: Daily Line/Area Chart
+================================================================================
+{% endcomment %}
+
+{% comment %}
+================================================================================
+SECTION: Monthly 4 Charts for Timeseries Bulanan (SML, NPL, OS, LAR)
+================================================================================
+{% endcomment %}
+{% if show_monthly_charts %}
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0">Time Series Bulanan</h6>
+            
+            <!-- Filter Form -->
+            <form method="get" class="d-flex gap-2 align-items-center flex-wrap" id="monthlyFilterForm">
+                
+                <!-- Year Filter (Dropdown Checkbox - Multiple Selection) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="yearDropdownMonthly" data-bs-toggle="dropdown" aria-expanded="false">
+                        Year
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="yearDropdownMonthly" style="min-width: 150px;">
+                        {% for yr in filters.years %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input monthly-year-check" type="checkbox" name="year" value="{{ yr }}" id="year_monthly_{{ yr }}"
+                                        {% if yr|stringformat:"s" in filters.selected_years %}checked{% endif %}>
+                                    <label class="form-check-label" for="year_monthly_{{ yr }}">{{ yr }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Month Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="monthDropdownMonthly" data-bs-toggle="dropdown" aria-expanded="false">
+                        Bulan
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="monthDropdownMonthly" style="min-width: 200px; max-height: 300px; overflow-y: auto;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="month_all_monthly" 
+                                    {% if filters.selected_months|length == 12 %}checked{% endif %}>
+                                <label class="form-check-label" for="month_all_monthly"><strong>Select All</strong></label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for m in filters.months %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input monthly-month-check" type="checkbox" name="month" value="{{ m.value }}" id="month_monthly_{{ m.value }}"
+                                        {% if m.value|stringformat:"s" in filters.selected_months %}checked{% endif %}>
+                                    <label class="form-check-label" for="month_monthly_{{ m.value }}">{{ m.name }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Segment Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="segmentDropdownMonthly" data-bs-toggle="dropdown" aria-expanded="false">
+                        Segment
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="segmentDropdownMonthly" style="min-width: 200px;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="segment" value="ALL" id="seg_all_monthly" 
+                                    {% if 'ALL' in filters.selected_segments %}checked{% endif %}>
+                                <label class="form-check-label" for="seg_all_monthly">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for seg in filters.segments %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input monthly-seg-check" type="checkbox" name="segment" value="{{ seg }}" id="seg_monthly_{{ seg }}"
+                                        {% if seg in filters.selected_segments %}checked{% endif %}>
+                                    <label class="form-check-label" for="seg_monthly_{{ seg }}">{{ seg }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Kanca Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="kancaDropdownMonthly" data-bs-toggle="dropdown" aria-expanded="false">
+                        Kanca
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="kancaDropdownMonthly" style="min-width: 250px; max-height: 300px; overflow-y: auto;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="kanca" value="ALL" id="kanca_all_monthly"
+                                    {% if 'ALL' in filters.selected_kancas %}checked{% endif %}>
+                                <label class="form-check-label" for="kanca_all_monthly">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for k in filters.kancas %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input monthly-kanca-check" type="checkbox" name="kanca" value="{{ k }}" id="kanca_monthly_{{ forloop.counter }}"
+                                        {% if k in filters.selected_kancas %}checked{% endif %}>
+                                    <label class="form-check-label" for="kanca_monthly_{{ forloop.counter }}">{{ k }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </form>
+
+            <!-- SCRIPT AUTO SUBMIT for Monthly Charts -->
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const formMonthly = document.getElementById('monthlyFilterForm');
+
+                // Auto submit when any year checkbox changes
+                document.querySelectorAll('.monthly-year-check').forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function() {
+                        formMonthly.submit();
+                    });
+                });
+
+                // Auto submit when any month checkbox changes
+                document.querySelectorAll('.monthly-month-check').forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function() {
+                        formMonthly.submit();
+                    });
+                });
+
+                // Select All months logic
+                const monthAllCheckbox = document.getElementById('month_all_monthly');
+                const monthCheckboxes = document.querySelectorAll('.monthly-month-check');
+                
+                monthAllCheckbox.addEventListener('change', function() {
+                    monthCheckboxes.forEach(cb => cb.checked = this.checked);
+                    formMonthly.submit();
+                });
+
+                // Segment Select All logic
+                const segAllMonthly = document.getElementById('seg_all_monthly');
+                const segCheckboxes = document.querySelectorAll('.monthly-seg-check');
+                
+                segAllMonthly.addEventListener('change', function() {
+                    if (this.checked) {
+                        segCheckboxes.forEach(cb => cb.checked = false);
+                    }
+                    formMonthly.submit();
+                });
+
+                segCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        if (this.checked) {
+                            segAllMonthly.checked = false;
+                        }
+                        formMonthly.submit();
+                    });
+                });
+
+                // Kanca Select All logic
+                const kancaAllMonthly = document.getElementById('kanca_all_monthly');
+                const kancaCheckboxes = document.querySelectorAll('.monthly-kanca-check');
+                
+                kancaAllMonthly.addEventListener('change', function() {
+                    if (this.checked) {
+                        kancaCheckboxes.forEach(cb => cb.checked = false);
+                    }
+                    formMonthly.submit();
+                });
+
+                kancaCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        if (this.checked) {
+                            kancaAllMonthly.checked = false;
+                        }
+                        formMonthly.submit();
+                    });
+                });
+            });
+            </script>
+
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- 4 Charts in 2x2 Grid -->
+        <div class="row">
+            <!-- Chart 1: SML -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <strong>Time Series Bulanan SML</strong>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 350px;">
+                            <canvas id="chartSML"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chart 2: NPL -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <strong>Time Series Bulanan NPL</strong>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 350px;">
+                            <canvas id="chartNPL"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chart 3: Baki Debet (OS) -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <strong>Time Series Bulanan Baki Debet</strong>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 350px;">
+                            <canvas id="chartOS"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chart 4: LAR -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <strong>Time Series Bulanan LAR</strong>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 350px;">
+                            <canvas id="chartLAR"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Register datalabels plugin
+        Chart.register(ChartDataLabels);
+        
+        // Chart data from Django
+        const chartSMLData = JSON.parse('{{ chart_sml_json|escapejs }}');
+        const chartNPLData = JSON.parse('{{ chart_npl_json|escapejs }}');
+        const chartOSData = JSON.parse('{{ chart_os_json|escapejs }}');
+        const chartLARData = JSON.parse('{{ chart_lar_json|escapejs }}');
+        
+        // Common chart options for smoothed line chart
+        function getChartOptions(title) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000000000) {
+                                    return (value / 1000000000000).toFixed(2) + 'T';
+                                } else if (value >= 1000000000) {
+                                    return (value / 1000000000).toFixed(3) + 'M';
+                                }
+                                return value;
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 10,
+                            font: { size: 11 }
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            // Show label at every point
+                            return true;
+                        },
+                        anchor: 'end',
+                        align: 'top',
+                        offset: 2,
+                        formatter: function(value) {
+                            if (value === null) return '';
+                            if (value >= 1000000000000) {
+                                return (value / 1000000000000).toFixed(3) + 'T';
+                            } else if (value >= 1000000000) {
+                                return (value / 1000000000).toFixed(3) + 'M';
+                            }
+                            return value.toLocaleString('id-ID');
+                        },
+                        color: function(context) {
+                            return context.dataset.borderColor;
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 8
+                        }
+                    }
+                }
+            };
+        }
+        
+        // Chart 1: SML
+        new Chart(document.getElementById('chartSML').getContext('2d'), {
+            type: 'line',
+            data: chartSMLData,
+            options: getChartOptions('SML')
+        });
+        
+        // Chart 2: NPL
+        new Chart(document.getElementById('chartNPL').getContext('2d'), {
+            type: 'line',
+            data: chartNPLData,
+            options: getChartOptions('NPL')
+        });
+        
+        // Chart 3: OS
+        new Chart(document.getElementById('chartOS').getContext('2d'), {
+            type: 'line',
+            data: chartOSData,
+            options: getChartOptions('Baki Debet')
+        });
+        
+        // Chart 4: LAR
+        new Chart(document.getElementById('chartLAR').getContext('2d'), {
+            type: 'line',
+            data: chartLARData,
+            options: getChartOptions('LAR')
+        });
+    });
+</script>
+{% endif %}
+{% comment %}
+================================================================================
+END SECTION: Monthly 4 Charts
+================================================================================
+{% endcomment %}
+
+{% comment %}
+================================================================================
+SECTION: Daily 3 Charts for Timeseries Harian (LAR, NPL, SML - Stacked Vertically)
+================================================================================
+{% endcomment %}
+{% if show_daily_three_charts %}
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0">Time Series Harian</h6>
+            
+            <!-- Filter Form -->
+            <form method="get" class="d-flex gap-2 align-items-center flex-wrap" id="dailyThreeFilterForm">
+                
+                <!-- Year Filter (Radio Buttons) -->
+                <div class="btn-group" role="group" aria-label="Year filter">
+                    {% for yr in filters.years %}
+                        <input type="radio" class="btn-check" name="year" value="{{ yr }}" id="year_dt_{{ yr }}" 
+                            {% if filters.selected_year == yr|stringformat:"s" %}checked{% endif %} autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="year_dt_{{ yr }}">{{ yr }}</label>
+                    {% endfor %}
+                </div>
+                
+                <!-- Month Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="monthDropdownDT" data-bs-toggle="dropdown" aria-expanded="false">
+                        Bulan
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="monthDropdownDT" style="min-width: 200px; max-height: 300px; overflow-y: auto;">
+                        {% for m in filters.months %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input dt-month-check" type="checkbox" name="month" value="{{ m.value }}" id="month_dt_{{ m.value }}"
+                                        {% if m.value|stringformat:"s" in filters.selected_months %}checked{% endif %}>
+                                    <label class="form-check-label" for="month_dt_{{ m.value }}">{{ m.name }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Segment Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="segmentDropdownDT" data-bs-toggle="dropdown" aria-expanded="false">
+                        Segment
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="segmentDropdownDT" style="min-width: 200px;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="segment" value="ALL" id="seg_all_dt" 
+                                    {% if 'ALL' in filters.selected_segments %}checked{% endif %}>
+                                <label class="form-check-label" for="seg_all_dt">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for seg in filters.segments %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input dt-seg-check" type="checkbox" name="segment" value="{{ seg }}" id="seg_dt_{{ seg }}"
+                                        {% if seg in filters.selected_segments %}checked{% endif %}>
+                                    <label class="form-check-label" for="seg_dt_{{ seg }}">{{ seg }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Kanca Filter (Dropdown Checkbox) -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="kancaDropdownDT" data-bs-toggle="dropdown" aria-expanded="false">
+                        Kanca
+                    </button>
+                    <ul class="dropdown-menu p-3" aria-labelledby="kancaDropdownDT" style="min-width: 250px; max-height: 300px; overflow-y: auto;">
+                        <li>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="kanca" value="ALL" id="kanca_all_dt"
+                                    {% if 'ALL' in filters.selected_kancas %}checked{% endif %}>
+                                <label class="form-check-label" for="kanca_all_dt">Select All</label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for k in filters.kancas %}
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input dt-kanca-check" type="checkbox" name="kanca" value="{{ k }}" id="kanca_dt_{{ forloop.counter }}"
+                                        {% if k in filters.selected_kancas %}checked{% endif %}>
+                                    <label class="form-check-label" for="kanca_dt_{{ forloop.counter }}">{{ k }}</label>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </form>
+
+            <!-- SCRIPT AUTO SUBMIT for Daily Three Charts -->
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const formDT = document.getElementById('dailyThreeFilterForm');
+
+                // Auto submit when year radio button changes
+                document.querySelectorAll('#dailyThreeFilterForm input[name="year"]').forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        formDT.submit();
+                    });
+                });
+
+                // Auto submit when month checkbox changes
+                document.querySelectorAll('.dt-month-check').forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function() {
+                        formDT.submit();
+                    });
+                });
+
+                // Segment Select All logic
+                const segAllDT = document.getElementById('seg_all_dt');
+                const segCheckboxesDT = document.querySelectorAll('.dt-seg-check');
+                
+                segAllDT.addEventListener('change', function() {
+                    if (this.checked) {
+                        segCheckboxesDT.forEach(cb => cb.checked = false);
+                    }
+                    formDT.submit();
+                });
+
+                segCheckboxesDT.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        if (this.checked) {
+                            segAllDT.checked = false;
+                        }
+                        formDT.submit();
+                    });
+                });
+
+                // Kanca Select All logic
+                const kancaAllDT = document.getElementById('kanca_all_dt');
+                const kancaCheckboxesDT = document.querySelectorAll('.dt-kanca-check');
+                
+                kancaAllDT.addEventListener('change', function() {
+                    if (this.checked) {
+                        kancaCheckboxesDT.forEach(cb => cb.checked = false);
+                    }
+                    formDT.submit();
+                });
+
+                kancaCheckboxesDT.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        if (this.checked) {
+                            kancaAllDT.checked = false;
+                        }
+                        formDT.submit();
+                    });
+                });
+            });
+            </script>
+
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- 3 Charts Stacked Vertically -->
+        
+        <!-- Chart 1: LAR -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <strong>Time Series Harian LAR</strong>
+            </div>
+            <div class="card-body">
+                <div style="min-height: 400px; height: 45vh;">
+                    <canvas id="chartDailyLAR"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 2: NPL -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <strong>Time Series Harian NPL</strong>
+            </div>
+            <div class="card-body">
+                <div style="min-height: 400px; height: 45vh;">
+                    <canvas id="chartDailyNPL"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart 3: SML -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <strong>Time Series Harian SML</strong>
+            </div>
+            <div class="card-body">
+                <div style="min-height: 400px; height: 45vh;">
+                    <canvas id="chartDailySML"></canvas>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Register datalabels plugin
+        Chart.register(ChartDataLabels);
+        
+        // Chart data from Django
+        const chartLARData = JSON.parse('{{ chart_lar_json|escapejs }}');
+        const chartNPLData = JSON.parse('{{ chart_npl_json|escapejs }}');
+        const chartSMLData = JSON.parse('{{ chart_sml_json|escapejs }}');
+        
+        // Common chart options for smoothed line chart
+        function getDailyChartOptions(title, yAxisTitle) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tanggal',
+                            font: { weight: 'bold' }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: yAxisTitle,
+                            font: { weight: 'bold' }
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000000000) {
+                                    return (value / 1000000000000).toFixed(2) + 'T';
+                                } else if (value >= 1000000000) {
+                                    return (value / 1000000000).toFixed(2) + 'M';
+                                }
+                                return value;
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return 'Tanggal ' + context[0].label;
+                            },
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 10,
+                            font: { size: 11 }
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            // Show label at every 5th point or at the last point
+                            const index = context.dataIndex;
+                            const dataLength = context.dataset.data.filter(d => d !== null).length;
+                            return index % 5 === 0 || index === dataLength - 1;
+                        },
+                        anchor: 'end',
+                        align: 'top',
+                        offset: 2,
+                        formatter: function(value) {
+                            if (value === null) return '';
+                            if (value >= 1000000000000) {
+                                return (value / 1000000000000).toFixed(2) + 'T';
+                            } else if (value >= 1000000000) {
+                                return (value / 1000000000).toFixed(2) + 'M';
+                            }
+                            return value.toLocaleString('id-ID');
+                        },
+                        color: function(context) {
+                            return context.dataset.borderColor;
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 8
+                        }
+                    }
+                }
+            };
+        }
+        
+        // Chart 1: LAR
+        new Chart(document.getElementById('chartDailyLAR').getContext('2d'), {
+            type: 'line',
+            data: chartLARData,
+            options: getDailyChartOptions('LAR', 'LAR')
+        });
+        
+        // Chart 2: NPL
+        new Chart(document.getElementById('chartDailyNPL').getContext('2d'), {
+            type: 'line',
+            data: chartNPLData,
+            options: getDailyChartOptions('NPL', 'NPL')
+        });
+        
+        // Chart 3: SML
+        new Chart(document.getElementById('chartDailySML').getContext('2d'), {
+            type: 'line',
+            data: chartSMLData,
+            options: getDailyChartOptions('SML', 'SML')
+        });
+    });
+</script>
+{% endif %}
+{% comment %}
+================================================================================
+END SECTION: Daily 3 Charts
+================================================================================
+{% endcomment %}
+
 {% if tables %}
     {% for table_title in tables %}
         <div class="card mb-4">
