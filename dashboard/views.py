@@ -993,5 +993,353 @@ def metric_page_view(request, slug):
     # END SECTION: Timeseries Harian
     # =================================================================================
 
+    # =================================================================================
+    # SECTION: OS Small Tables (3 Tables: KONSOL, KANCA ONLY, KCP ONLY)
+    # NOTE: Menampilkan data OS Small dengan struktur tabel sesuai format BRI
+    #       - Kolom A: Akhir bulan (dipilih) tahun kemarin
+    #       - Kolom B: 31 Desember tahun kemarin
+    #       - Kolom C: Akhir bulan kemarin
+    #       - Kolom D: Tanggal sama bulan kemarin
+    #       - Kolom E: Tanggal yang dipilih
+    #       - MtD, MoM, YtD, YoY: Perhitungan selisih
+    # =================================================================================
+    if slug == 'small-os':
+        from datetime import date
+        from .formulas import (
+            get_date_columns, calculate_table_data,
+            KANCA_MASTER, UKER_MASTER, KANCA_CODES, KCP_CODES
+        )
+        
+        # 1. Handle date filter
+        selected_date_str = request.GET.get('selected_date', '')
+        if selected_date_str:
+            try:
+                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = date.today()
+        else:
+            selected_date = date.today()
+        
+        # 2. Get available dates from database
+        # Get distinct dates from periode field
+        from django.db.models.functions import ExtractYear, ExtractMonth, ExtractDay
+        
+        qs_base = LW321.objects.annotate(
+            periode_iso=Concat(
+                Substr('periode', 7, 4),  # YYYY
+                Value('-'),
+                Substr('periode', 4, 2),  # MM
+                Value('-'),
+                Substr('periode', 1, 2),  # DD
+            ),
+        ).annotate(
+            periode_date=Cast('periode_iso', output_field=DateField())
+        )
+        
+        available_dates = list(
+            qs_base.values_list('periode_date', flat=True)
+            .distinct()
+            .order_by('-periode_date')[:100]  # Last 100 dates
+        )
+        
+        # 3. Build base queryset with annotations
+        qs = LW321.objects.all()
+        qs = qs.annotate(segment=get_segment_annotation())
+        qs = annotate_metrics(qs)
+        
+        # 4. Get date columns info
+        date_cols = get_date_columns(selected_date)
+        
+        # 5. Calculate table data for each type
+        # Helper function to get OS by UKER for a specific date
+        def get_os_by_uker(target_date, segment_filter='SMALL', uker_filter=None):
+            """Get OS aggregated by kode_uker for a specific date"""
+            periode_str = target_date.strftime("%d/%m/%Y")
+            
+            qs_filtered = qs.filter(periode=periode_str, segment=segment_filter)
+            
+            if uker_filter == 'KANCA':
+                kanca_codes_str = [str(c) for c in KANCA_CODES]
+                qs_filtered = qs_filtered.filter(kode_uker__in=kanca_codes_str)
+            elif uker_filter == 'KCP':
+                kcp_codes_str = [str(c) for c in KCP_CODES]
+                qs_filtered = qs_filtered.filter(kode_uker__in=kcp_codes_str)
+            
+            result = {}
+            for row in qs_filtered.values('kode_uker').annotate(total_os=Sum('os')):
+                result[row['kode_uker']] = float(row['total_os'] or 0)
+            return result
+        
+        # 6. Build KONSOL table (grouped by KANCA)
+        def build_konsol_table():
+            rows = []
+            totals = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
+            
+            # Get OS for each date
+            os_a = get_os_by_uker(date_cols['A']['date'])
+            os_b = get_os_by_uker(date_cols['B']['date'])
+            os_c = get_os_by_uker(date_cols['C']['date'])
+            os_d = get_os_by_uker(date_cols['D']['date'])
+            os_e = get_os_by_uker(date_cols['E']['date'])
+            
+            row_num = 1
+            for kode_kanca in sorted(KANCA_CODES):
+                nama_kanca = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+                
+                # Get all UKER codes under this KANCA
+                uker_codes = [str(kode_kanca)]  # KANCA itself
+                for k, (n, induk) in UKER_MASTER.items():
+                    if induk == kode_kanca and k != kode_kanca:
+                        uker_codes.append(str(k))
+                
+                # Sum OS for all UKERs under this KANCA
+                val_a = sum(os_a.get(c, 0) for c in uker_codes)
+                val_b = sum(os_b.get(c, 0) for c in uker_codes)
+                val_c = sum(os_c.get(c, 0) for c in uker_codes)
+                val_d = sum(os_d.get(c, 0) for c in uker_codes)
+                val_e = sum(os_e.get(c, 0) for c in uker_codes)
+                
+                # Get first KCP name under this KANCA for display
+                kcp_list = [(k, n) for k, (n, induk) in UKER_MASTER.items() 
+                           if induk == kode_kanca and k != kode_kanca]
+                first_kcp = kcp_list[0] if kcp_list else (None, '')
+                
+                row = {
+                    'no': row_num,
+                    'kode_uker': first_kcp[0] if first_kcp[0] else kode_kanca,
+                    'uker': first_kcp[1] if first_kcp[1] else nama_kanca,
+                    'kode_kanca': kode_kanca,
+                    'kanca': nama_kanca,
+                    'A': val_a,
+                    'B': val_b,
+                    'C': val_c,
+                    'D': val_d,
+                    'E': val_e,
+                    'MtD': val_e - val_c,
+                    'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
+                    'MoM': val_e - val_d,
+                    'MoM_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'YtD': val_e - val_b,
+                    'YtD_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
+                    'YoY': val_e - val_a,
+                    'YoY_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    # Komitmen placeholders
+                    'komitmen': 0,
+                    'komitmen_pct_ach': 0,
+                    'komitmen_gab_real': 0,
+                    'komitmen_vs_c': 0,
+                    'komitmen_vs_c_pct': 0,
+                    'komitmen_vs_b': 0,
+                    'komitmen_vs_b_pct': 0,
+                    # RKAP placeholders
+                    'rkap': 0,
+                    'rkap_gab_real': 0,
+                    'rkap_vs_komitmen': 0,
+                    'rkap_pct_ach': 0,
+                }
+                
+                rows.append(row)
+                totals['A'] += val_a
+                totals['B'] += val_b
+                totals['C'] += val_c
+                totals['D'] += val_d
+                totals['E'] += val_e
+                row_num += 1
+            
+            # Calculate totals derived values
+            totals['MtD'] = totals['E'] - totals['C']
+            totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
+            totals['MoM'] = totals['E'] - totals['D']
+            totals['MoM_pct'] = (totals['MoM'] / totals['D'] * 100) if totals['D'] else 0
+            totals['YtD'] = totals['E'] - totals['B']
+            totals['YtD_pct'] = (totals['YtD'] / totals['B'] * 100) if totals['B'] else 0
+            totals['YoY'] = totals['E'] - totals['A']
+            totals['YoY_pct'] = (totals['YoY'] / totals['A'] * 100) if totals['A'] else 0
+            
+            return rows, totals
+        
+        # 7. Build KANCA ONLY table
+        def build_kanca_only_table():
+            rows = []
+            totals = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
+            
+            os_a = get_os_by_uker(date_cols['A']['date'], uker_filter='KANCA')
+            os_b = get_os_by_uker(date_cols['B']['date'], uker_filter='KANCA')
+            os_c = get_os_by_uker(date_cols['C']['date'], uker_filter='KANCA')
+            os_d = get_os_by_uker(date_cols['D']['date'], uker_filter='KANCA')
+            os_e = get_os_by_uker(date_cols['E']['date'], uker_filter='KANCA')
+            
+            row_num = 1
+            for kode_kanca in sorted(KANCA_CODES):
+                nama_kanca = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+                kode_str = str(kode_kanca)
+                
+                val_a = os_a.get(kode_str, 0)
+                val_b = os_b.get(kode_str, 0)
+                val_c = os_c.get(kode_str, 0)
+                val_d = os_d.get(kode_str, 0)
+                val_e = os_e.get(kode_str, 0)
+                
+                row = {
+                    'no': row_num,
+                    'kode_uker': kode_kanca,
+                    'uker': nama_kanca,
+                    'kode_kanca': kode_kanca,
+                    'kanca': nama_kanca,
+                    'A': val_a,
+                    'B': val_b,
+                    'C': val_c,
+                    'D': val_d,
+                    'E': val_e,
+                    'MtD': val_e - val_c,
+                    'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
+                    'MoM': val_e - val_d,
+                    'MoM_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'YtD': val_e - val_b,
+                    'YtD_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
+                    'YoY': val_e - val_a,
+                    'YoY_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    'komitmen': 0, 'komitmen_pct_ach': 0, 'komitmen_gab_real': 0,
+                    'komitmen_vs_c': 0, 'komitmen_vs_c_pct': 0,
+                    'komitmen_vs_b': 0, 'komitmen_vs_b_pct': 0,
+                    'rkap': 0, 'rkap_gab_real': 0, 'rkap_vs_komitmen': 0, 'rkap_pct_ach': 0,
+                }
+                
+                rows.append(row)
+                totals['A'] += val_a
+                totals['B'] += val_b
+                totals['C'] += val_c
+                totals['D'] += val_d
+                totals['E'] += val_e
+                row_num += 1
+            
+            totals['MtD'] = totals['E'] - totals['C']
+            totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
+            totals['MoM'] = totals['E'] - totals['D']
+            totals['MoM_pct'] = (totals['MoM'] / totals['D'] * 100) if totals['D'] else 0
+            totals['YtD'] = totals['E'] - totals['B']
+            totals['YtD_pct'] = (totals['YtD'] / totals['B'] * 100) if totals['B'] else 0
+            totals['YoY'] = totals['E'] - totals['A']
+            totals['YoY_pct'] = (totals['YoY'] / totals['A'] * 100) if totals['A'] else 0
+            
+            return rows, totals
+        
+        # 8. Build KCP ONLY table
+        def build_kcp_only_table():
+            rows = []
+            totals = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
+            
+            os_a = get_os_by_uker(date_cols['A']['date'], uker_filter='KCP')
+            os_b = get_os_by_uker(date_cols['B']['date'], uker_filter='KCP')
+            os_c = get_os_by_uker(date_cols['C']['date'], uker_filter='KCP')
+            os_d = get_os_by_uker(date_cols['D']['date'], uker_filter='KCP')
+            os_e = get_os_by_uker(date_cols['E']['date'], uker_filter='KCP')
+            
+            row_num = 1
+            for kode_kcp in sorted(KCP_CODES):
+                if kode_kcp in UKER_MASTER:
+                    nama_kcp, kode_kanca_induk = UKER_MASTER[kode_kcp]
+                    nama_kanca = KANCA_MASTER.get(kode_kanca_induk, '')
+                else:
+                    nama_kcp = f"KCP {kode_kcp}"
+                    nama_kanca = ''
+                    kode_kanca_induk = 0
+                
+                kode_str = str(kode_kcp)
+                
+                val_a = os_a.get(kode_str, 0)
+                val_b = os_b.get(kode_str, 0)
+                val_c = os_c.get(kode_str, 0)
+                val_d = os_d.get(kode_str, 0)
+                val_e = os_e.get(kode_str, 0)
+                
+                row = {
+                    'no': row_num,
+                    'kode_uker': kode_kcp,
+                    'uker': nama_kcp,
+                    'kode_kanca': kode_kanca_induk,
+                    'kanca': nama_kanca,
+                    'A': val_a,
+                    'B': val_b,
+                    'C': val_c,
+                    'D': val_d,
+                    'E': val_e,
+                    'MtD': val_e - val_c,
+                    'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
+                    'MoM': val_e - val_d,
+                    'MoM_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'YtD': val_e - val_b,
+                    'YtD_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
+                    'YoY': val_e - val_a,
+                    'YoY_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    'komitmen': 0, 'komitmen_pct_ach': 0, 'komitmen_gab_real': 0,
+                    'komitmen_vs_c': 0, 'komitmen_vs_c_pct': 0,
+                    'komitmen_vs_b': 0, 'komitmen_vs_b_pct': 0,
+                    'rkap': 0, 'rkap_gab_real': 0, 'rkap_vs_komitmen': 0, 'rkap_pct_ach': 0,
+                }
+                
+                rows.append(row)
+                totals['A'] += val_a
+                totals['B'] += val_b
+                totals['C'] += val_c
+                totals['D'] += val_d
+                totals['E'] += val_e
+                row_num += 1
+            
+            totals['MtD'] = totals['E'] - totals['C']
+            totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
+            totals['MoM'] = totals['E'] - totals['D']
+            totals['MoM_pct'] = (totals['MoM'] / totals['D'] * 100) if totals['D'] else 0
+            totals['YtD'] = totals['E'] - totals['B']
+            totals['YtD_pct'] = (totals['YtD'] / totals['B'] * 100) if totals['B'] else 0
+            totals['YoY'] = totals['E'] - totals['A']
+            totals['YoY_pct'] = (totals['YoY'] / totals['A'] * 100) if totals['A'] else 0
+            
+            return rows, totals
+        
+        # Build all tables
+        konsol_rows, konsol_totals = build_konsol_table()
+        kanca_rows, kanca_totals = build_kanca_only_table()
+        kcp_rows, kcp_totals = build_kcp_only_table()
+        
+        # MtD header info
+        mtd_header = f"{date_cols['E']['label']} - {date_cols['C']['label']}"
+        mom_header = f"{date_cols['E']['label']} - {date_cols['D']['label']}"
+        ytd_header = f"{date_cols['E']['label']} - {date_cols['B']['label']}"
+        yoy_header = f"{date_cols['E']['label']} - {date_cols['A']['label']}"
+        
+        # Context
+        context.update({
+            'show_os_tables': True,
+            'selected_date': selected_date,
+            'selected_date_str': selected_date.strftime('%Y-%m-%d'),
+            'available_dates': available_dates,
+            'date_columns': date_cols,
+            'mtd_header': mtd_header,
+            'mom_header': mom_header,
+            'ytd_header': ytd_header,
+            'yoy_header': yoy_header,
+            'tables': {
+                'konsol': {
+                    'title': 'TOTAL OS SMALL KANCA KONSOL',
+                    'rows': konsol_rows,
+                    'totals': konsol_totals,
+                },
+                'kanca': {
+                    'title': 'TOTAL OS SMALL KANCA ONLY',
+                    'rows': kanca_rows,
+                    'totals': kanca_totals,
+                },
+                'kcp': {
+                    'title': 'TOTAL OS SMALL KCP ONLY',
+                    'rows': kcp_rows,
+                    'totals': kcp_totals,
+                },
+            },
+        })
+    # =================================================================================
+    # END SECTION: OS Small Tables
+    # =================================================================================
+
 
     return render(request, 'dashboard/metric_page.html', context)

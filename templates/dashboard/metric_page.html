@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load dashboard_filters %}
 
 {% block title %}{{ page_title }} - Dashboard Performance Highlights SME{% endblock %}
 
@@ -1393,6 +1394,642 @@ SECTION: Daily 3 Charts for Timeseries Harian (LAR, NPL, SML - Stacked Verticall
 {% comment %}
 ================================================================================
 END SECTION: Daily 3 Charts
+================================================================================
+{% endcomment %}
+
+{% comment %}
+================================================================================
+SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
+================================================================================
+{% endcomment %}
+{% if show_os_tables %}
+<style>
+    .os-table {
+        font-size: 0.75rem;
+    }
+    .os-table th, .os-table td {
+        padding: 0.35rem 0.5rem;
+        vertical-align: middle;
+        text-align: right;
+        white-space: nowrap;
+    }
+    .os-table th {
+        text-align: center;
+    }
+    .os-table td:nth-child(1),
+    .os-table td:nth-child(2),
+    .os-table td:nth-child(3),
+    .os-table td:nth-child(4),
+    .os-table td:nth-child(5) {
+        text-align: left;
+    }
+    .os-table .header-posisi {
+        background-color: #1e3a5f !important;
+        color: white;
+    }
+    .os-table .header-mtd {
+        background-color: #2d5a87 !important;
+        color: white;
+    }
+    .os-table .header-mom {
+        background-color: #3d7ab7 !important;
+        color: white;
+    }
+    .os-table .header-ytd {
+        background-color: #4d9ae7 !important;
+        color: white;
+    }
+    .os-table .header-yoy {
+        background-color: #6db5f7 !important;
+        color: white;
+    }
+    .os-table .header-komitmen {
+        background-color: #1e5a3f !important;
+        color: white;
+    }
+    .os-table .header-rkap {
+        background-color: #8b4513 !important;
+        color: white;
+    }
+    .os-table .row-total {
+        background-color: #ffc107 !important;
+        font-weight: bold;
+    }
+    .os-table .text-positive {
+        color: #28a745;
+    }
+    .os-table .text-negative {
+        color: #dc3545;
+    }
+    .table-title {
+        background-color: #0d47a1;
+        color: white;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        margin-bottom: 0;
+    }
+    .table-header-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: #0d47a1;
+        color: white;
+    }
+    .table-header-toolbar .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    .modal-fullscreen .modal-content {
+        height: 100%;
+    }
+    .modal-fullscreen .modal-body {
+        overflow: auto;
+    }
+    .unit-note {
+        font-size: 0.7rem;
+        color: #6c757d;
+        font-style: italic;
+    }
+</style>
+
+<!-- Date Filter -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Filter Tanggal</h6>
+            <form method="get" class="d-flex gap-2 align-items-center" id="dateFilterForm">
+                <input type="date" class="form-control form-control-sm" name="selected_date" 
+                       value="{{ selected_date_str }}" id="selectedDateInput"
+                       style="width: 180px;">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sync-alt me-1"></i>Terapkan
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body py-2">
+        <div class="row">
+            <div class="col-md-12">
+                <small class="text-muted">
+                    <strong>Kolom A:</strong> {{ date_columns.A.label }} (Akhir {{ date_columns.A.date|date:"F Y" }}) |
+                    <strong>Kolom B:</strong> {{ date_columns.B.label }} (31 Des {{ date_columns.B.date|date:"Y" }}) |
+                    <strong>Kolom C:</strong> {{ date_columns.C.label }} (Akhir {{ date_columns.C.date|date:"F Y" }}) |
+                    <strong>Kolom D:</strong> {{ date_columns.D.label }} |
+                    <strong>Kolom E:</strong> {{ date_columns.E.label }}
+                </small>
+                <br>
+                <span class="unit-note"><i class="fas fa-info-circle me-1"></i>Satuan angka: dalam jutaan Rupiah (Rp. Juta)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table 1: KONSOL -->
+<div class="card mb-4" id="konsol-table-card">
+    <div class="table-header-toolbar">
+        <span><i class="fas fa-table me-2"></i>{{ tables.konsol.title }}</span>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light btn-sm" onclick="openTableModal('konsol')">
+                <i class="fas fa-expand-alt"></i> Perbesar
+            </button>
+            <button type="button" class="btn btn-success btn-sm" onclick="exportTableToExcel('konsol-table', 'KONSOL')">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover os-table mb-0" id="konsol-table">
+                <thead>
+                    <!-- Header Row 1 -->
+                    <tr>
+                        <th rowspan="3" class="header-posisi" style="min-width: 40px;">NO</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE UKER</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">UKER</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE KANCA</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">KANCA</th>
+                        <th colspan="5" class="header-posisi">POSISI</th>
+                        <th colspan="2" class="header-mtd">MtD</th>
+                        <th colspan="2" class="header-mom">MoM</th>
+                        <th colspan="2" class="header-ytd">YtD</th>
+                        <th colspan="2" class="header-yoy">YoY</th>
+                        <th colspan="5" class="header-komitmen">Komitmen</th>
+                        <th colspan="5" class="header-rkap">RKAP</th>
+                    </tr>
+                    <!-- Header Row 2 -->
+                    <tr>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.A.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.B.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.C.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.D.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.E.label }}</th>
+                        <th colspan="2" class="header-mtd">{{ mtd_header }}</th>
+                        <th colspan="2" class="header-mom">{{ mom_header }}</th>
+                        <th colspan="2" class="header-ytd">{{ ytd_header }}</th>
+                        <th colspan="2" class="header-yoy">{{ yoy_header }}</th>
+                        <th rowspan="2" class="header-komitmen">Target</th>
+                        <th rowspan="2" class="header-komitmen">% Ach</th>
+                        <th rowspan="2" class="header-komitmen">Gap</th>
+                        <th rowspan="2" class="header-komitmen">vs C</th>
+                        <th rowspan="2" class="header-komitmen">vs B</th>
+                        <th rowspan="2" class="header-rkap">Target</th>
+                        <th rowspan="2" class="header-rkap">% Ach</th>
+                        <th rowspan="2" class="header-rkap">Gap</th>
+                        <th rowspan="2" class="header-rkap">vs C</th>
+                        <th rowspan="2" class="header-rkap">vs B</th>
+                    </tr>
+                    <!-- Header Row 3: Formula labels -->
+                    {% comment %} <tr>
+                        <th class="header-mtd">E-C</th>
+                        <th class="header-mtd">(E-C)/C%</th>
+                        <th class="header-mom">E-D</th>
+                        <th class="header-mom">(E-D)/D%</th>
+                        <th class="header-ytd">E-B</th>
+                        <th class="header-ytd">(E-B)/B%</th>
+                        <th class="header-yoy">E-A</th>
+                        <th class="header-yoy">(E-A)/A%</th>
+                    </tr> {% endcomment %}
+                </thead>
+                <tbody>
+                    {% for row in tables.konsol.rows %}
+                    <tr>
+                        <td>{{ row.no }}</td>
+                        <td>{{ row.kode_uker }}</td>
+                        <td>{{ row.uker }}</td>
+                        <td>{{ row.kode_kanca }}</td>
+                        <td>{{ row.kanca }}</td>
+                        <td>{{ row.A|millions:0|default:"-" }}</td>
+                        <td>{{ row.B|millions:0|default:"-" }}</td>
+                        <td>{{ row.C|millions:0|default:"-" }}</td>
+                        <td>{{ row.D|millions:0|default:"-" }}</td>
+                        <td>{{ row.E|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD|millions:0|default:"-" }}</td>
+                        <td class="{% if row.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YoY >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YoY|millions:0|default:"-" }}</td>
+                        <td class="{% if row.YoY_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YoY_pct|floatformat:2 }}%</td>
+                        <!-- Komitmen columns (placeholder) -->
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <!-- RKAP columns (placeholder) -->
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="28" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
+                    </tr>
+                    {% endfor %}
+                    <!-- Total Row -->
+                    <tr class="row-total">
+                        <td colspan="5" class="text-center"><strong>RO Bandung</strong></td>
+                        <td><strong>{{ tables.konsol.totals.A|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.konsol.totals.B|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.konsol.totals.C|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.konsol.totals.D|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.konsol.totals.E|millions:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD|millions:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.konsol.totals.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM|millions:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.konsol.totals.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD|millions:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.konsol.totals.YoY >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.YoY|millions:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.YoY_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.YoY_pct|floatformat:2 }}%</strong></td>
+                        <!-- Komitmen totals (placeholder) -->
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                        <!-- RKAP totals (placeholder) -->
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                        <td><strong>-</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Table 2: KANCA ONLY -->
+<div class="card mb-4" id="kanca-table-card">
+    <div class="table-header-toolbar" style="background-color: #1b5e20;">
+        <span><i class="fas fa-table me-2"></i>{{ tables.kanca.title }}</span>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light btn-sm" onclick="openTableModal('kanca')">
+                <i class="fas fa-expand-alt"></i> Perbesar
+            </button>
+            <button type="button" class="btn btn-success btn-sm" onclick="exportTableToExcel('kanca-table', 'KANCA_ONLY')">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover os-table mb-0" id="kanca-table">
+                <thead>
+                    <!-- Header Row 1 -->
+                    <tr>
+                        <th rowspan="3" class="header-posisi" style="min-width: 40px;">NO</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE UKER</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">UKER</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE KANCA</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">KANCA</th>
+                        <th colspan="5" class="header-posisi">POSISI</th>
+                        <th colspan="2" class="header-mtd">MtD</th>
+                        <th colspan="2" class="header-mom">MoM</th>
+                        <th colspan="2" class="header-ytd">YtD</th>
+                        <th colspan="2" class="header-yoy">YoY</th>
+                    </tr>
+                    <!-- Header Row 2: Date Range -->
+                    <tr>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.A.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.B.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.C.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.D.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.E.label }}</th>
+                        <th colspan="2" class="header-mtd">{{ mtd_header }}</th>
+                        <th colspan="2" class="header-mom">{{ mom_header }}</th>
+                        <th colspan="2" class="header-ytd">{{ ytd_header }}</th>
+                        <th colspan="2" class="header-yoy">{{ yoy_header }}</th>
+                    </tr>
+                    <!-- Header Row 3: Formula labels -->
+                    <tr>
+                        <th class="header-mtd">E-C</th>
+                        <th class="header-mtd">(E-C)/C%</th>
+                        <th class="header-mom">E-D</th>
+                        <th class="header-mom">(E-D)/D%</th>
+                        <th class="header-ytd">E-B</th>
+                        <th class="header-ytd">(E-B)/B%</th>
+                        <th class="header-yoy">E-A</th>
+                        <th class="header-yoy">(E-A)/A%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in tables.kanca.rows %}
+                    <tr>
+                        <td>{{ row.no }}</td>
+                        <td>{{ row.kode_uker }}</td>
+                        <td>{{ row.uker }}</td>
+                        <td>{{ row.kode_kanca }}</td>
+                        <td>{{ row.kanca }}</td>
+                        <td>{{ row.A|millions:0|default:"-" }}</td>
+                        <td>{{ row.B|millions:0|default:"-" }}</td>
+                        <td>{{ row.C|millions:0|default:"-" }}</td>
+                        <td>{{ row.D|millions:0|default:"-" }}</td>
+                        <td>{{ row.E|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD|millions:0|default:"-" }}</td>
+                        <td class="{% if row.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YoY >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YoY|millions:0|default:"-" }}</td>
+                        <td class="{% if row.YoY_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YoY_pct|floatformat:2 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="18" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
+                    </tr>
+                    {% endfor %}
+                    <!-- Total Row -->
+                    <tr class="row-total">
+                        <td colspan="5" class="text-center"><strong>RO Bandung</strong></td>
+                        <td><strong>{{ tables.kanca.totals.A|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kanca.totals.B|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kanca.totals.C|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kanca.totals.D|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kanca.totals.E|millions:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD|millions:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kanca.totals.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM|millions:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kanca.totals.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD|millions:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kanca.totals.YoY >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.YoY|millions:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.YoY_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.YoY_pct|floatformat:2 }}%</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Table 3: KCP ONLY -->
+<div class="card mb-4" id="kcp-table-card">
+    <div class="table-header-toolbar" style="background-color: #b71c1c;">
+        <span><i class="fas fa-table me-2"></i>{{ tables.kcp.title }}</span>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light btn-sm" onclick="openTableModal('kcp')">
+                <i class="fas fa-expand-alt"></i> Perbesar
+            </button>
+            <button type="button" class="btn btn-success btn-sm" onclick="exportTableToExcel('kcp-table', 'KCP_ONLY')">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover os-table mb-0" id="kcp-table">
+                <thead>
+                    <!-- Header Row 1 -->
+                    <tr>
+                        <th rowspan="3" class="header-posisi" style="min-width: 40px;">NO</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE UKER</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">UKER</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE KANCA</th>
+                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">KANCA</th>
+                        <th colspan="5" class="header-posisi">POSISI</th>
+                        <th colspan="2" class="header-mtd">MtD</th>
+                        <th colspan="2" class="header-mom">MoM</th>
+                        <th colspan="2" class="header-ytd">YtD</th>
+                        <th colspan="2" class="header-yoy">YoY</th>
+                    </tr>
+                    <!-- Header Row 2: Date Range -->
+                    <tr>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.A.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.B.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.C.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.D.label }}</th>
+                        <th rowspan="2" class="header-posisi">{{ date_columns.E.label }}</th>
+                        <th colspan="2" class="header-mtd">{{ mtd_header }}</th>
+                        <th colspan="2" class="header-mom">{{ mom_header }}</th>
+                        <th colspan="2" class="header-ytd">{{ ytd_header }}</th>
+                        <th colspan="2" class="header-yoy">{{ yoy_header }}</th>
+                    </tr>
+                    <!-- Header Row 3: Formula labels -->
+                    <tr>
+                        <th class="header-mtd">E-C</th>
+                        <th class="header-mtd">(E-C)/C%</th>
+                        <th class="header-mom">E-D</th>
+                        <th class="header-mom">(E-D)/D%</th>
+                        <th class="header-ytd">E-B</th>
+                        <th class="header-ytd">(E-B)/B%</th>
+                        <th class="header-yoy">E-A</th>
+                        <th class="header-yoy">(E-A)/A%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in tables.kcp.rows %}
+                    <tr>
+                        <td>{{ row.no }}</td>
+                        <td>{{ row.kode_uker }}</td>
+                        <td>{{ row.uker }}</td>
+                        <td>{{ row.kode_kanca }}</td>
+                        <td>{{ row.kanca }}</td>
+                        <td>{{ row.A|millions:0|default:"-" }}</td>
+                        <td>{{ row.B|millions:0|default:"-" }}</td>
+                        <td>{{ row.C|millions:0|default:"-" }}</td>
+                        <td>{{ row.D|millions:0|default:"-" }}</td>
+                        <td>{{ row.E|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM|millions:0|default:"-" }}</td>
+                        <td class="{% if row.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD|millions:0|default:"-" }}</td>
+                        <td class="{% if row.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YoY >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YoY|millions:0|default:"-" }}</td>
+                        <td class="{% if row.YoY_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YoY_pct|floatformat:2 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="18" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
+                    </tr>
+                    {% endfor %}
+                    <!-- Total Row -->
+                    <tr class="row-total">
+                        <td colspan="5" class="text-center"><strong>RO Bandung</strong></td>
+                        <td><strong>{{ tables.kcp.totals.A|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kcp.totals.B|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kcp.totals.C|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kcp.totals.D|millions:0 }}</strong></td>
+                        <td><strong>{{ tables.kcp.totals.E|millions:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD|millions:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kcp.totals.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM|millions:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kcp.totals.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD|millions:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kcp.totals.YoY >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.YoY|millions:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.YoY_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.YoY_pct|floatformat:2 }}%</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Validation Note -->
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Catatan:</strong> SUM dari KANCA ONLY + SUM dari KCP ONLY = SUM dari KONSOL
+    <br>
+    <small class="text-muted">
+        KANCA ONLY ({{ tables.kanca.totals.E|millions:0 }}) + KCP ONLY ({{ tables.kcp.totals.E|millions:0 }}) = {{ tables.konsol.totals.E|millions:0 }} (KONSOL) - dalam jutaan Rupiah
+    </small>
+</div>
+
+<!-- Table Modal for Full Screen View -->
+<div class="modal fade" id="tableModal" tabindex="-1" aria-labelledby="tableModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="tableModalLabel">
+                    <i class="fas fa-table me-2"></i><span id="modalTableTitle">Tabel</span>
+                </h5>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success btn-sm" id="modalExportBtn">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive" style="max-height: calc(100vh - 120px); overflow: auto;">
+                    <div id="modalTableContent"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="unit-note me-auto"><i class="fas fa-info-circle me-1"></i>Satuan angka: dalam jutaan Rupiah (Rp. Juta)</span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SheetJS Library for Excel Export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<script>
+// Function to open table in modal
+function openTableModal(tableType) {
+    let tableId, title, bgColor;
+    
+    switch(tableType) {
+        case 'konsol':
+            tableId = 'konsol-table';
+            title = '{{ tables.konsol.title }}';
+            bgColor = '#0d47a1';
+            break;
+        case 'kanca':
+            tableId = 'kanca-table';
+            title = '{{ tables.kanca.title }}';
+            bgColor = '#1b5e20';
+            break;
+        case 'kcp':
+            tableId = 'kcp-table';
+            title = '{{ tables.kcp.title }}';
+            bgColor = '#b71c1c';
+            break;
+    }
+    
+    // Get the table HTML
+    const table = document.getElementById(tableId);
+    const tableClone = table.cloneNode(true);
+    tableClone.id = 'modal-' + tableId;
+    tableClone.style.fontSize = '0.85rem';
+    
+    // Update modal
+    document.getElementById('modalTableTitle').textContent = title;
+    document.getElementById('modalTableContent').innerHTML = '';
+    document.getElementById('modalTableContent').appendChild(tableClone);
+    document.querySelector('#tableModal .modal-header').style.backgroundColor = bgColor;
+    
+    // Set up export button
+    document.getElementById('modalExportBtn').onclick = function() {
+        exportTableToExcel('modal-' + tableId, tableType.toUpperCase());
+    };
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('tableModal'));
+    modal.show();
+}
+
+// Function to export table to Excel
+function exportTableToExcel(tableId, filename) {
+    const table = document.getElementById(tableId);
+    
+    if (!table) {
+        console.error('Table not found:', tableId);
+        return;
+    }
+    
+    // Create workbook from table
+    const wb = XLSX.utils.table_to_book(table, {
+        sheet: filename,
+        raw: true
+    });
+    
+    // Generate filename with date
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const fullFilename = `OS_SMALL_${filename}_${dateStr}.xlsx`;
+    
+    // Save file
+    XLSX.writeFile(wb, fullFilename);
+    
+    // Show success message
+    showToast(`File ${fullFilename} berhasil diunduh!`, 'success');
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Create toast container if not exists
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toastId = 'toast-' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : (type === 'error' ? 'bg-danger' : 'bg-info');
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header ${bgClass} text-white">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                <strong class="me-auto">${type === 'success' ? 'Berhasil' : 'Info'}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    toast.show();
+    
+    // Remove after hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+</script>
+{% endif %}
+{% comment %}
+================================================================================
+END SECTION: OS Tables
 ================================================================================
 {% endcomment %}
 
