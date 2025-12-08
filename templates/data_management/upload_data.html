@@ -4,6 +4,20 @@
 {% block page_title %}Upload Data{% endblock %}
 
 {% block content %}
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 9999;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white;">
+        <div class="spinner-border text-light mb-3" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4>Sedang memproses file...</h4>
+        <p>Mohon tunggu, jangan tutup atau refresh halaman ini</p>
+        <div class="progress mt-3" style="width: 300px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-8">
         <div class="card">
@@ -11,6 +25,12 @@
                 <h5 class="mb-0"><i class="fas fa-upload"></i> Upload Data Pinjaman</h5>
             </div>
             <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Info:</strong> Data baru akan <strong>ditambahkan</strong> berdasarkan tanggal. 
+                    Data dengan nomor rekening sama tapi tanggal berbeda akan disimpan sebagai record terpisah.
+                </div>
+
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle"></i>
                     <strong>Perhatian:</strong>
@@ -19,15 +39,26 @@
                         <li>File maksimal 100MB</li>
                         <li>Format yang didukung: .xlsx, .xls, .csv</li>
                         <li>Data akan diproses dan disimpan ke database PostgreSQL</li>
+                        <li><strong>Pastikan kolom PERIODE berisi tanggal dengan format DD/MM/YYYY</strong></li>
                     </ul>
                 </div>
-                
-                {% crispy form %}
+
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-upload"></i> Upload File
+                    </button>
+                    <a href="{% url 'data_management:upload_history' %}" class="btn btn-secondary">
+                        <i class="fas fa-history"></i> Lihat Riwayat
+                    </a>
+                </form>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
+
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informasi</h6>
@@ -45,24 +76,146 @@
                     <li>status</li>
                     <li>... dan kolom lainnya</li>
                 </ul>
-                
+
                 <hr>
-                
+
                 <h6>Download Template:</h6>
                 <button class="btn btn-sm btn-outline-primary w-100">
                     <i class="fas fa-download"></i> Download Template Excel
                 </button>
             </div>
         </div>
-        
-        <div class="card mt-3">
+
+        {% comment %} <div class="card mt-3">
             <div class="card-header">
                 <h6 class="mb-0"><i class="fas fa-clock"></i> Upload Terakhir</h6>
             </div>
             <div class="card-body">
                 <p class="text-muted small">Belum ada data upload</p>
             </div>
+        </div> {% endcomment %}
+
+        <!-- ========================= -->
+        <!-- Card Statistik Data Baru -->
+        <!-- ========================= -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Statistik Data</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Total Data</small>
+                    <h4>{{ total_records|default:0|floatformat:0 }}</h4>
+                </div>
+
+                {% if available_dates %}
+                <div class="mb-3">
+                    <small class="text-muted">Tanggal Tersedia</small>
+                    <h4>{{ available_dates|length }}</h4>
+                </div>
+                
+                <hr>
+                
+                <h6 class="small">10 Tanggal Terakhir:</h6>
+                <div class="list-group list-group-flush">
+                    {% for item in available_dates %}
+                    <div class="list-group-item px-0 py-1 small">
+                        <i class="fas fa-calendar text-primary"></i> 
+                        <strong>{{ item.periode }}</strong>
+                        <span class="badge bg-secondary float-end">{{ item.count }} records</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
         </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Tips Upload</h6>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li>Upload data harian secara rutin</li>
+                    <li>Pastikan kolom <strong>PERIODE</strong> terisi dengan benar</li>
+                    <li>Nomor rekening <strong>boleh duplikat</strong> untuk tanggal berbeda</li>
+                    <li>Jika salah upload, gunakan <strong>Delete by Date</strong></li>
+                </ul>
+            </div>
+        </div>
+
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        const fileInput = document.querySelector('input[type="file"]');
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        // Check if file is selected
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            e.preventDefault();
+            alert('Harap pilih file terlebih dahulu');
+            return false;
+        }
+        
+        // Check file size (max 100MB)
+        const file = fileInput.files[0];
+        const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+        if (file.size > maxSize) {
+            e.preventDefault();
+            alert('Ukuran file terlalu besar! Maksimal 100MB');
+            return false;
+        }
+        
+        // Check file extension
+        const validExtensions = ['.xlsx', '.xls', '.csv'];
+        const fileName = file.name.toLowerCase();
+        const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+        
+        if (!isValidExtension) {
+            e.preventDefault();
+            alert('Format file tidak valid! Gunakan format .xlsx, .xls, atau .csv');
+            return false;
+        }
+        
+        // Show loading overlay
+        loadingOverlay.style.display = 'block';
+        
+        // Disable submit button
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengupload...';
+        
+        // Allow form to submit
+        return true;
+    });
+    
+    // File input validation and preview
+    document.querySelector('input[type="file"]')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+            const fileName = file.name;
+            
+            // Show file info
+            const existingInfo = document.getElementById('fileInfo');
+            if (existingInfo) {
+                existingInfo.remove();
+            }
+            
+            const fileInfo = document.createElement('div');
+            fileInfo.id = 'fileInfo';
+            fileInfo.className = 'alert alert-info mt-2';
+            fileInfo.innerHTML = `
+                <i class="fas fa-file"></i> 
+                <strong>${fileName}</strong> (${fileSize} MB)
+            `;
+            e.target.parentElement.appendChild(fileInfo);
+        }
+    });
+</script>
 {% endblock %}

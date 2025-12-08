@@ -6,8 +6,8 @@
 <div class="row">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-trash"></i> Delete LW321</h5>
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-trash"></i> Hapus Data LW321</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-danger">
@@ -15,56 +15,130 @@
                     <strong>Peringatan:</strong> Penghapusan data bersifat permanen dan tidak dapat dikembalikan!
                 </div>
                 
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Metode Penghapusan</label>
-                        <select class="form-select" name="delete_method" id="deleteMethod">
-                            <option value="">-- Pilih Metode --</option>
-                            <option value="by_date">Berdasarkan Tanggal</option>
-                            <option value="by_id">Berdasarkan ID</option>
-                            <option value="all">Hapus Semua Data</option>
-                        </select>
-                    </div>
-                    
-                    <div id="dateRangeFields" style="display: none;">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Dari Tanggal</label>
-                                <input type="date" class="form-control" name="date_from">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs mb-3" id="deleteTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="single-date-tab" data-bs-toggle="tab" data-bs-target="#single-date" type="button" role="tab">
+                            <i class="fas fa-calendar-day"></i> Berdasarkan Tanggal
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="range-date-tab" data-bs-toggle="tab" data-bs-target="#range-date" type="button" role="tab">
+                            <i class="fas fa-calendar-alt"></i> Range Tanggal
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="all-data-tab" data-bs-toggle="tab" data-bs-target="#all-data" type="button" role="tab">
+                            <i class="fas fa-database"></i> Hapus Semua
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="deleteTabContent">
+                    <!-- Single Date Tab -->
+                    <div class="tab-pane fade show active" id="single-date" role="tabpanel">
+                        <form method="post" id="deleteSingleDateForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_type" value="by_date">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Pilih Tanggal</label>
+                                <input type="date" class="form-control" name="selected_date" required>
+                                <small class="text-muted">Pilih tanggal data yang akan dihapus</small>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Sampai Tanggal</label>
-                                <input type="date" class="form-control" name="date_to">
+
+                            {% if available_dates %}
+                            <div class="mb-3">
+                                <label class="form-label">Atau pilih dari tanggal yang tersedia:</label>
+                                <select class="form-select" id="quickDateSelect">
+                                    <option value="">-- Pilih Tanggal --</option>
+                                    {% for item in available_dates %}
+                                    <option value="{{ item.periode }}">{{ item.periode }} ({{ item.count }} record)</option>
+                                    {% endfor %}
+                                </select>
                             </div>
-                        </div>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmDelete1" required>
+                                    <label class="form-check-label text-danger" for="confirmDelete1">
+                                        Saya yakin ingin menghapus data pada tanggal ini
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Hapus Data
+                            </button>
+                        </form>
                     </div>
-                    
-                    <div id="idFields" style="display: none;">
-                        <div class="mb-3">
-                            <label class="form-label">Loan IDs (pisahkan dengan koma)</label>
-                            <textarea class="form-control" name="loan_ids" rows="3" 
-                                      placeholder="Contoh: LOAN001, LOAN002, LOAN003"></textarea>
-                        </div>
+
+                    <!-- Range Date Tab -->
+                    <div class="tab-pane fade" id="range-date" role="tabpanel">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_type" value="by_range">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Dari Tanggal</label>
+                                    <input type="date" class="form-control" name="date_from" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Sampai Tanggal</label>
+                                    <input type="date" class="form-control" name="date_to" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmDelete2" required>
+                                    <label class="form-check-label text-danger" for="confirmDelete2">
+                                        Saya yakin ingin menghapus data dalam range tanggal ini
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Hapus Data
+                            </button>
+                        </form>
                     </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="confirmDelete" required>
-                            <label class="form-check-label text-danger" for="confirmDelete">
-                                Saya memahami bahwa data yang dihapus tidak dapat dikembalikan
-                            </label>
+
+                    <!-- All Data Tab -->
+                    <div class="tab-pane fade" id="all-data" role="tabpanel">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <strong>PERHATIAN:</strong> Tindakan ini akan menghapus SEMUA data LW321 dari database!
                         </div>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_type" value="all">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Ketik <code>DELETE ALL DATA</code> untuk konfirmasi:</label>
+                                <input type="text" class="form-control" name="confirm_delete_all" 
+                                       placeholder="DELETE ALL DATA" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmDelete3" required>
+                                    <label class="form-check-label text-danger" for="confirmDelete3">
+                                        Saya mengerti bahwa ini akan menghapus SEMUA data secara permanen
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> Hapus Semua Data
+                            </button>
+                        </form>
                     </div>
-                    
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash"></i> Hapus Data
-                    </button>
-                    <button type="reset" class="btn btn-secondary">
-                        <i class="fas fa-undo"></i> Reset
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -76,28 +150,29 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <small class="text-muted">Total Data Pinjaman</small>
-                    <h4>-</h4>
+                    <small class="text-muted">Total Data</small>
+                    <h4>{{ total_records|default:0|floatformat:0 }}</h4>
                 </div>
                 
+                {% if available_dates %}
                 <div class="mb-3">
-                    <small class="text-muted">Data Bulan Ini</small>
-                    <h4>-</h4>
+                    <small class="text-muted">Tanggal Tersedia</small>
+                    <h4>{{ available_dates|length }}</h4>
                 </div>
-                
-                <div class="mb-3">
-                    <small class="text-muted">Data Tahun Ini</small>
-                    <h4>-</h4>
-                </div>
+                {% endif %}
             </div>
         </div>
         
         <div class="card mt-3">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-history"></i> Riwayat Penghapusan</h6>
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Tips</h6>
             </div>
             <div class="card-body">
-                <p class="text-muted small">Belum ada riwayat penghapusan</p>
+                <ul class="small">
+                    <li>Gunakan <strong>Berdasarkan Tanggal</strong> untuk menghapus data spesifik</li>
+                    <li>Gunakan <strong>Range Tanggal</strong> untuk menghapus beberapa tanggal sekaligus</li>
+                    <li>Data yang dihapus <strong>tidak dapat dikembalikan</strong></li>
+                </ul>
             </div>
         </div>
     </div>
@@ -106,19 +181,69 @@
 
 {% block extra_js %}
 <script>
-    document.getElementById('deleteMethod').addEventListener('change', function() {
-        const method = this.value;
-        const dateFields = document.getElementById('dateRangeFields');
-        const idFields = document.getElementById('idFields');
-        
-        dateFields.style.display = 'none';
-        idFields.style.display = 'none';
-        
-        if (method === 'by_date') {
-            dateFields.style.display = 'block';
-        } else if (method === 'by_id') {
-            idFields.style.display = 'block';
+    // Quick date selector - populate date input from dropdown
+    document.getElementById('quickDateSelect')?.addEventListener('change', function() {
+        if (this.value) {
+            // Convert DD/MM/YYYY to YYYY-MM-DD for date input
+            const parts = this.value.split('/');
+            if (parts.length === 3) {
+                const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                document.querySelector('input[name="selected_date"]').value = formattedDate;
+            }
         }
+    });
+
+    // Form validation
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const deleteType = this.querySelector('input[name="delete_type"]')?.value;
+            
+            if (deleteType === 'all') {
+                const confirmText = this.querySelector('input[name="confirm_delete_all"]')?.value;
+                if (confirmText !== 'DELETE ALL DATA') {
+                    e.preventDefault();
+                    alert('Harap ketik "DELETE ALL DATA" dengan benar untuk konfirmasi');
+                    return false;
+                }
+                
+                if (!confirm('Apakah Anda YAKIN akan menghapus SEMUA data? Tindakan ini tidak dapat dibatalkan!')) {
+                    e.preventDefault();
+                    return false;
+                }
+            } else if (deleteType === 'by_date') {
+                const selectedDate = this.querySelector('input[name="selected_date"]')?.value;
+                if (!selectedDate) {
+                    e.preventDefault();
+                    alert('Harap pilih tanggal yang akan dihapus');
+                    return false;
+                }
+                
+                if (!confirm('Apakah Anda yakin akan menghapus data pada tanggal ini?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            } else if (deleteType === 'by_range') {
+                const dateFrom = this.querySelector('input[name="date_from"]')?.value;
+                const dateTo = this.querySelector('input[name="date_to"]')?.value;
+                
+                if (!dateFrom || !dateTo) {
+                    e.preventDefault();
+                    alert('Harap pilih range tanggal');
+                    return false;
+                }
+                
+                if (new Date(dateFrom) > new Date(dateTo)) {
+                    e.preventDefault();
+                    alert('Tanggal "Dari" tidak boleh lebih besar dari tanggal "Sampai"');
+                    return false;
+                }
+                
+                if (!confirm('Apakah Anda yakin akan menghapus data dalam range tanggal ini?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
     });
 </script>
 {% endblock %}

@@ -11,7 +11,7 @@ class LW321(models.Model):
     kode_uker = models.CharField(max_length=50, blank=True)
     uker = models.CharField(max_length=150, blank=True)
     ln_type = models.CharField(max_length=50, blank=True)
-    nomor_rekening = models.CharField(max_length=50, unique=True, db_index=True)
+    nomor_rekening = models.CharField(max_length=50, db_index=True)
     nama_debitur = models.CharField(max_length=200, blank=True)
     plafon = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     next_pmt_date = models.DateField(null=True, blank=True)
@@ -57,7 +57,9 @@ class LW321(models.Model):
             models.Index(fields=['periode', 'kanca']),
             models.Index(fields=['periode', 'kolektibilitas_macet']),
             models.Index(fields=['nomor_rekening']),
+            models.Index(fields=['periode', 'nomor_rekening']),
         ]
+        # Tidak ada unique constraint - nomor_rekening boleh duplikat untuk tanggal berbeda
 
     def __str__(self):
         nama = self.nama_debitur or '-'

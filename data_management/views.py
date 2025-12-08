@@ -74,9 +74,19 @@ def upload_data_view(request):
     else:
         form = UploadDataForm()
     
+    # Get statistics for display
+    from django.db.models import Count
+    available_dates = LW321.objects.values('periode').annotate(
+        count=Count('id')
+    ).order_by('-periode')[:10]
+    
+    total_records = LW321.objects.count()
+    
     context = {
         'form': form,
         'page_title': 'Upload Data',
+        'available_dates': available_dates,
+        'total_records': total_records,
     }
     return render(request, 'data_management/upload_data.html', context)
 
@@ -106,17 +116,89 @@ def delete_data_view(request):
     View untuk delete data (hanya admin)
     """
     if request.method == 'POST':
-        # Implementasi delete data
-        # Bisa berdasarkan tanggal, ID, atau kriteria lain
-        date_from = request.POST.get('date_from')
-        date_to = request.POST.get('date_to')
+        # Implementasi delete data berdasarkan periode (tanggal)
+        delete_type = request.POST.get('delete_type')
         
-        # TODO: Implementasi logic delete
-        messages.success(request, 'Data berhasil dihapus.')
+        try:
+            if delete_type == 'by_date':
+                # Hapus berdasarkan tanggal
+                selected_date = request.POST.get('selected_date')
+                
+                if not selected_date:
+                    messages.error(request, 'Tanggal harus dipilih.')
+                    return redirect('data_management:delete_data')
+                
+                # Convert format dari YYYY-MM-DD ke DD/MM/YYYY (format di database)
+                from datetime import datetime
+                date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
+                periode_str = date_obj.strftime('%d/%m/%Y')
+                
+                # Hapus data dengan periode tersebut
+                deleted_count = LW321.objects.filter(periode=periode_str).delete()[0]
+                
+                if deleted_count > 0:
+                    messages.success(request, f'Berhasil menghapus {deleted_count} record dengan tanggal {periode_str}.')
+                else:
+                    messages.warning(request, f'Tidak ada data dengan tanggal {periode_str}.')
+                    
+            elif delete_type == 'by_range':
+                # Hapus berdasarkan range tanggal
+                date_from = request.POST.get('date_from')
+                date_to = request.POST.get('date_to')
+                
+                if not date_from or not date_to:
+                    messages.error(request, 'Tanggal mulai dan tanggal akhir harus dipilih.')
+                    return redirect('data_management:delete_data')
+                
+                from datetime import datetime
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+                
+                # Get all unique periode dalam range
+                all_periods = LW321.objects.values_list('periode', flat=True).distinct()
+                periods_to_delete = []
+                
+                for periode in all_periods:
+                    try:
+                        periode_date = datetime.strptime(periode, '%d/%m/%Y')
+                        if date_from_obj <= periode_date <= date_to_obj:
+                            periods_to_delete.append(periode)
+                    except:
+                        continue
+                
+                if periods_to_delete:
+                    deleted_count = LW321.objects.filter(periode__in=periods_to_delete).delete()[0]
+                    messages.success(request, f'Berhasil menghapus {deleted_count} record dari tanggal {date_from} sampai {date_to}.')
+                else:
+                    messages.warning(request, f'Tidak ada data dalam range tanggal tersebut.')
+                    
+            elif delete_type == 'all':
+                # Hapus semua data (dengan konfirmasi)
+                confirm = request.POST.get('confirm_delete_all')
+                
+                if confirm == 'DELETE ALL DATA':
+                    deleted_count = LW321.objects.all().delete()[0]
+                    messages.success(request, f'Berhasil menghapus semua data ({deleted_count} record).')
+                else:
+                    messages.error(request, 'Konfirmasi tidak sesuai. Data tidak dihapus.')
+            else:
+                messages.error(request, 'Tipe penghapusan tidak valid.')
+                
+        except Exception as e:
+            messages.error(request, f'Terjadi kesalahan: {str(e)}')
+        
         return redirect('data_management:delete_data')
+    
+    # Get available dates for dropdown
+    from django.db.models import Count
+    available_dates = LW321.objects.values('periode').annotate(
+        count=Count('id')
+    ).order_by('-periode')[:50]
     
     context = {
         'page_title': 'Delete Data',
+        'available_dates': available_dates,
+        'total_records': LW321.objects.count(),
     }
     return render(request, 'data_management/delete_data.html', context)
 

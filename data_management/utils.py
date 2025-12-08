@@ -174,13 +174,12 @@ def process_uploaded_file(upload_history):
                 record['periode'] = periode
                 record['cif_no'] = cif_no
 
-                defaults = record.copy()
-                defaults.pop('nomor_rekening', None)
-
-                LW321.objects.update_or_create(
-                    nomor_rekening=nomor_rekening,
-                    defaults=defaults,
-                )
+                # VERSI 2 (ACTIVE): Selalu insert setiap row sebagai record baru
+                # Setiap upload file = data baru ditambahkan (append-only)
+                # Cocok untuk data snapshot harian / historical tracking
+                # Contoh: Upload hari ini 100 rows → besok upload 100 rows → total 200 rows
+                LW321.objects.create(**record)
+                
                 successful_rows += 1
                 
             except Exception as e:
