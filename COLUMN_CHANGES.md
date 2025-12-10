@@ -1,0 +1,208 @@
+# Perubahan Struktur Kolom LW321
+
+## Tanggal: 10 Desember 2025
+
+### ❌ Kolom yang Dihapus (9 kolom)
+
+1. `pn_pengelola_1` - PN PENGELOLA 1
+2. `pn_pemrakarsa` - PN PEMRAKARSA
+3. `pn_referral` - PN REFERRAL
+4. `pn_restruk` - PN RESTRUK
+5. `pn_pengelola_2` - PN PENGELOLA 2
+6. `pn_pemutus` - PN PEMUTUS
+7. `pn_crm` - PN CRM
+8. `pn_rm_referral_naik_segmentasi` - PN RM REFERRAL NAIK SEGMENTASI
+9. `pn_rm_crr` - PN RM CRR
+
+### ✅ Kolom yang Ditambahkan (1 kolom)
+
+1. `nama_rm` - NAMA RM
+
+### 📋 Struktur Kolom Final (30 kolom)
+
+1. PERIODE
+2. KANCA
+3. KODE UKER
+4. UKER
+5. LN TYPE
+6. NOMOR REKENING
+7. NAMA DEBITUR
+8. PLAFON
+9. NEXT PMT DATE
+10. NEXT INT PMT DATE
+11. RATE
+12. TGL MENUNGGAK
+13. TGL REALISASI
+14. TGL JATUH TEMPO
+15. JANGKA WAKTU
+16. FLAG RESTRUK
+17. CIFNO
+18. KOLEKTIBILITAS LANCAR
+19. KOLEKTIBILITAS DPK
+20. KOLEKTIBILITAS KURANG LANCAR
+21. KOLEKTIBILITAS DIRAGUKAN
+22. KOLEKTIBILITAS MACET
+23. TUNGGAKAN POKOK
+24. TUNGGAKAN BUNGA
+25. TUNGGAKAN PINALTI
+26. CODE
+27. DESCRIPTION
+28. KOL_ADK
+29. PN PENGELOLA SINGLEPN
+30. **NAMA RM** ← Kolom baru
+
+---
+
+## File yang Diubah
+
+### 1. `dashboard/models.py`
+- Hapus 9 field `pn_*` 
+- Tambah field `nama_rm`
+
+### 2. `data_management/utils.py`
+- Update `COLUMN_FIELD_MAP` 
+- Hapus mapping 9 kolom PN lama
+- Tambah mapping `'NAMA RM': 'nama_rm'`
+- Update format nama kolom dengan spasi (KODE UKER, LN TYPE, dll)
+
+### 3. Migration
+- Created: `0007_remove_lw321_pn_crm_remove_lw321_pn_pemrakarsa_and_more.py`
+- Status: FAKED (kolom sudah tidak ada di DB)
+
+---
+
+## Format File Excel/CSV yang Diperlukan
+
+Pastikan file upload memiliki kolom dengan nama (CASE SENSITIVE):
+
+```
+PERIODE
+KANCA
+KODE UKER          ← dengan spasi
+UKER
+LN TYPE            ← dengan spasi
+NOMOR REKENING     ← dengan spasi (18 digit, akan auto-pad dengan leading zeros)
+NAMA DEBITUR       ← dengan spasi
+PLAFON
+NEXT PMT DATE      ← dengan spasi
+NEXT INT PMT DATE  ← dengan spasi
+RATE
+TGL MENUNGGAK      ← dengan spasi
+TGL REALISASI      ← dengan spasi
+TGL JATUH TEMPO    ← dengan spasi
+JANGKA WAKTU       ← dengan spasi
+FLAG RESTRUK       ← dengan spasi
+CIFNO
+KOLEKTIBILITAS LANCAR      ← dengan spasi
+KOLEKTIBILITAS DPK         ← dengan spasi
+KOLEKTIBILITAS KURANG LANCAR  ← dengan spasi
+KOLEKTIBILITAS DIRAGUKAN   ← dengan spasi
+KOLEKTIBILITAS MACET       ← dengan spasi
+TUNGGAKAN POKOK    ← dengan spasi
+TUNGGAKAN BUNGA    ← dengan spasi
+TUNGGAKAN PINALTI  ← dengan spasi
+CODE
+DESCRIPTION
+KOL_ADK
+PN PENGELOLA SINGLEPN  ← dengan spasi
+NAMA RM               ← KOLOM BARU dengan spasi
+```
+
+---
+
+## Backward Compatibility
+
+⚠️ **WARNING:** File lama dengan 9 kolom PN tidak akan error, tapi kolom tersebut akan diabaikan.
+
+✅ **RECOMMENDED:** Update template Excel dengan struktur kolom baru (30 kolom).
+
+---
+
+## ⚠️ Format Nomor Rekening (PENTING!)
+
+### Format yang Benar
+- **Tipe Data**: Text/String (bukan Number!)
+- **Panjang**: 18 digit
+- **Leading Zeros**: HARUS dipertahankan
+
+### Contoh Nomor Rekening yang Benar:
+```
+000000050104667108  ← 18 digit dengan leading zeros
+000000050105456106
+000000050105111103
+000000050105300100
+000000050105302102
+```
+
+### ❌ Format yang SALAH:
+```
+50104667108         ← Leading zeros hilang
+5.0104667108E+10    ← Format scientific notation
+"50104667108"       ← Kurang dari 18 digit
+```
+
+### 💡 Tips Excel:
+1. **Set kolom sebagai Text** sebelum paste data
+   - Select kolom NOMOR REKENING
+   - Format Cells → Text
+   - Paste data nomor rekening
+
+2. **Atau gunakan apostrophe** di depan nomor:
+   ```
+   '000000050104667108
+   ```
+
+3. **Check leading zeros** sebelum save file:
+   - Pastikan nomor rekening masih 18 digit
+   - Pastikan dimulai dengan '0' jika memang ada leading zeros
+
+### Sistem Auto-Correction:
+Sistem akan otomatis:
+- Convert nomor rekening ke string
+- Pad dengan leading zeros jika kurang dari 18 digit
+- Remove decimal point jika ada (dari float)
+
+**Contoh:**
+- Input: `50104667108` → Output: `000000050104667108`
+- Input: `5.0104667108E+10` → Output: `000000050104667108`
+
+---
+
+## Testing
+
+### Upload Test File
+1. Buat file Excel dengan 30 kolom sesuai struktur baru
+2. Isi kolom `NAMA RM` dengan data test
+3. Upload melalui: http://localhost:8000/data-management/upload/
+4. Verify data masuk dengan benar
+
+### Query Test
+```python
+from dashboard.models import LW321
+
+# Test query kolom baru
+data = LW321.objects.filter(nama_rm__isnull=False)
+print(data.count())
+print(data.first().nama_rm)
+```
+
+---
+
+## Migration Commands
+
+```powershell
+# Generate migration
+python manage.py makemigrations dashboard --noinput
+
+# Apply migration (fake karena kolom sudah tidak ada)
+python manage.py migrate dashboard 0007 --fake
+
+# Verify schema
+python manage.py dbshell
+\d lw321
+\q
+```
+
+---
+
+Perubahan selesai! ✅

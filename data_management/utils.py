@@ -7,21 +7,22 @@ from dashboard.models import LW321
 COLUMN_FIELD_MAP = {
     'PERIODE': 'periode',
     'KANCA': 'kanca',
-    'KODE_UKER': 'kode_uker',
+    'KODE UKER': 'kode_uker',
     'UKER': 'uker',
-    'LN_TYPE': 'ln_type',
-    'NOMOR_REKENING': 'nomor_rekening',
-    'NAMA_DEBITUR': 'nama_debitur',
+    'LN TYPE': 'ln_type',
+    'NOMOR REKENING': 'nomor_rekening',
+    'NAMA DEBITUR': 'nama_debitur',
     'PLAFON': 'plafon',
-    'NEXT_PMT_DATE': 'next_pmt_date',
-    'NEXT_INT_PMT_DATE': 'next_int_pmt_date',
+    'NEXT PMT DATE': 'next_pmt_date',
+    'NEXT INT PMT DATE': 'next_int_pmt_date',
     'RATE': 'rate',
-    'TGL_MENUNGGAK': 'tgl_menunggak',
-    'TGL_REALISASI': 'tgl_realisasi',
+    'TGL MENUNGGAK': 'tgl_menunggak',
+    'TGL REALISASI': 'tgl_realisasi',
     'TGL JATUH TEMPO': 'tgl_jatuh_tempo',
     'JANGKA WAKTU': 'jangka_waktu',
     'FLAG RESTRUK': 'flag_restruk',
-    'CIFNO': 'cif_no',
+    'CIFNO': 'cif_no',  # Excel: CIFNO
+    'CIF_NO': 'cif_no',  # Alternative: CIF_NO
     'KOLEKTIBILITAS LANCAR': 'kolektibilitas_lancar',
     'KOLEKTIBILITAS DPK': 'kolektibilitas_dpk',
     'KOLEKTIBILITAS KURANG LANCAR': 'kolektibilitas_kurang_lancar',
@@ -32,17 +33,9 @@ COLUMN_FIELD_MAP = {
     'TUNGGAKAN PINALTI': 'tunggakan_pinalti',
     'CODE': 'code',
     'DESCRIPTION': 'description',
-    'KOL_ADK': 'kol_adk',
+    'KOL_ADK': 'kol_adk',  # Excel: KOL_ADK with underscore
     'PN PENGELOLA SINGLEPN': 'pn_pengelola_singlepn',
-    'PN PENGELOLA 1': 'pn_pengelola_1',
-    'PN PEMRAKARSA': 'pn_pemrakarsa',
-    'PN REFERRAL': 'pn_referral',
-    'PN RESTRUK': 'pn_restruk',
-    'PN PENGELOLA 2': 'pn_pengelola_2',
-    'PN PEMUTUS': 'pn_pemutus',
-    'PN CRM': 'pn_crm',
-    'PN RM REFERRAL NAIK SEGMENTASI': 'pn_rm_referral_naik_segmentasi',
-    'PN RM CRR': 'pn_rm_crr',
+    'NAMA RM': 'nama_rm',
 }
 
 DATE_FIELDS = {
@@ -124,10 +117,11 @@ def process_uploaded_file(upload_history):
         file_ext = file_path.lower()[file_path.rfind('.'):]
         
         # Baca file berdasarkan ekstensi
+        # PENTING: dtype=str untuk kolom yang harus preserve leading zeros
         if file_ext == '.csv':
-            df = pd.read_csv(file_path)
+            df = pd.read_csv(file_path, dtype={'NOMOR REKENING': str, 'NOMOR_REKENING': str})
         elif file_ext in ['.xlsx', '.xls']:
-            df = pd.read_excel(file_path)
+            df = pd.read_excel(file_path, dtype={'NOMOR REKENING': str, 'NOMOR_REKENING': str})
         else:
             return {
                 'success': False,
@@ -136,6 +130,18 @@ def process_uploaded_file(upload_history):
         
         # Normalisasi nama kolom (hilangkan spasi depan/belakang dan ubah ke uppercase)
         df.columns = [str(col).strip().upper() for col in df.columns]
+        
+        # Debug: Log kolom yang ditemukan
+        print(f"[DEBUG] Kolom di file Excel: {list(df.columns)}")
+        
+        # Check kolom yang diperlukan
+        required_columns = ['PERIODE', 'NOMOR REKENING', 'CIFNO']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            return {
+                'success': False,
+                'error': f'Kolom yang diperlukan tidak ditemukan: {", ".join(missing_columns)}. Kolom yang ada: {", ".join(df.columns)}'
+            }
 
         total_rows = len(df)
         successful_rows = 0
@@ -148,6 +154,10 @@ def process_uploaded_file(upload_history):
                 record = {}
 
                 for source_column, target_field in COLUMN_FIELD_MAP.items():
+                    # Skip jika kolom tidak ada di DataFrame
+                    if source_column not in df.columns:
+                        continue
+                    
                     raw_value = row.get(source_column)
 
                     if target_field in DATE_FIELDS:
@@ -161,15 +171,39 @@ def process_uploaded_file(upload_history):
 
                 nomor_rekening = record.get('nomor_rekening')
                 if not nomor_rekening:
-                    raise ValueError('Nomor rekening tidak boleh kosong')
+                    # Debug: cek apakah kolom NOMOR REKENING ada di file
+                    if 'NOMOR REKENING' not in df.columns:
+                        raise ValueError('Kolom "NOMOR REKENING" tidak ditemukan di file Excel. Kolom yang tersedia: ' + ', '.join(df.columns))
+                    else:
+                        raise ValueError(f'Nomor rekening tidak boleh kosong. Nilai: {row.get("NOMOR REKENING")}')
+                
+                # Ensure nomor_rekening is string and preserve leading zeros
+                # Convert float/int to string with proper formatting
+                if isinstance(nomor_rekening, (int, float)):
+                    # Format as integer string (no decimal point)
+                    nomor_rekening = str(int(nomor_rekening))
+                else:
+                    nomor_rekening = str(nomor_rekening).strip()
+                
+                # Pad with zeros if needed (18 digits for BRI account numbers)
+                if nomor_rekening.isdigit() and len(nomor_rekening) < 18:
+                    nomor_rekening = nomor_rekening.zfill(18)
+                
+                record['nomor_rekening'] = nomor_rekening
 
                 periode = record.get('periode') or ''
                 if not periode:
-                    raise ValueError('Periode tidak boleh kosong')
+                    if 'PERIODE' not in df.columns:
+                        raise ValueError('Kolom "PERIODE" tidak ditemukan di file Excel')
+                    else:
+                        raise ValueError(f'Periode tidak boleh kosong. Nilai: {row.get("PERIODE")}')
 
                 cif_no = record.get('cif_no') or ''
                 if not cif_no:
-                    raise ValueError('CIF tidak boleh kosong')
+                    if 'CIFNO' not in df.columns and 'CIF_NO' not in df.columns:
+                        raise ValueError('Kolom "CIFNO" tidak ditemukan di file Excel')
+                    else:
+                        raise ValueError(f'CIF tidak boleh kosong. Nilai: {row.get("CIFNO") or row.get("CIF_NO")}')
 
                 record['periode'] = periode
                 record['cif_no'] = cif_no
