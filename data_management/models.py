@@ -15,12 +15,12 @@ class UploadHistory(models.Model):
     failed_rows = models.IntegerField(default=0)
     
     STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('processing', 'Processing'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed'),
+        ('queued', 'Queued'),  # File uploaded, waiting in queue
+        ('processing', 'Processing'),  # Currently being processed
+        ('completed', 'Completed'),  # Successfully completed
+        ('failed', 'Failed'),  # Processing failed
     )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued')
     
     error_log = models.TextField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)

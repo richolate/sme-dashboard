@@ -26,51 +26,49 @@ def admin_required(view_func):
 def upload_data_view(request):
     """
     View untuk upload data (hanya admin)
+    Upload file langsung, processing dijalankan di background dengan Celery
     """
     if request.method == 'POST':
         form = UploadDataForm(request.POST, request.FILES)
         if form.is_valid():
             upload_file = request.FILES['file']
             
-            # Simpan upload history
+            # Simpan upload history dengan status 'queued'
             upload_history = UploadHistory.objects.create(
                 uploaded_by=request.user,
                 file_name=upload_file.name,
                 file_path=upload_file,
                 file_size=upload_file.size,
-                status='pending',
+                status='queued',  # Changed from 'pending' to 'queued'
                 notes=form.cleaned_data.get('notes', ''),
             )
             
-            # Process file (akan diimplementasi di utils.py)
+            # Queue task untuk diproses di background
             try:
-                result = process_uploaded_file(upload_history)
+                from .tasks import process_uploaded_data_task
                 
-                if result['success']:
-                    upload_history.status = 'completed'
-                    upload_history.total_rows = result['total_rows']
-                    upload_history.successful_rows = result['successful_rows']
-                    upload_history.failed_rows = result['failed_rows']
-                    upload_history.completed_at = timezone.now()
-                    if result.get('errors'):
-                        upload_history.error_log = '\n'.join(result['errors'])
-                    upload_history.save()
-                    
-                    messages.success(request, f'File berhasil diupload! Total: {result["total_rows"]}, Sukses: {result["successful_rows"]}, Gagal: {result["failed_rows"]}')
-                else:
-                    upload_history.status = 'failed'
-                    upload_history.error_log = result['error']
-                    upload_history.save()
-                    
-                    messages.error(request, f'Upload gagal: {result["error"]}')
+                # Jalankan task secara asynchronous
+                task = process_uploaded_data_task.delay(upload_history.id)
+                
+                messages.success(
+                    request, 
+                    f'File "{upload_file.name}" berhasil diupload! '
+                    f'Data sedang diproses di background. '
+                    f'Silakan cek halaman History untuk melihat status.'
+                )
+                
             except Exception as e:
                 upload_history.status = 'failed'
-                upload_history.error_log = str(e)
+                upload_history.error_log = f'Failed to queue task: {str(e)}'
                 upload_history.save()
                 
-                messages.error(request, f'Terjadi kesalahan: {str(e)}')
+                messages.error(
+                    request, 
+                    f'Gagal menambahkan file ke antrian: {str(e)}. '
+                    f'Pastikan Redis dan Celery worker sudah berjalan.'
+                )
             
-            return redirect('data_management:upload_data')
+            return redirect('data_management:upload_history')
     else:
         form = UploadDataForm()
     

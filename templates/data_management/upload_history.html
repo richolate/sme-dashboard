@@ -42,13 +42,15 @@
                         <td><span class="badge bg-danger">{{ upload.failed_rows|default:"0" }}</span></td>
                         <td>
                             {% if upload.status == 'completed' %}
-                                <span class="badge bg-success">Selesai</span>
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Selesai</span>
                             {% elif upload.status == 'processing' %}
-                                <span class="badge bg-warning">Proses</span>
+                                <span class="badge bg-warning"><i class="fas fa-spinner fa-spin"></i> Sedang Diproses</span>
+                            {% elif upload.status == 'queued' %}
+                                <span class="badge bg-info"><i class="fas fa-clock"></i> Dalam Antrian</span>
                             {% elif upload.status == 'failed' %}
-                                <span class="badge bg-danger">Gagal</span>
+                                <span class="badge bg-danger"><i class="fas fa-times"></i> Gagal</span>
                             {% else %}
-                                <span class="badge bg-secondary">Pending</span>
+                                <span class="badge bg-secondary">{{ upload.status|title }}</span>
                             {% endif %}
                         </td>
                         <td>
@@ -97,4 +99,40 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh halaman jika ada upload yang masih processing atau queued
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasProcessing = document.querySelector('.badge.bg-warning, .badge.bg-info');
+        
+        if (hasProcessing) {
+            // Refresh setiap 5 detik jika ada proses yang berjalan
+            setTimeout(function() {
+                location.reload();
+            }, 5000);
+            
+            // Tampilkan notifikasi
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 80px; right: 20px; z-index: 1050; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="fas fa-info-circle"></i>
+                <strong>Auto-refresh aktif</strong><br>
+                <small>Halaman akan refresh otomatis untuk update status</small>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-hide notifikasi setelah 3 detik
+            setTimeout(function() {
+                notification.classList.remove('show');
+                setTimeout(function() {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        }
+    });
+</script>
 {% endblock %}

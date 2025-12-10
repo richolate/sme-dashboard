@@ -183,8 +183,50 @@
     </style>
     
     {% block extra_css %}{% endblock %}
+    
+    <style>
+        /* Global Loading Overlay */
+        .page-loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .page-loading-overlay.show {
+            display: flex;
+        }
+        
+        .page-loading-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .page-loading-spinner {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto 1rem;
+        }
+    </style>
 </head>
 <body>
+    <!-- Global Loading Overlay -->
+    <div class="page-loading-overlay" id="pageLoadingOverlay">
+        <div class="page-loading-content">
+            <div class="spinner-border text-light page-loading-spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4>Memuat data...</h4>
+            <p>Mohon tunggu sebentar</p>
+        </div>
+    </div>
+    
     {% if user.is_authenticated %}
     <!-- Sidebar -->
     <div class="sidebar">
@@ -310,6 +352,38 @@
             updateLiveDatetime();
             setInterval(updateLiveDatetime, 1000); 
         });
+        
+        // ===============================================
+        // Global Loading Functions
+        // ===============================================
+        function showPageLoading(message) {
+            const overlay = document.getElementById('pageLoadingOverlay');
+            if (overlay) {
+                const msgEl = overlay.querySelector('h4');
+                if (msgEl && message) {
+                    msgEl.textContent = message;
+                }
+                overlay.classList.add('show');
+            }
+        }
+        
+        function hidePageLoading() {
+            const overlay = document.getElementById('pageLoadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+            }
+        }
+        
+        // Auto-show loading for dashboard pages on load
+        if (window.location.pathname.includes('/dashboard/')) {
+            // Show loading initially
+            showPageLoading('Memuat data visualisasi...');
+            
+            // Hide after page fully loaded
+            window.addEventListener('load', function() {
+                setTimeout(hidePageLoading, 500);
+            });
+        }
     </script>
     
     {% block extra_js %}{% endblock %}

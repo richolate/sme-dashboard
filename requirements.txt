@@ -9,4 +9,9 @@ xlrd==2.0.1
 django-crispy-forms==2.3
 crispy-bootstrap5==2024.10
 
+# Task Queue & Background Processing
+celery==5.4.0
+redis==5.2.0
+django-celery-results==2.5.1
+
 // sudah disesuaikan dengan versi python 3.13.2
