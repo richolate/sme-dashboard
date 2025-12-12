@@ -21,10 +21,10 @@ from .uker_mapping import (
 )
 from .table_calculations import (
     get_date_columns,
-    get_mtd_columns,
+    get_dtd_columns,
     get_mom_columns,
+    get_mtd_columns,
     get_ytd_columns,
-    get_yoy_columns,
     date_to_periode_str,
     get_os_for_date,
     calculate_table_data,

@@ -1115,14 +1115,14 @@ def metric_page_view(request, slug):
                     'C': val_c,
                     'D': val_d,
                     'E': val_e,
+                    'DtD': val_e - val_d,
+                    'DtD_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'MoM': val_e - val_b,
+                    'MoM_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
                     'MtD': val_e - val_c,
                     'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
-                    'MoM': val_e - val_d,
-                    'MoM_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
-                    'YtD': val_e - val_b,
-                    'YtD_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
-                    'YoY': val_e - val_a,
-                    'YoY_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    'YtD': val_e - val_a,
+                    'YtD_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
                     # Komitmen placeholders
                     'komitmen': 0,
                     'komitmen_pct_ach': 0,
@@ -1147,14 +1147,14 @@ def metric_page_view(request, slug):
                 row_num += 1
             
             # Calculate totals derived values
+            totals['DtD'] = totals['E'] - totals['D']
+            totals['DtD_pct'] = (totals['DtD'] / totals['D'] * 100) if totals['D'] else 0
+            totals['MoM'] = totals['E'] - totals['B']
+            totals['MoM_pct'] = (totals['MoM'] / totals['B'] * 100) if totals['B'] else 0
             totals['MtD'] = totals['E'] - totals['C']
             totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
-            totals['MoM'] = totals['E'] - totals['D']
-            totals['MoM_pct'] = (totals['MoM'] / totals['D'] * 100) if totals['D'] else 0
-            totals['YtD'] = totals['E'] - totals['B']
-            totals['YtD_pct'] = (totals['YtD'] / totals['B'] * 100) if totals['B'] else 0
-            totals['YoY'] = totals['E'] - totals['A']
-            totals['YoY_pct'] = (totals['YoY'] / totals['A'] * 100) if totals['A'] else 0
+            totals['YtD'] = totals['E'] - totals['A']
+            totals['YtD_pct'] = (totals['YtD'] / totals['A'] * 100) if totals['A'] else 0
             
             return rows, totals
         
@@ -1191,14 +1191,14 @@ def metric_page_view(request, slug):
                     'C': val_c,
                     'D': val_d,
                     'E': val_e,
+                    'DtD': val_e - val_d,
+                    'DtD_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'MoM': val_e - val_b,
+                    'MoM_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
                     'MtD': val_e - val_c,
                     'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
-                    'MoM': val_e - val_d,
-                    'MoM_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
-                    'YtD': val_e - val_b,
-                    'YtD_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
-                    'YoY': val_e - val_a,
-                    'YoY_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    'YtD': val_e - val_a,
+                    'YtD_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
                     'komitmen': 0, 'komitmen_pct_ach': 0, 'komitmen_gab_real': 0,
                     'komitmen_vs_c': 0, 'komitmen_vs_c_pct': 0,
                     'komitmen_vs_b': 0, 'komitmen_vs_b_pct': 0,
@@ -1213,14 +1213,14 @@ def metric_page_view(request, slug):
                 totals['E'] += val_e
                 row_num += 1
             
+            totals['DtD'] = totals['E'] - totals['D']
+            totals['DtD_pct'] = (totals['DtD'] / totals['D'] * 100) if totals['D'] else 0
+            totals['MoM'] = totals['E'] - totals['B']
+            totals['MoM_pct'] = (totals['MoM'] / totals['B'] * 100) if totals['B'] else 0
             totals['MtD'] = totals['E'] - totals['C']
             totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
-            totals['MoM'] = totals['E'] - totals['D']
-            totals['MoM_pct'] = (totals['MoM'] / totals['D'] * 100) if totals['D'] else 0
-            totals['YtD'] = totals['E'] - totals['B']
-            totals['YtD_pct'] = (totals['YtD'] / totals['B'] * 100) if totals['B'] else 0
-            totals['YoY'] = totals['E'] - totals['A']
-            totals['YoY_pct'] = (totals['YoY'] / totals['A'] * 100) if totals['A'] else 0
+            totals['YtD'] = totals['E'] - totals['A']
+            totals['YtD_pct'] = (totals['YtD'] / totals['A'] * 100) if totals['A'] else 0
             
             return rows, totals
         
@@ -1264,14 +1264,14 @@ def metric_page_view(request, slug):
                     'C': val_c,
                     'D': val_d,
                     'E': val_e,
+                    'DtD': val_e - val_d,
+                    'DtD_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'MoM': val_e - val_b,
+                    'MoM_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
                     'MtD': val_e - val_c,
                     'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
-                    'MoM': val_e - val_d,
-                    'MoM_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
-                    'YtD': val_e - val_b,
-                    'YtD_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
-                    'YoY': val_e - val_a,
-                    'YoY_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    'YtD': val_e - val_a,
+                    'YtD_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
                     'komitmen': 0, 'komitmen_pct_ach': 0, 'komitmen_gab_real': 0,
                     'komitmen_vs_c': 0, 'komitmen_vs_c_pct': 0,
                     'komitmen_vs_b': 0, 'komitmen_vs_b_pct': 0,
@@ -1286,14 +1286,14 @@ def metric_page_view(request, slug):
                 totals['E'] += val_e
                 row_num += 1
             
+            totals['DtD'] = totals['E'] - totals['D']
+            totals['DtD_pct'] = (totals['DtD'] / totals['D'] * 100) if totals['D'] else 0
+            totals['MoM'] = totals['E'] - totals['B']
+            totals['MoM_pct'] = (totals['MoM'] / totals['B'] * 100) if totals['B'] else 0
             totals['MtD'] = totals['E'] - totals['C']
             totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
-            totals['MoM'] = totals['E'] - totals['D']
-            totals['MoM_pct'] = (totals['MoM'] / totals['D'] * 100) if totals['D'] else 0
-            totals['YtD'] = totals['E'] - totals['B']
-            totals['YtD_pct'] = (totals['YtD'] / totals['B'] * 100) if totals['B'] else 0
-            totals['YoY'] = totals['E'] - totals['A']
-            totals['YoY_pct'] = (totals['YoY'] / totals['A'] * 100) if totals['A'] else 0
+            totals['YtD'] = totals['E'] - totals['A']
+            totals['YtD_pct'] = (totals['YtD'] / totals['A'] * 100) if totals['A'] else 0
             
             return rows, totals
         
@@ -1302,11 +1302,11 @@ def metric_page_view(request, slug):
         kanca_rows, kanca_totals = build_kanca_only_table()
         kcp_rows, kcp_totals = build_kcp_only_table()
         
-        # MtD header info
+        # Header info for calculations
+        dtd_header = f"{date_cols['E']['label']} - {date_cols['D']['label']}"
+        mom_header = f"{date_cols['E']['label']} - {date_cols['B']['label']}"
         mtd_header = f"{date_cols['E']['label']} - {date_cols['C']['label']}"
-        mom_header = f"{date_cols['E']['label']} - {date_cols['D']['label']}"
-        ytd_header = f"{date_cols['E']['label']} - {date_cols['B']['label']}"
-        yoy_header = f"{date_cols['E']['label']} - {date_cols['A']['label']}"
+        ytd_header = f"{date_cols['E']['label']} - {date_cols['A']['label']}"
         
         # Context
         context.update({
@@ -1315,10 +1315,10 @@ def metric_page_view(request, slug):
             'selected_date_str': selected_date.strftime('%Y-%m-%d'),
             'available_dates': available_dates,
             'date_columns': date_cols,
-            'mtd_header': mtd_header,
+            'dtd_header': dtd_header,
             'mom_header': mom_header,
+            'mtd_header': mtd_header,
             'ytd_header': ytd_header,
-            'yoy_header': yoy_header,
             'tables': {
                 'konsol': {
                     'title': 'TOTAL OS SMALL KANCA KONSOL',

@@ -3,17 +3,17 @@ Table Calculations for Dashboard Tables
 Menghitung data untuk tabel seperti OS Small, OS Medium, dll.
 
 Struktur Kolom:
-- Kolom A: Tanggal akhir Bulan (yang dipilih) Tahun Kemarin
-- Kolom B: Tanggal akhir (31 Desember) Tahun Kemarin
-- Kolom C: Tanggal akhir bulan Kemarin (dari yang dipilih)
-- Kolom D: Tanggal yang sama dari yang dipilih tapi Bulan Kemarin
-- Kolom E: Tanggal yang sekarang dipilih
+- Kolom A: 31 Desember tahun kemarin (label: bulan-tahun saja, contoh: Dec-2024)
+- Kolom B: Tanggal yang sama tapi bulan kemarin
+- Kolom C: Tanggal akhir bulan kemarin
+- Kolom D: H-1 (kemarin)
+- Kolom E: Hari ini (yang dipilih user)
 
 Perhitungan:
+- DtD (Day to Day): E - D
+- MoM (Month on Month): E - B
 - MtD (Month to Date): E - C
-- MoM (Month on Month): E - D  
-- YtD (Year to Date): E - B
-- YoY (Year on Year): E - A
+- YtD (Year to Date): E - A
 """
 
 from datetime import date, datetime, timedelta
@@ -41,26 +41,26 @@ def get_date_columns(selected_date: date) -> Dict[str, Dict[str, Any]]:
     month = selected_date.month
     day = selected_date.day
     
-    # Kolom E: Tanggal yang dipilih
+    # Kolom E: Hari ini (tanggal yang dipilih)
     col_e = selected_date
     
-    # Kolom A: Tanggal akhir Bulan (yang dipilih) Tahun Kemarin
-    # Contoh: jika dipilih 09-Oct-2025, maka A = 31-Oct-2024
-    last_day_of_month_last_year = monthrange(year - 1, month)[1]
-    col_a = date(year - 1, month, last_day_of_month_last_year)
+    # Kolom A: 31 Desember tahun kemarin (fixed bulan Desember)
+    # Contoh: jika dipilih tanggal di tahun 2025, maka A = 31-Dec-2024
+    col_a = date(year - 1, 12, 31)
     
-    # Kolom B: 31 Desember Tahun Kemarin
-    col_b = date(year - 1, 12, 31)
+    # Kolom B: Tanggal yang sama tapi bulan kemarin
+    # Contoh: jika dipilih 09-Oct-2025, maka B = 09-Sep-2025
+    col_b = selected_date - relativedelta(months=1)
     
-    # Kolom C: Tanggal akhir bulan Kemarin
+    # Kolom C: Tanggal akhir bulan kemarin
     # Contoh: jika dipilih 09-Oct-2025, maka C = 30-Sep-2025
     first_day_this_month = date(year, month, 1)
     last_day_prev_month = first_day_this_month - timedelta(days=1)
     col_c = last_day_prev_month
     
-    # Kolom D: Tanggal yang sama, Bulan Kemarin
-    # Contoh: jika dipilih 09-Oct-2025, maka D = 09-Sep-2025
-    col_d = selected_date - relativedelta(months=1)
+    # Kolom D: H-1 (kemarin)
+    # Contoh: jika dipilih 09-Oct-2025, maka D = 08-Oct-2025
+    col_d = selected_date - timedelta(days=1)
     
     # Format labels
     def format_date_label(d: date) -> str:
@@ -69,13 +69,13 @@ def get_date_columns(selected_date: date) -> Dict[str, Dict[str, Any]]:
     return {
         'A': {
             'date': col_a,
-            'label': format_date_label(col_a),
-            'description': f"Akhir {col_a.strftime('%B')} {col_a.year}",
+            'label': f"{col_a.strftime('%b')}-{col_a.year}",  # Format: Dec-2024
+            'description': f"31 Desember {col_a.year}",
         },
         'B': {
             'date': col_b,
             'label': format_date_label(col_b),
-            'description': f"31 Desember {col_b.year}",
+            'description': f"{col_b.day} {col_b.strftime('%B')} {col_b.year}",
         },
         'C': {
             'date': col_c,
@@ -85,19 +85,47 @@ def get_date_columns(selected_date: date) -> Dict[str, Dict[str, Any]]:
         'D': {
             'date': col_d,
             'label': format_date_label(col_d),
-            'description': f"{col_d.day} {col_d.strftime('%B')} {col_d.year}",
+            'description': f"H-1 ({col_d.day} {col_d.strftime('%B')} {col_d.year})",
         },
         'E': {
             'date': col_e,
             'label': format_date_label(col_e),
-            'description': f"{col_e.day} {col_e.strftime('%B')} {col_e.year}",
+            'description': f"Hari ini ({col_e.day} {col_e.strftime('%B')} {col_e.year})",
         },
+    }
+
+
+def get_dtd_columns(date_cols: Dict) -> Dict[str, str]:
+    """
+    Generate DtD (Day to Day) column headers
+    Format: {selected_date} - {yesterday}
+    """
+    col_e = date_cols['E']['date']
+    col_d = date_cols['D']['date']
+    
+    return {
+        'label': f"{col_e.strftime('%d-%b-%Y')} - {col_d.strftime('%d-%b-%Y')}",
+        'formula': 'E - D',
+    }
+
+
+def get_mom_columns(date_cols: Dict) -> Dict[str, str]:
+    """
+    Generate MoM (Month on Month) column headers
+    Format: {selected_date} - {same_day_last_month}
+    """
+    col_e = date_cols['E']['date']
+    col_b = date_cols['B']['date']
+    
+    return {
+        'label': f"{col_e.strftime('%d-%b-%Y')} - {col_b.strftime('%d-%b-%Y')}",
+        'formula': 'E - B',
     }
 
 
 def get_mtd_columns(date_cols: Dict) -> Dict[str, str]:
     """
-    Generate MtD column headers
+    Generate MtD (Month to Date) column headers
     Format: {selected_date} - {end_of_prev_month}
     """
     col_e = date_cols['E']['date']
@@ -109,38 +137,10 @@ def get_mtd_columns(date_cols: Dict) -> Dict[str, str]:
     }
 
 
-def get_mom_columns(date_cols: Dict) -> Dict[str, str]:
-    """
-    Generate MoM column headers
-    Format: {selected_date} - {same_day_prev_month}
-    """
-    col_e = date_cols['E']['date']
-    col_d = date_cols['D']['date']
-    
-    return {
-        'label': f"{col_e.strftime('%d-%b-%Y')} - {col_d.strftime('%d-%b-%Y')}",
-        'formula': 'E - D',
-    }
-
-
 def get_ytd_columns(date_cols: Dict) -> Dict[str, str]:
     """
-    Generate YtD column headers
-    Format: {selected_date} - {31-Dec-prev_year}
-    """
-    col_e = date_cols['E']['date']
-    col_b = date_cols['B']['date']
-    
-    return {
-        'label': f"{col_e.strftime('%d-%b-%Y')} - {col_b.strftime('%d-%b-%Y')}",
-        'formula': 'E - B',
-    }
-
-
-def get_yoy_columns(date_cols: Dict) -> Dict[str, str]:
-    """
-    Generate YoY column headers
-    Format: {selected_date} - {end_of_same_month_prev_year}
+    Generate YtD (Year to Date) column headers
+    Format: {selected_date} - {end_of_same_month_last_year}
     """
     col_e = date_cols['E']['date']
     col_a = date_cols['A']['date']
@@ -246,10 +246,10 @@ def calculate_table_data(
     rows = []
     totals = {
         'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0,
-        'MtD': 0, 'MtD_pct': 0,
+        'DtD': 0, 'DtD_pct': 0,
         'MoM': 0, 'MoM_pct': 0,
+        'MtD': 0, 'MtD_pct': 0,
         'YtD': 0, 'YtD_pct': 0,
-        'YoY': 0, 'YoY_pct': 0,
     }
     
     # Determine which codes to iterate
@@ -279,17 +279,17 @@ def calculate_table_data(
                 totals[col_key] += col_sum
             
             # Calculate derived columns
+            row_data['DtD'] = row_data['E'] - row_data['D']
+            row_data['DtD_pct'] = (row_data['DtD'] / row_data['D'] * 100) if row_data['D'] else 0
+            
+            row_data['MoM'] = row_data['E'] - row_data['B']
+            row_data['MoM_pct'] = (row_data['MoM'] / row_data['B'] * 100) if row_data['B'] else 0
+            
             row_data['MtD'] = row_data['E'] - row_data['C']
             row_data['MtD_pct'] = (row_data['MtD'] / row_data['C'] * 100) if row_data['C'] else 0
             
-            row_data['MoM'] = row_data['E'] - row_data['D']
-            row_data['MoM_pct'] = (row_data['MoM'] / row_data['D'] * 100) if row_data['D'] else 0
-            
-            row_data['YtD'] = row_data['E'] - row_data['B']
-            row_data['YtD_pct'] = (row_data['YtD'] / row_data['B'] * 100) if row_data['B'] else 0
-            
-            row_data['YoY'] = row_data['E'] - row_data['A']
-            row_data['YoY_pct'] = (row_data['YoY'] / row_data['A'] * 100) if row_data['A'] else 0
+            row_data['YtD'] = row_data['E'] - row_data['A']
+            row_data['YtD_pct'] = (row_data['YtD'] / row_data['A'] * 100) if row_data['A'] else 0
             
             rows.append(row_data)
     
@@ -312,17 +312,17 @@ def calculate_table_data(
                 totals[col_key] += val
             
             # Calculate derived columns
+            row_data['DtD'] = row_data['E'] - row_data['D']
+            row_data['DtD_pct'] = (row_data['DtD'] / row_data['D'] * 100) if row_data['D'] else 0
+            
+            row_data['MoM'] = row_data['E'] - row_data['B']
+            row_data['MoM_pct'] = (row_data['MoM'] / row_data['B'] * 100) if row_data['B'] else 0
+            
             row_data['MtD'] = row_data['E'] - row_data['C']
             row_data['MtD_pct'] = (row_data['MtD'] / row_data['C'] * 100) if row_data['C'] else 0
             
-            row_data['MoM'] = row_data['E'] - row_data['D']
-            row_data['MoM_pct'] = (row_data['MoM'] / row_data['D'] * 100) if row_data['D'] else 0
-            
-            row_data['YtD'] = row_data['E'] - row_data['B']
-            row_data['YtD_pct'] = (row_data['YtD'] / row_data['B'] * 100) if row_data['B'] else 0
-            
-            row_data['YoY'] = row_data['E'] - row_data['A']
-            row_data['YoY_pct'] = (row_data['YoY'] / row_data['A'] * 100) if row_data['A'] else 0
+            row_data['YtD'] = row_data['E'] - row_data['A']
+            row_data['YtD_pct'] = (row_data['YtD'] / row_data['A'] * 100) if row_data['A'] else 0
             
             rows.append(row_data)
     
@@ -352,39 +352,39 @@ def calculate_table_data(
                 totals[col_key] += val
             
             # Calculate derived columns
+            row_data['DtD'] = row_data['E'] - row_data['D']
+            row_data['DtD_pct'] = (row_data['DtD'] / row_data['D'] * 100) if row_data['D'] else 0
+            
+            row_data['MoM'] = row_data['E'] - row_data['B']
+            row_data['MoM_pct'] = (row_data['MoM'] / row_data['B'] * 100) if row_data['B'] else 0
+            
             row_data['MtD'] = row_data['E'] - row_data['C']
             row_data['MtD_pct'] = (row_data['MtD'] / row_data['C'] * 100) if row_data['C'] else 0
             
-            row_data['MoM'] = row_data['E'] - row_data['D']
-            row_data['MoM_pct'] = (row_data['MoM'] / row_data['D'] * 100) if row_data['D'] else 0
-            
-            row_data['YtD'] = row_data['E'] - row_data['B']
-            row_data['YtD_pct'] = (row_data['YtD'] / row_data['B'] * 100) if row_data['B'] else 0
-            
-            row_data['YoY'] = row_data['E'] - row_data['A']
-            row_data['YoY_pct'] = (row_data['YoY'] / row_data['A'] * 100) if row_data['A'] else 0
+            row_data['YtD'] = row_data['E'] - row_data['A']
+            row_data['YtD_pct'] = (row_data['YtD'] / row_data['A'] * 100) if row_data['A'] else 0
             
             rows.append(row_data)
     
     # Calculate totals for derived columns
+    totals['DtD'] = totals['E'] - totals['D']
+    totals['DtD_pct'] = (totals['DtD'] / totals['D'] * 100) if totals['D'] else 0
+    
+    totals['MoM'] = totals['E'] - totals['B']
+    totals['MoM_pct'] = (totals['MoM'] / totals['B'] * 100) if totals['B'] else 0
+    
     totals['MtD'] = totals['E'] - totals['C']
     totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
     
-    totals['MoM'] = totals['E'] - totals['D']
-    totals['MoM_pct'] = (totals['MoM'] / totals['D'] * 100) if totals['D'] else 0
-    
-    totals['YtD'] = totals['E'] - totals['B']
-    totals['YtD_pct'] = (totals['YtD'] / totals['B'] * 100) if totals['B'] else 0
-    
-    totals['YoY'] = totals['E'] - totals['A']
-    totals['YoY_pct'] = (totals['YoY'] / totals['A'] * 100) if totals['A'] else 0
+    totals['YtD'] = totals['E'] - totals['A']
+    totals['YtD_pct'] = (totals['YtD'] / totals['A'] * 100) if totals['A'] else 0
     
     return {
         'date_columns': date_cols,
-        'mtd_header': get_mtd_columns(date_cols),
+        'dtd_header': get_dtd_columns(date_cols),
         'mom_header': get_mom_columns(date_cols),
+        'mtd_header': get_mtd_columns(date_cols),
         'ytd_header': get_ytd_columns(date_cols),
-        'yoy_header': get_yoy_columns(date_cols),
         'rows': rows,
         'totals': totals,
     }
@@ -392,10 +392,10 @@ def calculate_table_data(
 
 __all__ = [
     'get_date_columns',
+    'get_dtd_columns',
+    'get_mom_columns',
     'get_mtd_columns',
-    'get_mom_columns', 
     'get_ytd_columns',
-    'get_yoy_columns',
     'date_to_periode_str',
     'get_os_for_date',
     'calculate_table_data',
