@@ -6,16 +6,6 @@
 {% block page_title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="card mb-4">
-    <div class="card-body">
-        <h6 class="card-subtitle text-muted mb-2">{{ section }}</h6>
-        {% if description %}
-            <p class="mb-0">{{ description }}</p>
-        {% else %}
-            <p class="mb-0 text-muted">Placeholder halaman dashboard. Integrasikan metrik dan visualisasi sesuai kebutuhan bisnis.</p>
-        {% endif %}
-    </div>
-</div>
 
 {% if show_chart %}
 <div class="card mb-4">
@@ -1423,24 +1413,30 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
     .os-table td:nth-child(5) {
         text-align: left;
     }
-    .os-table .header-posisi {
+    /* Header untuk No, Kode Kanca, Kanca */
+    .os-table th.header-id {
         background-color: #1e3a5f !important;
         color: white;
     }
+    /* Header untuk kolom POSISI (A, B, C, D, E) */
+    .os-table .header-posisi {
+        background-color: #538dd5 !important;
+        color: white;
+    }
     .os-table .header-dtd {
-        background-color: #7c3aed !important;
+        background-color: #808080 !important;
         color: white;
     }
     .os-table .header-mom {
-        background-color: #3d7ab7 !important;
+        background-color: #808080 !important;
         color: white;
     }
     .os-table .header-mtd {
-        background-color: #2d5a87 !important;
+        background-color: #808080 !important;
         color: white;
     }
     .os-table .header-ytd {
-        background-color: #4d9ae7 !important;
+        background-color: #808080 !important;
         color: white;
     }
     .os-table .header-komitmen {
@@ -1452,8 +1448,26 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
         color: white;
     }
     .os-table .row-total {
-        background-color: #ffc107 !important;
+        background-color: #1e3a5f !important;
         font-weight: bold;
+        color: white !important;
+    }
+    /* Background selang-seling untuk baris data */
+    .os-table tbody tr:not(.row-total):nth-child(odd) {
+        background-color: #e8f0f8 !important;
+    }
+    .os-table tbody tr:not(.row-total):nth-child(even) {
+        background-color: #d0e0f0 !important;
+    }
+    /* Background hijau untuk nilai positif */
+    .os-table .bg-positive {
+        background-color: #c6efce !important;
+        color: #000 !important;
+    }
+    /* Background merah untuk nilai negatif */
+    .os-table .bg-negative {
+        background-color: #ffc7ce !important;
+        color: #000 !important;
     }
     .os-table .text-positive {
         color: #28a745;
@@ -1544,20 +1558,16 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                 <thead>
                     <!-- Header Row 1 -->
                     <tr>
-                        <th rowspan="3" class="header-posisi" style="min-width: 40px;">NO</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE UKERR</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">UKER</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE KANCA</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">KANCA</th>
+                        <th rowspan="3" class="header-id" style="min-width: 40px;">NO</th>
+                        <th rowspan="3" class="header-id" style="min-width: 80px;">KODE KANCA</th>
+                        <th rowspan="3" class="header-id" style="min-width: 150px;">KANCA</th>
                         <th colspan="5" class="header-posisi">POSISI</th>
                         <th colspan="2" class="header-dtd">DtD</th>
                         <th colspan="2" class="header-mom">MoM</th>
                         <th colspan="2" class="header-mtd">MtD</th>
                         <th colspan="2" class="header-ytd">YtD</th>
-                        <th colspan="5" class="header-komitmen">Komitmen</th>
-                        <th colspan="5" class="header-rkap">RKAP</th>
                     </tr>
-                    <!-- Header Row 2 -->
+                    <!-- Header Row 2: Date Range -->
                     <tr>
                         <th rowspan="2" class="header-posisi">{{ date_columns.A.label }}</th>
                         <th rowspan="2" class="header-posisi">{{ date_columns.B.label }}</th>
@@ -1568,35 +1578,23 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <th colspan="2" class="header-mom">{{ mom_header }}</th>
                         <th colspan="2" class="header-mtd">{{ mtd_header }}</th>
                         <th colspan="2" class="header-ytd">{{ ytd_header }}</th>
-                        <th rowspan="2" class="header-komitmen">Target</th>
-                        <th rowspan="2" class="header-komitmen">% Ach</th>
-                        <th rowspan="2" class="header-komitmen">Gap</th>
-                        <th rowspan="2" class="header-komitmen">vs C</th>
-                        <th rowspan="2" class="header-komitmen">vs B</th>
-                        <th rowspan="2" class="header-rkap">Target</th>
-                        <th rowspan="2" class="header-rkap">% Ach</th>
-                        <th rowspan="2" class="header-rkap">Gap</th>
-                        <th rowspan="2" class="header-rkap">vs C</th>
-                        <th rowspan="2" class="header-rkap">vs B</th>
                     </tr>
                     <!-- Header Row 3: Formula labels -->
                     {% comment %} <tr>
+                        <th class="header-dtd">E-D</th>
+                        <th class="header-dtd">(E-D)/D%</th>
+                        <th class="header-mom">E-B</th>
+                        <th class="header-mom">(E-B)/B%</th>
                         <th class="header-mtd">E-C</th>
                         <th class="header-mtd">(E-C)/C%</th>
-                        <th class="header-mom">E-D</th>
-                        <th class="header-mom">(E-D)/D%</th>
-                        <th class="header-ytd">E-B</th>
-                        <th class="header-ytd">(E-B)/B%</th>
-                        <th class="header-yoy">E-A</th>
-                        <th class="header-yoy">(E-A)/A%</th>
+                        <th class="header-ytd">E-A</th>
+                        <th class="header-ytd">(E-A)/A%</th>
                     </tr> {% endcomment %}
                 </thead>
                 <tbody>
                     {% for row in tables.konsol.rows %}
                     <tr>
                         <td>{{ row.no }}</td>
-                        <td>{{ row.kode_uker }}</td>
-                        <td>{{ row.uker }}</td>
                         <td>{{ row.kode_kanca }}</td>
                         <td>{{ row.kanca }}</td>
                         <td>{{ row.A|format_number:0|default:"-" }}</td>
@@ -1604,60 +1602,36 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td>{{ row.C|format_number:0|default:"-" }}</td>
                         <td>{{ row.D|format_number:0|default:"-" }}</td>
                         <td>{{ row.E|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
-                        <!-- Komitmen columns (placeholder) -->
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <!-- RKAP columns (placeholder) -->
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
+                        <td class="{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="28" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
+                        <td colspan="16" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
                     </tr>
                     {% endfor %}
                     <!-- Total Row -->
                     <tr class="row-total">
-                        <td colspan="5" class="text-center"><strong>RO Bandung</strong></td>
-                        <td><strong>{{ tables.konsol.totals.A|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.konsol.totals.B|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.konsol.totals.C|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.konsol.totals.D|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.konsol.totals.E|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.DtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.DtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.DtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.DtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.konsol.totals.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.konsol.totals.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.konsol.totals.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD_pct|floatformat:2 }}%</strong></td>
-                        <!-- Komitmen totals (placeholder) -->
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
-                        <!-- RKAP totals (placeholder) -->
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
-                        <td><strong>-</strong></td>
+                        <td colspan="3" class="text-center" style="background-color: #1e3a5f; color: white;"><strong>RO Bandung</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.A|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.B|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.C|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.D|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.E|format_number:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.DtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.DtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.konsol.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM|format_number:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.konsol.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.konsol.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.konsol.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD_pct|floatformat:2 }}%</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -1684,11 +1658,9 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                 <thead>
                     <!-- Header Row 1 -->
                     <tr>
-                        <th rowspan="3" class="header-posisi" style="min-width: 40px;">NO</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE UKER</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">UKER</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE KANCA</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">KANCA</th>
+                        <th rowspan="3" class="header-id" style="min-width: 40px;">NO</th>
+                        <th rowspan="3" class="header-id" style="min-width: 80px;">KODE UKER</th>
+                        <th rowspan="3" class="header-id" style="min-width: 150px;">UKER</th>
                         <th colspan="5" class="header-posisi">POSISI</th>
                         <th colspan="2" class="header-dtd">DtD</th>
                         <th colspan="2" class="header-mom">MoM</th>
@@ -1708,7 +1680,7 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <th colspan="2" class="header-ytd">{{ ytd_header }}</th>
                     </tr>
                     <!-- Header Row 3: Formula labels -->
-                    <tr>
+                    {% comment %} <tr>
                         <th class="header-dtd">E-D</th>
                         <th class="header-dtd">(E-D)/D%</th>
                         <th class="header-mom">E-B</th>
@@ -1717,7 +1689,7 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <th class="header-mtd">(E-C)/C%</th>
                         <th class="header-ytd">E-A</th>
                         <th class="header-ytd">(E-A)/A%</th>
-                    </tr>
+                    </tr> {% endcomment %}
                 </thead>
                 <tbody>
                     {% for row in tables.kanca.rows %}
@@ -1725,43 +1697,41 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td>{{ row.no }}</td>
                         <td>{{ row.kode_uker }}</td>
                         <td>{{ row.uker }}</td>
-                        <td>{{ row.kode_kanca }}</td>
-                        <td>{{ row.kanca }}</td>
                         <td>{{ row.A|format_number:0|default:"-" }}</td>
                         <td>{{ row.B|format_number:0|default:"-" }}</td>
                         <td>{{ row.C|format_number:0|default:"-" }}</td>
                         <td>{{ row.D|format_number:0|default:"-" }}</td>
                         <td>{{ row.E|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="18" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
+                        <td colspan="16" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
                     </tr>
                     {% endfor %}
                     <!-- Total Row -->
                     <tr class="row-total">
-                        <td colspan="5" class="text-center"><strong>RO Bandung</strong></td>
-                        <td><strong>{{ tables.kanca.totals.A|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kanca.totals.B|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kanca.totals.C|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kanca.totals.D|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kanca.totals.E|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.DtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.DtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.DtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.DtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kanca.totals.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kanca.totals.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kanca.totals.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td colspan="3" class="text-center" style="background-color: #1e3a5f; color: white;"><strong>RO Bandung</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.A|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.B|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.C|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.D|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.E|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.DtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.DtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kanca.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kanca.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kanca.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kanca.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD_pct|floatformat:2 }}%</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -1788,11 +1758,9 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                 <thead>
                     <!-- Header Row 1 -->
                     <tr>
-                        <th rowspan="3" class="header-posisi" style="min-width: 40px;">NO</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE UKER</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">UKER</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 80px;">KODE KANCA</th>
-                        <th rowspan="3" class="header-posisi" style="min-width: 150px;">KANCA</th>
+                        <th rowspan="3" class="header-id" style="min-width: 40px;">NO</th>
+                        <th rowspan="3" class="header-id" style="min-width: 80px;">KODE UKER</th>
+                        <th rowspan="3" class="header-id" style="min-width: 150px;">UKER</th>
                         <th colspan="5" class="header-posisi">POSISI</th>
                         <th colspan="2" class="header-dtd">DtD</th>
                         <th colspan="2" class="header-mom">MoM</th>
@@ -1811,7 +1779,7 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <th colspan="2" class="header-mtd">{{ mtd_header }}</th>
                         <th colspan="2" class="header-ytd">{{ ytd_header }}</th>
                     </tr>
-                    <!-- Header Row 3: Formula labels -->
+                    {% comment %} <!-- Header Row 3: Formula labels -->
                     <tr>
                         <th class="header-dtd">E-D</th>
                         <th class="header-dtd">(E-D)/D%</th>
@@ -1821,7 +1789,7 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <th class="header-mtd">(E-C)/C%</th>
                         <th class="header-ytd">E-A</th>
                         <th class="header-ytd">(E-A)/A%</th>
-                    </tr>
+                    </tr> {% endcomment %}
                 </thead>
                 <tbody>
                     {% for row in tables.kcp.rows %}
@@ -1829,43 +1797,41 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td>{{ row.no }}</td>
                         <td>{{ row.kode_uker }}</td>
                         <td>{{ row.uker }}</td>
-                        <td>{{ row.kode_kanca }}</td>
-                        <td>{{ row.kanca }}</td>
                         <td>{{ row.A|format_number:0|default:"-" }}</td>
                         <td>{{ row.B|format_number:0|default:"-" }}</td>
                         <td>{{ row.C|format_number:0|default:"-" }}</td>
                         <td>{{ row.D|format_number:0|default:"-" }}</td>
                         <td>{{ row.E|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
+                        <td class="{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="18" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
+                        <td colspan="16" class="text-center text-muted py-3">Tidak ada data untuk tanggal yang dipilih.</td>
                     </tr>
                     {% endfor %}
                     <!-- Total Row -->
                     <tr class="row-total">
-                        <td colspan="5" class="text-center"><strong>RO Bandung</strong></td>
-                        <td><strong>{{ tables.kcp.totals.A|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kcp.totals.B|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kcp.totals.C|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kcp.totals.D|format_number:0 }}</strong></td>
-                        <td><strong>{{ tables.kcp.totals.E|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.DtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.DtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.DtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.DtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kcp.totals.MoM >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.MoM_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kcp.totals.MtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.MtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kcp.totals.YtD >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.YtD_pct >= 0 %}text-positive{% else %}text-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td colspan="3" class="text-center" style="background-color: #1e3a5f; color: white;"><strong>RO Bandung</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.A|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.B|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.C|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.D|format_number:0 }}</strong></td>
+                        <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.E|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.DtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.DtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kcp.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kcp.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if tables.kcp.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD|format_number:0 }}</strong></td>
+                        <td class="{% if tables.kcp.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD_pct|floatformat:2 }}%</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -1876,11 +1842,12 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
 <!-- Validation Note -->
 <div class="alert alert-info">
     <i class="fas fa-info-circle me-2"></i>
-    <strong>Catatan:</strong> SUM dari KANCA ONLY + SUM dari KCP ONLY = SUM dari KONSOL
-    <br>
-    <small class="text-muted">
-        KANCA ONLY ({{ tables.kanca.totals.E|millions:0 }}) + KCP ONLY ({{ tables.kcp.totals.E|millions:0 }}) = {{ tables.konsol.totals.E|millions:0 }} (KONSOL) - dalam jutaan Rupiah
-    </small>
+    <strong>Catatan:</strong> 
+    <ul class="mb-0">
+        <li>Semua nilai dalam tabel ditampilkan dalam satuan <strong>jutaan Rupiah</strong> (contoh: 620,546 = 620,546 juta Rupiah)</li>
+        <li>SUM dari KANCA ONLY + SUM dari KCP ONLY = SUM dari KONSOL</li>
+        <li>KANCA ONLY ({{ tables.kanca.totals.E|format_number:0 }}) + KCP ONLY ({{ tables.kcp.totals.E|format_number:0 }}) = {{ tables.konsol.totals.E|format_number:0 }} (KONSOL)</li>
+    </ul>
 </div>
 
 <!-- Table Modal for Full Screen View -->

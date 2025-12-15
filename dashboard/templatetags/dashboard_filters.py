@@ -71,13 +71,16 @@ def abs_value(value):
 @register.filter
 def format_number(value, decimals=0):
     """
-    Format number with thousand separator
+    Format number divided by 1 million with thousand separator
+    Example: 620,546,000,000 -> 620,546
     """
     try:
         if value is None or value == '' or value == '-':
             return '-'
         num = float(value)
-        formatted = floatformat(num, decimals)
+        # Divide by 1 million
+        result = num / 1000000
+        formatted = floatformat(result, decimals)
         parts = str(formatted).split('.')
         parts[0] = '{:,}'.format(int(parts[0].replace(',', '').replace(' ', '')))
         return '.'.join(parts) if len(parts) > 1 else parts[0]

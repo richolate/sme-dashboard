@@ -1051,6 +1051,34 @@ def metric_page_view(request, slug):
         date_cols = get_date_columns(selected_date)
         
         # 5. Calculate table data for each type
+        # Helper function to get kode_kanca from kode_uker
+        def get_kode_kanca_from_uker(kode_uker_str):
+            """
+            Determine the parent KANCA code from a UKER code.
+            - If kode_uker is a KANCA itself, return it
+            - If kode_uker is a KCP, return its parent KANCA
+            """
+            try:
+                kode_uker = int(kode_uker_str)
+            except (ValueError, TypeError):
+                return None
+            
+            # Check if it's a KANCA
+            if kode_uker in KANCA_CODES:
+                return kode_uker
+            
+            # Check if it's a KCP, get its parent
+            if kode_uker in UKER_MASTER:
+                _, kode_kanca_induk = UKER_MASTER[kode_uker]
+                return kode_kanca_induk
+            
+            # Try to find in UKER_MASTER by checking if it appears as key
+            for k, (n, induk) in UKER_MASTER.items():
+                if k == kode_uker:
+                    return induk
+            
+            return None
+        
         # Helper function to get OS by UKER for a specific date
         def get_os_by_uker(target_date, segment_filter='SMALL', uker_filter=None):
             """Get OS aggregated by kode_uker for a specific date"""
@@ -1070,44 +1098,57 @@ def metric_page_view(request, slug):
                 result[row['kode_uker']] = float(row['total_os'] or 0)
             return result
         
+        # Helper function to get OS grouped by KANCA (for KONSOL table)
+        def get_os_by_kanca(target_date, segment_filter='SMALL'):
+            """
+            Get OS aggregated by kode_kanca for KONSOL table.
+            This groups all UKER (both KANCA and KCP) under their parent KANCA.
+            """
+            periode_str = target_date.strftime("%d/%m/%Y")
+            
+            qs_filtered = qs.filter(periode=periode_str, segment=segment_filter)
+            
+            # Get all OS by kode_uker first
+            os_by_uker = {}
+            for row in qs_filtered.values('kode_uker').annotate(total_os=Sum('os')):
+                os_by_uker[row['kode_uker']] = float(row['total_os'] or 0)
+            
+            # Now group by KANCA
+            os_by_kanca = {}
+            for kode_uker_str, os_value in os_by_uker.items():
+                kode_kanca = get_kode_kanca_from_uker(kode_uker_str)
+                if kode_kanca:
+                    if kode_kanca not in os_by_kanca:
+                        os_by_kanca[kode_kanca] = 0
+                    os_by_kanca[kode_kanca] += os_value
+            
+            return os_by_kanca
+        
         # 6. Build KONSOL table (grouped by KANCA)
         def build_konsol_table():
             rows = []
             totals = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
             
-            # Get OS for each date
-            os_a = get_os_by_uker(date_cols['A']['date'])
-            os_b = get_os_by_uker(date_cols['B']['date'])
-            os_c = get_os_by_uker(date_cols['C']['date'])
-            os_d = get_os_by_uker(date_cols['D']['date'])
-            os_e = get_os_by_uker(date_cols['E']['date'])
+            # Get OS for each date, grouped by KANCA
+            os_a = get_os_by_kanca(date_cols['A']['date'])
+            os_b = get_os_by_kanca(date_cols['B']['date'])
+            os_c = get_os_by_kanca(date_cols['C']['date'])
+            os_d = get_os_by_kanca(date_cols['D']['date'])
+            os_e = get_os_by_kanca(date_cols['E']['date'])
             
             row_num = 1
             for kode_kanca in sorted(KANCA_CODES):
                 nama_kanca = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
                 
-                # Get all UKER codes under this KANCA
-                uker_codes = [str(kode_kanca)]  # KANCA itself
-                for k, (n, induk) in UKER_MASTER.items():
-                    if induk == kode_kanca and k != kode_kanca:
-                        uker_codes.append(str(k))
-                
-                # Sum OS for all UKERs under this KANCA
-                val_a = sum(os_a.get(c, 0) for c in uker_codes)
-                val_b = sum(os_b.get(c, 0) for c in uker_codes)
-                val_c = sum(os_c.get(c, 0) for c in uker_codes)
-                val_d = sum(os_d.get(c, 0) for c in uker_codes)
-                val_e = sum(os_e.get(c, 0) for c in uker_codes)
-                
-                # Get first KCP name under this KANCA for display
-                kcp_list = [(k, n) for k, (n, induk) in UKER_MASTER.items() 
-                           if induk == kode_kanca and k != kode_kanca]
-                first_kcp = kcp_list[0] if kcp_list else (None, '')
+                # Get OS values for this KANCA (already summed with its KCPs)
+                val_a = os_a.get(kode_kanca, 0)
+                val_b = os_b.get(kode_kanca, 0)
+                val_c = os_c.get(kode_kanca, 0)
+                val_d = os_d.get(kode_kanca, 0)
+                val_e = os_e.get(kode_kanca, 0)
                 
                 row = {
                     'no': row_num,
-                    'kode_uker': first_kcp[0] if first_kcp[0] else kode_kanca,
-                    'uker': first_kcp[1] if first_kcp[1] else nama_kanca,
                     'kode_kanca': kode_kanca,
                     'kanca': nama_kanca,
                     'A': val_a,
@@ -1123,19 +1164,6 @@ def metric_page_view(request, slug):
                     'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
                     'YtD': val_e - val_a,
                     'YtD_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
-                    # Komitmen placeholders
-                    'komitmen': 0,
-                    'komitmen_pct_ach': 0,
-                    'komitmen_gab_real': 0,
-                    'komitmen_vs_c': 0,
-                    'komitmen_vs_c_pct': 0,
-                    'komitmen_vs_b': 0,
-                    'komitmen_vs_b_pct': 0,
-                    # RKAP placeholders
-                    'rkap': 0,
-                    'rkap_gab_real': 0,
-                    'rkap_vs_komitmen': 0,
-                    'rkap_pct_ach': 0,
                 }
                 
                 rows.append(row)
@@ -1235,8 +1263,9 @@ def metric_page_view(request, slug):
             os_d = get_os_by_uker(date_cols['D']['date'], uker_filter='KCP')
             os_e = get_os_by_uker(date_cols['E']['date'], uker_filter='KCP')
             
-            row_num = 1
-            for kode_kcp in sorted(KCP_CODES):
+            # Build list with kode_kanca for sorting
+            kcp_list = []
+            for kode_kcp in KCP_CODES:
                 if kode_kcp in UKER_MASTER:
                     nama_kcp, kode_kanca_induk = UKER_MASTER[kode_kcp]
                     nama_kanca = KANCA_MASTER.get(kode_kanca_induk, '')
@@ -1245,6 +1274,13 @@ def metric_page_view(request, slug):
                     nama_kanca = ''
                     kode_kanca_induk = 0
                 
+                kcp_list.append((kode_kanca_induk, kode_kcp, nama_kcp, nama_kanca))
+            
+            # Sort by kode_kanca ascending, then by kode_kcp
+            kcp_list.sort(key=lambda x: (x[0], x[1]))
+            
+            row_num = 1
+            for kode_kanca_induk, kode_kcp, nama_kcp, nama_kanca in kcp_list:
                 kode_str = str(kode_kcp)
                 
                 val_a = os_a.get(kode_str, 0)
