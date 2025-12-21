@@ -98,6 +98,46 @@
             transform: rotate(-90deg);
         }
 
+        /* Background colors for metric group headers */
+        .sidebar .nav-link-toggle[data-group-color] {
+            position: relative;
+        }
+
+        .sidebar .nav-link-toggle[data-group-color]:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--group-color);
+        }
+
+        .sidebar .nav-link-toggle.menu-medium {
+            background-color: #00b050 !important;
+            color: white !important;
+        }
+
+        .sidebar .nav-link-toggle.menu-small {
+            background-color: #31869b !important;
+            color: white !important;
+        }
+
+        .sidebar .nav-link-toggle.menu-small-ncc {
+            background-color: #ff0000 !important;
+            color: white !important;
+        }
+
+        .sidebar .nav-link-toggle.menu-cc {
+            background-color: #ffff00 !important;
+            color: #000000 !important;
+        }
+
+        .sidebar .nav-link-toggle.menu-kur {
+            background-color: #c0504d !important;
+            color: white !important;
+        }
+
         .sidebar .submenu {
             padding-left: 10px;
         }
@@ -237,9 +277,10 @@
         <nav class="nav flex-column">
             {% for item in dashboard_menu %}
                 {% if item.children %}
-                    <a class="nav-link nav-link-toggle d-flex justify-content-between align-items-center {% if not item.open %}collapsed{% endif %} {% if item.active %}active{% endif %}"
+                    <a class="nav-link nav-link-toggle d-flex justify-content-between align-items-center {% if not item.open %}collapsed{% endif %} {% if item.active %}active{% endif %} menu-{{ item.key }}"
                        data-bs-toggle="collapse" href="#{{ item.collapse_id }}" role="button"
-                       aria-expanded="{{ item.open|yesno:'true,false' }}" aria-controls="{{ item.collapse_id }}">
+                       aria-expanded="{{ item.open|yesno:'true,false' }}" aria-controls="{{ item.collapse_id }}"
+                       {% if item.color %}style="--group-color: {{ item.color }};"{% endif %}>
                         <span><i class="{{ item.icon }}"></i> {{ item.label }}</span>
                         <i class="fas fa-chevron-down chevron"></i>
                     </a>

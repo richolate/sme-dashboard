@@ -93,40 +93,41 @@ METRIC_GROUPS = [
     },
     {
         "key": "medium",
-        "label": "Medium",
+        "label": "MEDIUM",
         "icon": "fas fa-briefcase",
+        "color": "#00b050",
         "pages": [
             {
                 "slug": "medium-os",
-                "title": "OS Medium",
+                "title": "OS MEDIUM",
                 "tables": [
                     "OS MEDIUM KANCA KONSOL",
                 ],
             },
             {
-                "slug": "medium-sml",
-                "title": "SML Medium",
+                "slug": "medium-dpk",
+                "title": "DPK MEDIUM",
                 "tables": [
-                    "SML MEDIUM KANCA KONSOL",
+                    "DPK MEDIUM KANCA KONSOL",
                 ],
             },
             {
                 "slug": "medium-npl",
-                "title": "NPL Medium",
+                "title": "NPL MEDIUM",
                 "tables": [
                     "NPL MEDIUM KANCA KONSOL",
                 ],
             },
             {
                 "slug": "medium-nsb",
-                "title": "NSB Medium",
+                "title": "NSB MEDIUM",
                 "tables": [
                     "NSB MEDIUM KANCA KONSOL",
                 ],
             },
             {
                 "slug": "medium-lr",
-                "title": "LR Medium",
+                "title": "LR MEDIUM",
                 "tables": [
                     "LR MEDIUM KANCA KONSOL",
                 ],
@@ -135,12 +136,13 @@ METRIC_GROUPS = [
     },
     {
         "key": "small",
-        "label": "Small",
+        "label": "SMALL",
         "icon": "fas fa-chart-area",
+        "color": "#31869b",
         "pages": [
             {
                 "slug": "small-os",
-                "title": "OS Small",
+                "title": "OS SMALL",
                 "tables": [
                     "TOTAL OS SMALL KANCA KONSOL",
                     "TOTAL OS SMALL KANCA ONLY",
@@ -148,17 +150,26 @@ METRIC_GROUPS = [
                 ],
             },
             {
-                "slug": "small-sml",
-                "title": "SML Small",
+                "slug": "small-dpk",
+                "title": "DPK SMALL",
                 "tables": [
-                    "TOTAL SML SMALL KANCA KONSOL",
-                    "TOTAL SML SMALL KANCA ONLY",
-                    "TOTAL SML SMALL KCP ONLY",
+                    "TOTAL DPK SMALL KANCA KONSOL",
+                    "TOTAL DPK SMALL KANCA ONLY",
+                    "TOTAL DPK SMALL KCP ONLY",
+                ],
+            },
+            {
+                "slug": "small-dpk-pct",
+                "title": "%DPK SMALL",
+                "tables": [
+                    "TOTAL %DPK SMALL KANCA KONSOL",
+                    "TOTAL %DPK SMALL KANCA ONLY",
+                    "TOTAL %DPK SMALL KCP ONLY",
                 ],
             },
             {
                 "slug": "small-npl",
-                "title": "NPL Small",
+                "title": "NPL SMALL",
                 "tables": [
                     "TOTAL NPL SMALL KANCA KONSOL",
                     "TOTAL NPL SMALL KANCA ONLY",
@@ -166,8 +177,26 @@ METRIC_GROUPS = [
                 ],
             },
             {
+                "slug": "small-npl-pct",
+                "title": "%NPL SMALL",
+                "tables": [
+                    "TOTAL %NPL SMALL KANCA KONSOL",
+                    "TOTAL %NPL SMALL KANCA ONLY",
+                    "TOTAL %NPL SMALL KCP ONLY",
+                ],
+            },
+            {
+                "slug": "small-lar",
+                "title": "LAR SMALL",
+                "tables": [
+                    "TOTAL LAR SMALL KANCA KONSOL",
+                    "TOTAL LAR SMALL KANCA ONLY",
+                    "TOTAL LAR SMALL KCP ONLY",
+                ],
+            },
+            {
                 "slug": "small-nsb",
-                "title": "NSB Small",
+                "title": "NSB SMALL",
                 "tables": [
                     "TOTAL NASABAH SMALL KANCA KONSOL",
                     "TOTAL NASABAH SMALL KANCA ONLY",
@@ -176,32 +205,24 @@ METRIC_GROUPS = [
             },
             {
                 "slug": "small-lr",
-                "title": "LR Small",
+                "title": "LR SMALL",
                 "tables": [
                     "TOTAL LR SMALL KANCA KONSOL",
                     "TOTAL LR SMALL KANCA ONLY",
                     "TOTAL LR SMALL KCP ONLY",
                 ],
             },
-            {
-                "slug": "small-lar",
-                "title": "LAR Small",
-                "tables": [
-                    "TOTAL LAR SMALL KANCA KONSOL",
-                    "TOTAL LAR SMALL KANCA ONLY",
-                    "TOTAL LAR SMALL KCP ONLY",
-                ],
-            },
         ],
     },
     {
         "key": "small-ncc",
-        "label": "Small NCC",
+        "label": "SMALL NCC",
         "icon": "fas fa-chart-line",
+        "color": "#ff0000",
         "pages": [
             {
                 "slug": "small-ncc-os",
-                "title": "OS Small NCC",
+                "title": "OS SMALL NCC",
                 "tables": [
                     "OS SMALL SD 5M KANCA KONSOL",
                     "OS SMALL SD 5M KANCA ONLY",
@@ -209,17 +230,17 @@ METRIC_GROUPS = [
                 ],
             },
             {
-                "slug": "small-ncc-sml",
-                "title": "SML Small NCC",
+                "slug": "small-ncc-dpk",
+                "title": "DPK SMALL NCC",
                 "tables": [
-                    "SML SMALL SD 5M KANCA KONSOL",
-                    "SML SMALL SD 5M KANCA ONLY",
-                    "SML SMALL SD 5M KCP ONLY",
+                    "DPK SMALL SD 5M KANCA KONSOL",
+                    "DPK SMALL SD 5M KANCA ONLY",
+                    "DPK SMALL SD 5M KCP ONLY",
                 ],
             },
             {
                 "slug": "small-ncc-npl",
-                "title": "NPL Small NCC",
+                "title": "NPL SMALL NCC",
                 "tables": [
                     "NPL SMALL SD 5M KANCA KONSOL",
                     "NPL SMALL SD 5M KANCA ONLY",
@@ -228,7 +249,7 @@ METRIC_GROUPS = [
             },
             {
                 "slug": "small-ncc-nsb",
-                "title": "NSB Small NCC",
+                "title": "NSB SMALL NCC",
                 "tables": [
                     "NASABAH SMALL SD 5M KANCA KONSOL",
                     "NASABAH SMALL SD 5M KANCA ONLY",
@@ -237,7 +258,7 @@ METRIC_GROUPS = [
             },
             {
                 "slug": "small-ncc-lr",
-                "title": "LR Small NCC",
+                "title": "LR SMALL NCC",
                 "tables": [
                     "LR SMALL SD 5M KANCA KONSOL",
                     "LR SMALL SD 5M KANCA ONLY",
@@ -250,6 +271,7 @@ METRIC_GROUPS = [
         "key": "cc",
         "label": "CC",
         "icon": "fas fa-credit-card",
+        "color": "#ffff00",
         "pages": [
             {
                 "slug": "cc-os",
@@ -261,12 +283,12 @@ METRIC_GROUPS = [
                 ],
             },
             {
-                "slug": "cc-sml",
-                "title": "SML CC",
+                "slug": "cc-dpk",
+                "title": "DPK CC",
                 "tables": [
-                    "SML CC KANCA KONSOL",
-                    "SML CC KANCA ONLY",
-                    "SML CC KCP ONLY",
+                    "DPK CC KANCA KONSOL",
+                    "DPK CC KANCA ONLY",
+                    "DPK CC KCP ONLY",
                 ],
             },
             {
@@ -293,6 +315,7 @@ METRIC_GROUPS = [
         "key": "kur",
         "label": "KUR",
         "icon": "fas fa-hand-holding-usd",
+        "color": "#c0504d",
         "pages": [
             {
                 "slug": "kur-os",
@@ -304,12 +327,12 @@ METRIC_GROUPS = [
                 ],
             },
             {
-                "slug": "kur-sml",
-                "title": "SML KUR",
+                "slug": "kur-dpk",
+                "title": "DPK KUR",
                 "tables": [
-                    "SML KUR KANCA KONSOL",
-                    "SML KUR KANCA ONLY",
-                    "SML KUR KCP ONLY",
+                    "DPK KUR KANCA KONSOL",
+                    "DPK KUR KANCA ONLY",
+                    "DPK KUR KCP ONLY",
                 ],
             },
             {
@@ -440,6 +463,7 @@ def build_menu(
                 "collapse_id": collapse_id,
                 "open": is_open,
                 "active": is_open,
+                "color": group.get("color", ""),
             }
         )
 
