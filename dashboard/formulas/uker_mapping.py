@@ -249,11 +249,16 @@ def get_uker_name(kode_uker: int) -> Optional[str]:
 
 def get_kcp_by_kanca(kode_kanca: int) -> List[Tuple[int, str]]:
     """
-    Get list of KCP (kode, nama) under a specific KANCA
+    Get list of KCP (kode, nama) under a specific KANCA.
+    Excludes any UKER codes that are also defined as KANCA to avoid double counting.
     """
     result = []
     for kode_uker, (nama, induk) in UKER_MASTER.items():
-        if induk == kode_kanca and kode_uker != kode_kanca:
+        # Only include if:
+        # 1. Parent KANCA matches
+        # 2. Not the KANCA itself
+        # 3. Not in KANCA_CODES (to handle edge cases like 137)
+        if induk == kode_kanca and kode_uker != kode_kanca and kode_uker not in KANCA_CODES:
             result.append((kode_uker, nama))
     return result
 

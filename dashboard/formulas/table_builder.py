@@ -1,0 +1,581 @@
+"""
+Table Builder Module
+Handles the construction of KONSOL, KANCA ONLY, and KCP ONLY tables
+for different metrics (OS, DPK, NPL, LAR, etc.)
+"""
+
+from decimal import Decimal
+from datetime import datetime, timedelta
+from django.db.models import Sum, Q, F
+from ..models import LW321
+from .segmentation import get_segment_annotation
+from .calculations import annotate_metrics
+from .uker_mapping import (
+    KANCA_MASTER,
+    UKER_MASTER,
+    KANCA_CODES,
+    KCP_CODES,
+    get_kanca_induk,
+    get_uker_name,
+    get_kcp_by_kanca
+)
+
+
+# ============================================================================
+# KANCA and UKER Master Data - Imported from uker_mapping.py
+# ============================================================================
+# All KANCA/UKER data now comes from uker_mapping.py to ensure consistency
+
+
+# ============================================================================
+# Date Calculation Helpers
+# ============================================================================
+
+def get_date_columns(selected_date):
+    """
+    Calculate the 5 date columns (A, B, C, D, E) based on selected date.
+    Follows the same logic as table_calculations.py for consistency.
+    
+    Logic:
+    - A: 31 December of previous year (fixed December)
+    - B: Same day but 1 month ago
+    - C: Last day of previous month
+    - D: Yesterday (H-1)
+    - E: Selected date
+    
+    Returns:
+        dict: Dictionary with date information for each column
+    """
+    from dateutil.relativedelta import relativedelta
+    
+    year = selected_date.year
+    month = selected_date.month
+    
+    # E: Selected date
+    date_E = selected_date
+    
+    # D: Yesterday (H-1)
+    date_D = selected_date - timedelta(days=1)
+    
+    # C: Last day of previous month (akhir bulan kemarin)
+    first_day_this_month = datetime(year, month, 1).date()
+    date_C = first_day_this_month - timedelta(days=1)
+    
+    # B: Same day but 1 month ago (tanggal sama bulan kemarin)
+    date_B = selected_date - relativedelta(months=1)
+    
+    # A: 31 December of previous year (fixed December)
+    date_A = datetime(year - 1, 12, 31).date()
+    
+    # Format labels - matching OS SMALL format
+    def format_date_label(d):
+        return d.strftime("%d-%b-%y")  # Format: 09-Oct-25
+    
+    return {
+        'A': {
+            'date': date_A,
+            'label': f"{date_A.strftime('%b')}-{date_A.year}",  # Format: Dec-2024
+            'description': f"31 Desember {date_A.year}",
+        },
+        'B': {
+            'date': date_B,
+            'label': format_date_label(date_B),
+            'description': f"{date_B.day} {date_B.strftime('%B')} {date_B.year}",
+        },
+        'C': {
+            'date': date_C,
+            'label': format_date_label(date_C),
+            'description': f"Akhir {date_C.strftime('%B')} {date_C.year}",
+        },
+        'D': {
+            'date': date_D,
+            'label': format_date_label(date_D),
+            'description': f"H-1 ({date_D.day} {date_D.strftime('%B')} {date_D.year})",
+        },
+        'E': {
+            'date': date_E,
+            'label': format_date_label(date_E),
+            'description': f"Hari ini ({date_E.day} {date_E.strftime('%B')} {date_E.year})",
+        },
+    }
+
+
+# ============================================================================
+# Core Query Functions
+# ============================================================================
+
+def get_base_queryset(target_date, segment_filter, metric_field='os', kol_adk_filter=None):
+    """
+    Get base queryset with filters and annotations.
+    
+    Args:
+        target_date: Date to filter data
+        segment_filter: Segment to filter (e.g., 'SMALL', 'MEDIUM', 'CC', 'KUR')
+        metric_field: Field to aggregate (e.g., 'os', 'dpk', 'npl', 'lar')
+        kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
+    
+    Returns:
+        QuerySet: Annotated and filtered queryset
+    """
+    qs = LW321.objects.filter(periode=target_date.strftime('%d/%m/%Y'))
+    qs = qs.annotate(segment=get_segment_annotation())
+    qs = annotate_metrics(qs)
+    
+    if segment_filter:
+        qs = qs.filter(segment=segment_filter)
+    
+    # Apply kol_adk filter if specified (for DPK: kol_adk='2')
+    if kol_adk_filter is not None:
+        qs = qs.filter(kol_adk=kol_adk_filter)
+    
+    return qs
+
+
+def calculate_percentage_metric(metric_value, base_value):
+    """
+    Calculate percentage metric (metric / base * 100).
+    Used for %DPK and %NPL calculations.
+    
+    Args:
+        metric_value: Numerator value (dpk or npl)
+        base_value: Denominator value (usually os)
+    
+    Returns:
+        float: Percentage value (0-100)
+    """
+    if base_value == 0 or base_value is None:
+        return 0
+    if metric_value is None:
+        return 0
+    return (metric_value / base_value) * 100
+
+
+def get_metric_by_uker(target_date, segment_filter, metric_field='os', kol_adk_filter=None):
+    """
+    Get metric sum grouped by UKER.
+    Handles special percentage metrics (dpk_pct, npl_pct).
+    
+    DPK Logic:
+    - DPK = SUM(kolektibilitas_dpk) 
+    - No kol_adk filter needed, DPK is already its own column
+    
+    Args:
+        kol_adk_filter: Optional filter for kol_adk field (not used for DPK)
+    
+    Returns:
+        dict: {kode_uker: metric_value}
+    """
+    qs = get_base_queryset(target_date, segment_filter, metric_field, kol_adk_filter)
+    
+    # Handle percentage metrics specially
+    if metric_field == 'dpk_pct':
+        # %DPK = (kolektibilitas_dpk / os) * 100
+        # First cast to decimal
+        from .utils import cast_to_decimal
+        qs = qs.annotate(
+            val_dpk=cast_to_decimal('kolektibilitas_dpk')
+        )
+        
+        result = qs.values('kode_uker').annotate(
+            metric_sum=Sum('val_dpk'),
+            base_sum=Sum('os')
+        ).order_by('kode_uker')
+        
+        return {
+            item['kode_uker']: calculate_percentage_metric(
+                item['metric_sum'] or 0, 
+                item['base_sum'] or 0
+            ) 
+            for item in result
+        }
+    
+    elif metric_field == 'npl_pct':
+        # %NPL = (npl / os) * 100
+        result = qs.values('kode_uker').annotate(
+            metric_sum=Sum('npl'),
+            base_sum=Sum('os')
+        ).order_by('kode_uker')
+        
+        return {
+            item['kode_uker']: calculate_percentage_metric(
+                item['metric_sum'] or 0, 
+                item['base_sum'] or 0
+            ) 
+            for item in result
+        }
+    
+    else:
+        # Regular metrics (os, npl, lar, lr, sml/dpk, etc.)
+        # For DPK, use 'sml' field which is already annotated in calculations.py
+        # SML = DPK + (Lancar if kol_adk == '2')
+        actual_field = 'sml' if metric_field == 'dpk' else metric_field
+        
+        result = qs.values('kode_uker').annotate(
+            total=Sum(actual_field)
+        ).order_by('kode_uker')
+        
+        return {item['kode_uker']: item['total'] or Decimal('0') for item in result}
+
+
+def get_kode_kanca_from_uker(kode_uker_str):
+    """
+    Determine the parent KANCA code from a given UKER code.
+    Returns integer kode_kanca or None.
+    """
+    try:
+        kode_uker_int = int(kode_uker_str)
+    except (ValueError, TypeError):
+        # If string code, check directly in KANCA_CODES
+        if kode_uker_str in [str(k) for k in KANCA_CODES]:
+            return kode_uker_str
+        return None
+    
+    # Check if it's a KANCA
+    if kode_uker_int in KANCA_CODES:
+        return kode_uker_int
+    
+    # Check if it's in UKER_MASTER (could be KCP)
+    if kode_uker_int in UKER_MASTER:
+        _, kode_kanca_induk = UKER_MASTER[kode_uker_int]
+        return kode_kanca_induk
+    
+    # Try with get_kanca_induk helper from uker_mapping
+    return get_kanca_induk(kode_uker_int)
+
+
+def get_metric_by_kanca(target_date, segment_filter, metric_field='os', kol_adk_filter=None):
+    """
+    Get metric sum grouped by parent KANCA (dynamically calculated).
+    
+    Args:
+        kol_adk_filter: Optional filter for kol_adk field
+    
+    Returns:
+        dict: {kode_kanca: metric_value}
+    """
+    metric_by_uker = get_metric_by_uker(target_date, segment_filter, metric_field, kol_adk_filter)
+    metric_by_kanca = {}
+    
+    for kode_uker_str, value in metric_by_uker.items():
+        kode_kanca = get_kode_kanca_from_uker(kode_uker_str)
+        if kode_kanca:
+            if kode_kanca not in metric_by_kanca:
+                metric_by_kanca[kode_kanca] = Decimal('0')
+            metric_by_kanca[kode_kanca] += value
+    
+    return metric_by_kanca
+
+
+# ============================================================================
+# Table Building Functions
+# ============================================================================
+
+def calculate_changes(A, B, C, D, E):
+    """
+    Calculate DtD, MoM, MtD, YtD and their percentages.
+    """
+    def safe_divide(num, den):
+        if den == 0 or den is None:
+            return Decimal('0')
+        return (num / den) * Decimal('100')
+    
+    DtD = E - D if E and D else Decimal('0')
+    DtD_pct = safe_divide(DtD, D) if D else Decimal('0')
+    
+    MoM = E - B if E and B else Decimal('0')
+    MoM_pct = safe_divide(MoM, B) if B else Decimal('0')
+    
+    MtD = E - C if E and C else Decimal('0')
+    MtD_pct = safe_divide(MtD, C) if C else Decimal('0')
+    
+    YtD = E - A if E and A else Decimal('0')
+    YtD_pct = safe_divide(YtD, A) if A else Decimal('0')
+    
+    return {
+        'DtD': DtD,
+        'DtD_pct': DtD_pct,
+        'MoM': MoM,
+        'MoM_pct': MoM_pct,
+        'MtD': MtD,
+        'MtD_pct': MtD_pct,
+        'YtD': YtD,
+        'YtD_pct': YtD_pct,
+    }
+
+
+def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', kol_adk_filter=None):
+    """
+    Build KONSOL table (grouped by KANCA - includes both KANCA and their KCPs).
+    
+    Args:
+        kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
+    """
+    rows = []
+    
+    # Get data for each date
+    data_by_date = {}
+    for col_name, col_info in date_columns.items():
+        data_by_date[col_name] = get_metric_by_kanca(
+            col_info['date'], 
+            segment_filter, 
+            metric_field,
+            kol_adk_filter
+        )
+    
+    # Build rows for each KANCA
+    for idx, kode_kanca in enumerate(KANCA_CODES, start=1):
+        kanca_name = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+        
+        A = data_by_date['A'].get(kode_kanca, Decimal('0'))
+        B = data_by_date['B'].get(kode_kanca, Decimal('0'))
+        C = data_by_date['C'].get(kode_kanca, Decimal('0'))
+        D = data_by_date['D'].get(kode_kanca, Decimal('0'))
+        E = data_by_date['E'].get(kode_kanca, Decimal('0'))
+        
+        changes = calculate_changes(A, B, C, D, E)
+        
+        rows.append({
+            'no': idx,
+            'kode_kanca': kode_kanca,
+            'kanca': kanca_name,
+            'A': A,
+            'B': B,
+            'C': C,
+            'D': D,
+            'E': E,
+            **changes
+        })
+    
+    # Calculate totals
+    totals = {
+        'A': sum(row['A'] for row in rows),
+        'B': sum(row['B'] for row in rows),
+        'C': sum(row['C'] for row in rows),
+        'D': sum(row['D'] for row in rows),
+        'E': sum(row['E'] for row in rows),
+    }
+    totals.update(calculate_changes(
+        totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
+    ))
+    
+    return {
+        'title': f'TOTAL {metric_field.upper()} {segment_filter} KANCA KONSOL',
+        'rows': rows,
+        'totals': totals
+    }
+
+
+def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='os', kol_adk_filter=None):
+    """
+    Build KANCA ONLY table (only KANCA, excluding KCPs).
+    Only includes actual KANCA codes, not KCP contributions.
+    
+    Args:
+        kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
+    """
+    rows = []
+    
+    # Initialize totals
+    totals = {
+        'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0,
+        'DtD': 0, 'MoM': 0, 'MtD': 0, 'YtD': 0,
+        'DtD_pct': 0, 'MoM_pct': 0, 'MtD_pct': 0, 'YtD_pct': 0
+    }
+    
+    # Pre-fetch all metrics for all dates (optimization)
+    # This avoids calling get_metric_by_uker() inside the loop
+    metrics_by_date = {}
+    for col_name, col_info in date_columns.items():
+        metrics_by_date[col_name] = get_metric_by_uker(
+            col_info['date'],
+            segment_filter,
+            metric_field,
+            kol_adk_filter
+        )
+    
+    for idx, kode_kanca in enumerate(KANCA_CODES, start=1):
+        # Get metrics for each date column - only for KANCA code itself
+        # Convert kode_kanca to string because kode_uker in database is CharField
+        kode_kanca_str = str(kode_kanca)
+        
+        A_val = metrics_by_date['A'].get(kode_kanca_str, 0)
+        B_val = metrics_by_date['B'].get(kode_kanca_str, 0)
+        C_val = metrics_by_date['C'].get(kode_kanca_str, 0)
+        D_val = metrics_by_date['D'].get(kode_kanca_str, 0)
+        E_val = metrics_by_date['E'].get(kode_kanca_str, 0)
+        
+        # Calculate changes
+        changes = calculate_changes(A_val, B_val, C_val, D_val, E_val)
+        
+        # Build row
+        kanca_name = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+        row = {
+            'no': idx,
+            'kode_kanca': kode_kanca,
+            'kanca': kanca_name,
+            'kode_uker': kode_kanca,  # For KANCA ONLY, kode_uker = kode_kanca
+            'uker': kanca_name,        # For KANCA ONLY, uker name = kanca name
+            'A': A_val,
+            'B': B_val,
+            'C': C_val,
+            'D': D_val,
+            'E': E_val,
+            'DtD': changes['DtD'],
+            'DtD_pct': changes['DtD_pct'],
+            'MoM': changes['MoM'],
+            'MoM_pct': changes['MoM_pct'],
+            'MtD': changes['MtD'],
+            'MtD_pct': changes['MtD_pct'],
+            'YtD': changes['YtD'],
+            'YtD_pct': changes['YtD_pct'],
+        }
+        rows.append(row)
+        
+        # Add to totals
+        totals['A'] += A_val
+        totals['B'] += B_val
+        totals['C'] += C_val
+        totals['D'] += D_val
+        totals['E'] += E_val
+    
+    # Calculate totals changes
+    totals_changes = calculate_changes(
+        totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
+    )
+    totals.update(totals_changes)
+    
+    return {
+        'title': f'TOTAL {metric_field.upper()} {segment_filter} KANCA ONLY',
+        'rows': rows,
+        'totals': totals
+    }
+
+
+def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os', kol_adk_filter=None):
+    """
+    Build KCP ONLY table (only KCPs, sorted by parent KANCA).
+    Groups KCP codes under their parent KANCA for better organization.
+    
+    Args:
+        kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
+    """
+    rows = []
+    
+    # Initialize totals
+    totals = {
+        'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0,
+        'DtD': 0, 'MoM': 0, 'MtD': 0, 'YtD': 0,
+        'DtD_pct': 0, 'MoM_pct': 0, 'MtD_pct': 0, 'YtD_pct': 0
+    }
+    
+    # Get all KCP codes from UKER_MASTER, sorted by parent KANCA
+    kcp_list = []
+    for kode_kanca in KANCA_CODES:
+        # Get KCP list for this KANCA using helper function
+        kcp_data = get_kcp_by_kanca(kode_kanca)
+        for kcp_code, kcp_name in kcp_data:
+            kcp_list.append({
+                'kode_kanca': kode_kanca,
+                'kcp_code': kcp_code,
+                'kcp_name': kcp_name,  # Store KCP name
+                'kanca_name': KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+            })
+    
+    # Sort by parent KANCA code, then by KCP code (both are integers now)
+    kcp_list.sort(key=lambda x: (x['kode_kanca'], x['kcp_code']))
+    
+    # Pre-fetch all metrics for all dates (optimization)
+    # This avoids calling get_metric_by_uker() inside the loop
+    metrics_by_date = {}
+    for col_name, col_info in date_columns.items():
+        metrics_by_date[col_name] = get_metric_by_uker(
+            col_info['date'],
+            segment_filter,
+            metric_field,
+            kol_adk_filter
+        )
+    
+    # Build rows for each KCP
+    for idx, kcp_info in enumerate(kcp_list, start=1):
+        kcp_code = kcp_info['kcp_code']
+        # Convert kcp_code to string because kode_uker in database is CharField
+        kcp_code_str = str(kcp_code)
+        
+        # Get metrics for each date column from pre-fetched data
+        A_val = metrics_by_date['A'].get(kcp_code_str, 0)
+        B_val = metrics_by_date['B'].get(kcp_code_str, 0)
+        C_val = metrics_by_date['C'].get(kcp_code_str, 0)
+        D_val = metrics_by_date['D'].get(kcp_code_str, 0)
+        E_val = metrics_by_date['E'].get(kcp_code_str, 0)
+        
+        # Calculate changes
+        changes = calculate_changes(A_val, B_val, C_val, D_val, E_val)
+        
+        # Build row
+        row = {
+            'no': idx,
+            'kode_kanca': kcp_info['kode_kanca'],
+            'kanca': f"{kcp_info['kanca_name']} - KCP {kcp_code}",
+            'kode_uker': kcp_code,           # KCP code as kode_uker
+            'uker': kcp_info['kcp_name'],    # KCP name as uker
+            'A': A_val,
+            'B': B_val,
+            'C': C_val,
+            'D': D_val,
+            'E': E_val,
+            'DtD': changes['DtD'],
+            'DtD_pct': changes['DtD_pct'],
+            'MoM': changes['MoM'],
+            'MoM_pct': changes['MoM_pct'],
+            'MtD': changes['MtD'],
+            'MtD_pct': changes['MtD_pct'],
+            'YtD': changes['YtD'],
+            'YtD_pct': changes['YtD_pct'],
+        }
+        rows.append(row)
+        
+        # Add to totals
+        totals['A'] += A_val
+        totals['B'] += B_val
+        totals['C'] += C_val
+        totals['D'] += D_val
+        totals['E'] += E_val
+    
+    # Calculate totals changes
+    totals_changes = calculate_changes(
+        totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
+    )
+    totals.update(totals_changes)
+    
+    return {
+        'title': f'TOTAL {metric_field.upper()} {segment_filter} KCP ONLY',
+        'rows': rows,
+        'totals': totals
+    }
+
+
+# ============================================================================
+# Main Table Builder Function
+# ============================================================================
+
+def build_metric_tables(selected_date, segment_filter='SMALL', metric_field='os', kol_adk_filter=None):
+    """
+    Build all three tables (KONSOL, KANCA ONLY, KCP ONLY) for a specific metric.
+    
+    Args:
+        selected_date: Date to analyze
+        segment_filter: Segment to filter ('SMALL', 'MEDIUM', 'CC', 'KUR', 'SMALL NCC')
+        metric_field: Metric to calculate ('os', 'dpk', 'npl', 'lar', 'sml', etc.)
+        kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
+    
+    Returns:
+        dict: Contains konsol, kanca, kcp tables and date_columns info
+    """
+    date_columns = get_date_columns(selected_date)
+    
+    return {
+        'konsol': build_konsol_table(date_columns, segment_filter, metric_field, kol_adk_filter),
+        'kanca': build_kanca_only_table(date_columns, segment_filter, metric_field, kol_adk_filter),
+        'kcp': build_kcp_only_table(date_columns, segment_filter, metric_field, kol_adk_filter),
+        'date_columns': date_columns,
+    }

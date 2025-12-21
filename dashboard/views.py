@@ -1376,6 +1376,20 @@ def metric_page_view(request, slug):
     # =================================================================================
     # END SECTION: OS Small Tables
     # =================================================================================
+    
+    # =================================================================================
+    # SECTION: DPK Small Tables - NEW with kol_adk filter
+    #       - Filtered by kol_adk='2' (Kolektibilitas DPK)
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-dpk':
+        from .formulas.metric_handlers import handle_dpk_view
+        
+        # Use modular handler - DPK filtered by kol_adk='2'
+        context.update(handle_dpk_view(request, segment_filter='SMALL'))
+    # =================================================================================
+    # END SECTION: DPK Small Tables
+    # =================================================================================
 
 
     return render(request, 'dashboard/metric_page.html', context)
