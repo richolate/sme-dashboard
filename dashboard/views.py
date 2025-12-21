@@ -1405,5 +1405,33 @@ def metric_page_view(request, slug):
     # END SECTION: NPL Small Tables
     # =================================================================================
 
+    # =================================================================================
+    # SECTION: LR Small Tables
+    #       - LR = Lancar if (kol_adk == '1' AND flag_restruk == 'Y')
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-lr':
+        from .formulas.metric_handlers import handle_lr_view
+        
+        # Use modular handler - LR calculated from calculations.py
+        context.update(handle_lr_view(request, segment_filter='SMALL'))
+    # =================================================================================
+    # END SECTION: LR Small Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: LAR Small Tables
+    #       - LAR = SML + NPL + LR
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-lar':
+        from .formulas.metric_handlers import handle_lar_view
+        
+        # Use modular handler - LAR calculated from calculations.py
+        context.update(handle_lar_view(request, segment_filter='SMALL'))
+    # =================================================================================
+    # END SECTION: LAR Small Tables
+    # =================================================================================
+
 
     return render(request, 'dashboard/metric_page.html', context)

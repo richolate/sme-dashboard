@@ -238,6 +238,8 @@ def handle_npl_pct_view(request, segment_filter='SMALL'):
 def handle_lar_view(request, segment_filter='SMALL'):
     """
     Handle LAR (Loan at Risk) metric view.
+    LAR uses formula: LAR = SML + NPL + LR (from calculations.py)
+    Structure identical to OS SMALL, only the metric field differs.
     
     Args:
         request: Django request object
@@ -252,6 +254,9 @@ def handle_lar_view(request, segment_filter='SMALL'):
     except ValueError:
         selected_date = datetime.now().date()
     
+    # Build tables for LAR metric (uses 'lar' field from calculations.py)
+    # LAR = sml + npl + lr
+    # Table structure same as OS SMALL, only metric_field='lar'
     table_data = build_metric_tables(
         selected_date=selected_date,
         segment_filter=segment_filter,
@@ -321,6 +326,8 @@ def handle_nsb_view(request, segment_filter='SMALL'):
 def handle_lr_view(request, segment_filter='SMALL'):
     """
     Handle LR (Loan Restructured) metric view.
+    LR uses formula: LR = Lancar if (kol_adk == '1' AND flag_restruk == 'Y')
+    Structure identical to OS SMALL, only the metric field differs.
     
     Args:
         request: Django request object
@@ -335,6 +342,9 @@ def handle_lr_view(request, segment_filter='SMALL'):
     except ValueError:
         selected_date = datetime.now().date()
     
+    # Build tables for LR metric (uses 'lr' field from calculations.py)
+    # LR = val_lancar if (kol_adk='1' AND flag_restruk='Y')
+    # Table structure same as OS SMALL, only metric_field='lr'
     table_data = build_metric_tables(
         selected_date=selected_date,
         segment_filter=segment_filter,
