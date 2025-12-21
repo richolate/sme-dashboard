@@ -1992,6 +1992,32 @@ function showToast(message, type = 'info') {
         toastElement.remove();
     });
 }
+
+// ===============================================
+// Date Filter Persistence Handler
+// ===============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const dateFilterForm = document.getElementById('dateFilterForm');
+    const dateInput = document.getElementById('selectedDateInput');
+    
+    if (dateFilterForm && dateInput) {
+        // Save date to localStorage when form is submitted
+        dateFilterForm.addEventListener('submit', function(e) {
+            const selectedDate = dateInput.value;
+            if (selectedDate) {
+                localStorage.setItem('dashboard_selected_date', selectedDate);
+            }
+        });
+    }
+    
+    // If date input has no value but localStorage has one, use it
+    if (dateInput && !dateInput.value) {
+        const storedDate = localStorage.getItem('dashboard_selected_date');
+        if (storedDate) {
+            dateInput.value = storedDate;
+        }
+    }
+});
 </script>
 {% endif %}
 {% comment %}
