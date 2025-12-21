@@ -1391,5 +1391,19 @@ def metric_page_view(request, slug):
     # END SECTION: DPK Small Tables
     # =================================================================================
 
+    # =================================================================================
+    # SECTION: NPL Small Tables
+    #       - NPL = KL + D + M (from calculations.py)
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-npl':
+        from .formulas.metric_handlers import handle_npl_view
+        
+        # Use modular handler - NPL calculated from calculations.py
+        context.update(handle_npl_view(request, segment_filter='SMALL'))
+    # =================================================================================
+    # END SECTION: NPL Small Tables
+    # =================================================================================
+
 
     return render(request, 'dashboard/metric_page.html', context)

@@ -150,6 +150,8 @@ def handle_dpk_pct_view(request, segment_filter='SMALL'):
 def handle_npl_view(request, segment_filter='SMALL'):
     """
     Handle NPL (Non-Performing Loan) metric view.
+    NPL uses formula: NPL = KL + D + M (from calculations.py)
+    Structure identical to OS SMALL, only the metric field differs.
     
     Args:
         request: Django request object
@@ -164,6 +166,9 @@ def handle_npl_view(request, segment_filter='SMALL'):
     except ValueError:
         selected_date = datetime.now().date()
     
+    # Build tables for NPL metric (uses 'npl' field from calculations.py)
+    # NPL = val_kl + val_d + val_m
+    # Table structure same as OS SMALL, only metric_field='npl'
     table_data = build_metric_tables(
         selected_date=selected_date,
         segment_filter=segment_filter,
