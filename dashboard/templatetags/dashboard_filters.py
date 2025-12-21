@@ -86,3 +86,35 @@ def format_number(value, decimals=0):
         return '.'.join(parts) if len(parts) > 1 else parts[0]
     except (ValueError, TypeError):
         return '-'
+
+
+@register.filter
+def format_number_parentheses(value, decimals=0):
+    """
+    Format number divided by 1 million with thousand separator
+    Negative numbers shown with parentheses instead of minus sign
+    Example: -620,546,000,000 -> (620,546)
+    Example: 620,546,000,000 -> 620,546
+    """
+    try:
+        if value is None or value == '' or value == '-':
+            return '-'
+        num = float(value)
+        # Divide by 1 million
+        result = num / 1000000
+        
+        # Check if negative
+        is_negative = result < 0
+        result = abs(result)
+        
+        formatted = floatformat(result, decimals)
+        parts = str(formatted).split('.')
+        parts[0] = '{:,}'.format(int(parts[0].replace(',', '').replace(' ', '')))
+        final_number = '.'.join(parts) if len(parts) > 1 else parts[0]
+        
+        # Return with parentheses if negative
+        if is_negative:
+            return f'({final_number})'
+        return final_number
+    except (ValueError, TypeError):
+        return '-'

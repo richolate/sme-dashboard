@@ -1602,14 +1602,14 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td>{{ row.C|format_number:0|default:"-" }}</td>
                         <td>{{ row.D|format_number:0|default:"-" }}</td>
                         <td>{{ row.E|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.DtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.DtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.DtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.DtD_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MoM >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MoM|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MoM_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MoM_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MtD_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.YtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.YtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.YtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.YtD_pct|floatformat:1 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -1624,14 +1624,14 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.C|format_number:0 }}</strong></td>
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.D|format_number:0 }}</strong></td>
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.konsol.totals.E|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.DtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.DtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.konsol.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MoM_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.konsol.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.MtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.konsol.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.konsol.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.konsol.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.DtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.DtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.DtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.DtD_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.MoM >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.MoM|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.MoM_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.MoM_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.MtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.MtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.MtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.MtD_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.YtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.YtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.konsol.totals.YtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.konsol.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.konsol.totals.YtD_pct|floatformat:1 }}%</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -1702,14 +1702,14 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td>{{ row.C|format_number:0|default:"-" }}</td>
                         <td>{{ row.D|format_number:0|default:"-" }}</td>
                         <td>{{ row.E|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.DtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.DtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.DtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.DtD_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MoM >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MoM|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MoM_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MoM_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MtD_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.YtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.YtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.YtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.YtD_pct|floatformat:1 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -1724,14 +1724,14 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.C|format_number:0 }}</strong></td>
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.D|format_number:0 }}</strong></td>
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kanca.totals.E|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.DtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.DtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kanca.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MoM_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kanca.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.MtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kanca.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kanca.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kanca.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.DtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.DtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.DtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.DtD_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.MoM >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.MoM|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.MoM_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.MoM_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.MtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.MtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.MtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.MtD_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.YtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.YtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kanca.totals.YtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kanca.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kanca.totals.YtD_pct|floatformat:1 }}%</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -1802,14 +1802,14 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td>{{ row.C|format_number:0|default:"-" }}</td>
                         <td>{{ row.D|format_number:0|default:"-" }}</td>
                         <td>{{ row.E|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.DtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MoM_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.MtD_pct|floatformat:2 }}%</td>
-                        <td class="{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD|format_number:0|default:"-" }}</td>
-                        <td class="{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}">{{ row.YtD_pct|floatformat:2 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.DtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.DtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.DtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.DtD_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MoM >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MoM|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MoM_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MoM_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.MtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.MtD_pct|floatformat:1 }}%</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.YtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.YtD|format_number_parentheses:0|default:"-" }}</td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if row.YtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}">{{ row.YtD_pct|floatformat:1 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -1824,14 +1824,14 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.C|format_number:0 }}</strong></td>
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.D|format_number:0 }}</strong></td>
                         <td style="background-color: #538dd5; color: white;"><strong>{{ tables.kcp.totals.E|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.DtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.DtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kcp.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MoM_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kcp.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.MtD_pct|floatformat:2 }}%</strong></td>
-                        <td class="{% if tables.kcp.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD|format_number:0 }}</strong></td>
-                        <td class="{% if tables.kcp.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}"><strong>{{ tables.kcp.totals.YtD_pct|floatformat:2 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.DtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.DtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.DtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.DtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.DtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.DtD_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.MoM >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.MoM >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.MoM|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.MoM_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.MoM_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.MoM_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.MtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.MtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.MtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.MtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.MtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.MtD_pct|floatformat:1 }}%</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.YtD >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.YtD >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.YtD|format_number_parentheses:0 }}</strong></td>
+                        <td class="{% if metric_type in 'dpk,npl,lar,lr' %}{% if tables.kcp.totals.YtD_pct >= 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if tables.kcp.totals.YtD_pct >= 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}"><strong>{{ tables.kcp.totals.YtD_pct|floatformat:1 }}%</strong></td>
                     </tr>
                 </tbody>
             </table>

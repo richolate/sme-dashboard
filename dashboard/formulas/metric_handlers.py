@@ -86,6 +86,7 @@ def handle_dpk_view(request, segment_filter='SMALL'):
     
     context = {
         'show_os_tables': True,
+        'metric_type': 'dpk',  # For conditional color logic in template (inverse colors)
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
@@ -177,6 +178,7 @@ def handle_npl_view(request, segment_filter='SMALL'):
     
     context = {
         'show_os_tables': True,
+        'metric_type': 'npl',  # For conditional color logic in template (inverse colors)
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
@@ -265,6 +267,7 @@ def handle_lar_view(request, segment_filter='SMALL'):
     
     context = {
         'show_os_tables': True,
+        'metric_type': 'lar',  # For conditional color logic in template (inverse colors)
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
@@ -353,6 +356,7 @@ def handle_lr_view(request, segment_filter='SMALL'):
     
     context = {
         'show_os_tables': True,
+        'metric_type': 'lr',  # For conditional color logic in template (inverse colors)
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
