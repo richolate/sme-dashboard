@@ -34,8 +34,9 @@ class LW321(models.Model):
     code = models.CharField(max_length=50, blank=True)
     description = models.CharField(max_length=255, blank=True)
     kol_adk = models.CharField(max_length=50, blank=True)
-    pn_pengelola_singlepn = models.CharField(max_length=150, blank=True)
+    pn_rm = models.CharField(max_length=150, blank=True)  # PN RM (renamed from pn_pengelola_singlepn)
     nama_rm = models.CharField(max_length=150, blank=True)
+    os = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)  # OS kolom baru
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

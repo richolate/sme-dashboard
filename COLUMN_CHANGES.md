@@ -1,67 +1,131 @@
-# Perubahan Struktur Kolom LW321
+# Revisi Kolom dan Fungsi Upload Data# Perubahan Struktur Kolom LW321
 
-## Tanggal: 10 Desember 2025
 
-### ❌ Kolom yang Dihapus (9 kolom)
 
-1. `pn_pengelola_1` - PN PENGELOLA 1
+## Tanggal: 23 Desember 2025## Tanggal: 10 Desember 2025
+
+
+
+## Summary Perubahan### ❌ Kolom yang Dihapus (9 kolom)
+
+
+
+### 1. Perubahan Struktur Kolom1. `pn_pengelola_1` - PN PENGELOLA 1
+
 2. `pn_pemrakarsa` - PN PEMRAKARSA
-3. `pn_referral` - PN REFERRAL
-4. `pn_restruk` - PN RESTRUK
-5. `pn_pengelola_2` - PN PENGELOLA 2
-6. `pn_pemutus` - PN PEMUTUS
-7. `pn_crm` - PN CRM
-8. `pn_rm_referral_naik_segmentasi` - PN RM REFERRAL NAIK SEGMENTASI
-9. `pn_rm_crr` - PN RM CRR
 
-### ✅ Kolom yang Ditambahkan (1 kolom)
+#### COLUMN_FIELD_MAP Terbaru (31 kolom):3. `pn_referral` - PN REFERRAL
 
-1. `nama_rm` - NAMA RM
+```4. `pn_restruk` - PN RESTRUK
 
-### 📋 Struktur Kolom Final (30 kolom)
+1.  PERIODE → periode5. `pn_pengelola_2` - PN PENGELOLA 2
 
-1. PERIODE
-2. KANCA
-3. KODE UKER
-4. UKER
-5. LN TYPE
-6. NOMOR REKENING
-7. NAMA DEBITUR
-8. PLAFON
-9. NEXT PMT DATE
-10. NEXT INT PMT DATE
-11. RATE
-12. TGL MENUNGGAK
-13. TGL REALISASI
-14. TGL JATUH TEMPO
-15. JANGKA WAKTU
-16. FLAG RESTRUK
-17. CIFNO
-18. KOLEKTIBILITAS LANCAR
-19. KOLEKTIBILITAS DPK
-20. KOLEKTIBILITAS KURANG LANCAR
+2.  KANCA → kanca6. `pn_pemutus` - PN PEMUTUS
+
+3.  KODE UKER → kode_uker7. `pn_crm` - PN CRM
+
+4.  UKER → uker8. `pn_rm_referral_naik_segmentasi` - PN RM REFERRAL NAIK SEGMENTASI
+
+5.  LN TYPE → ln_type9. `pn_rm_crr` - PN RM CRR
+
+6.  NOMOR REKENING → nomor_rekening
+
+7.  NAMA DEBITUR → nama_debitur### ✅ Kolom yang Ditambahkan (1 kolom)
+
+8.  PLAFON → plafon
+
+9.  NEXT PMT DATE → next_pmt_date1. `nama_rm` - NAMA RM
+
+10. NEXT INT PMT DATE → next_int_pmt_date
+
+11. RATE → rate### 📋 Struktur Kolom Final (30 kolom)
+
+12. TGL MENUNGGAK → tgl_menunggak
+
+13. TGL REALISASI → tgl_realisasi1. PERIODE
+
+14. TGL JATUH TEMPO → tgl_jatuh_tempo2. KANCA
+
+15. JANGKA WAKTU → jangka_waktu3. KODE UKER
+
+16. FLAG RESTRUK → flag_restruk4. UKER
+
+17. CIFNO → cif_no5. LN TYPE
+
+18. KOLEKTIBILITAS LANCAR → kolektibilitas_lancar6. NOMOR REKENING
+
+19. KOLEKTIBILITAS DPK → kolektibilitas_dpk7. NAMA DEBITUR
+
+20. KOLEKTIBILITAS KURANG LANCAR → kolektibilitas_kurang_lancar8. PLAFON
+
+21. KOLEKTIBILITAS DIRAGUKAN → kolektibilitas_diragukan9. NEXT PMT DATE
+
+22. KOLEKTIBILITAS MACET → kolektibilitas_macet10. NEXT INT PMT DATE
+
+23. TUNGGAKAN POKOK → tunggakan_pokok11. RATE
+
+24. TUNGGAKAN BUNGA → tunggakan_bunga12. TGL MENUNGGAK
+
+25. TUNGGAKAN PINALTI → tunggakan_pinalti13. TGL REALISASI
+
+26. CODE → code14. TGL JATUH TEMPO
+
+27. DESCRIPTION → description15. JANGKA WAKTU
+
+28. KOL_ADK → kol_adk16. FLAG RESTRUK
+
+29. PN RM → pn_rm (RENAMED dari pn_pengelola_singlepn)17. CIFNO
+
+30. NAMA RM → nama_rm18. KOLEKTIBILITAS LANCAR
+
+31. OS → os (KOLOM BARU)19. KOLEKTIBILITAS DPK
+
+```20. KOLEKTIBILITAS KURANG LANCAR
+
 21. KOLEKTIBILITAS DIRAGUKAN
-22. KOLEKTIBILITAS MACET
+
+### 2. Rumus Perhitungan Baru22. KOLEKTIBILITAS MACET
+
 23. TUNGGAKAN POKOK
-24. TUNGGAKAN BUNGA
-25. TUNGGAKAN PINALTI
+
+**DPK/SML:** `SUM(OS) WHERE KOL_ADK = '2'`  24. TUNGGAKAN BUNGA
+
+**NPL:** `SUM(OS) WHERE KOL_ADK IN ('3', '4', '5')`  25. TUNGGAKAN PINALTI
+
 26. CODE
-27. DESCRIPTION
+
+### 3. Fitur Upload Baru27. DESCRIPTION
+
 28. KOL_ADK
-29. PN PENGELOLA SINGLEPN
-30. **NAMA RM** ← Kolom baru
 
----
+✅ **Preview Modal** - Validasi 10 sample data sebelum upload  29. PN PENGELOLA SINGLEPN
 
-## File yang Diubah
+✅ **Color Coding** - Hijau (valid), Merah (missing)  30. **NAMA RM** ← Kolom baru
 
-### 1. `dashboard/models.py`
-- Hapus 9 field `pn_*` 
-- Tambah field `nama_rm`
+✅ **Auto TRIM** - Semua string di-trim otomatis  
 
-### 2. `data_management/utils.py`
+✅ **Statistik Informatif** - Record count, customers, ukers per tanggal  ---
+
+
+
+## Testing Required## File yang Diubah
+
+
+
+1. Upload file dengan kolom OS### 1. `dashboard/models.py`
+
+2. Verify DPK = SUM(OS WHERE KOL_ADK='2')- Hapus 9 field `pn_*` 
+
+3. Verify NPL = SUM(OS WHERE KOL_ADK IN ('3','4','5'))- Tambah field `nama_rm`
+
+4. Test preview modal functionality
+
+5. Check TRIM working### 2. `data_management/utils.py`
+
 - Update `COLUMN_FIELD_MAP` 
-- Hapus mapping 9 kolom PN lama
+
+**Status:** ✅ READY FOR TESTING- Hapus mapping 9 kolom PN lama
+
 - Tambah mapping `'NAMA RM': 'nama_rm'`
 - Update format nama kolom dengan spasi (KODE UKER, LN TYPE, dll)
 

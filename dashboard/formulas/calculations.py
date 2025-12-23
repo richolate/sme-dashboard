@@ -1,11 +1,18 @@
 from django.db.models import Sum, F, Case, When, Value, DecimalField, ExpressionWrapper, Count
-from .utils import cast_to_decimal
+from .utils import cast_to_decimal, safe_decimal_field
 
 def annotate_metrics(queryset):
     """
-    Annotates the queryset with OS, SML, NPL, LR, LAR fields.
+    Annotates the queryset with outstanding, SML, NPL, LR, LAR fields.
+    
+    IMPORTANT: 
+    - OS column already exists in database (from Excel file) as 'os' field (DecimalField)
+    - Outstanding (calculated) will be named 'outstanding' to avoid conflict
+    - DPK/SML = SUM(OS) WHERE KOL_ADK = '2'
+    - NPL = SUM(OS) WHERE KOL_ADK IN ('3', '4', '5')
     """
     # First, ensure we have numeric values for the base fields
+    # Keep legacy kolektibilitas fields for backward compatibility (these are CharFields)
     qs = queryset.annotate(
         val_lancar=cast_to_decimal('kolektibilitas_lancar'),
         val_dpk=cast_to_decimal('kolektibilitas_dpk'),
@@ -13,28 +20,52 @@ def annotate_metrics(queryset):
         val_d=cast_to_decimal('kolektibilitas_diragukan'),
         val_m=cast_to_decimal('kolektibilitas_macet'),
     )
-
-    # Calculate OS (Outstanding)
+    
+    # Safe access to OS field (already DecimalField in model, just handle NULL)
     qs = qs.annotate(
-        os=ExpressionWrapper(
+        val_os=safe_decimal_field('os')
+    )
+
+    # Calculate Outstanding from legacy fields (for fallback)
+    qs = qs.annotate(
+        os_from_legacy=ExpressionWrapper(
             F('val_lancar') + F('val_dpk') + F('val_kl') + F('val_d') + F('val_m'),
+            output_field=DecimalField(max_digits=20, decimal_places=2)
+        )
+    )
+    
+    # Outstanding: Use OS from file (val_os) if not zero, otherwise use calculated from legacy
+    # Rename to 'outstanding' to avoid conflict with model field 'os'
+    qs = qs.annotate(
+        outstanding=Case(
+            When(val_os__gt=0, then=F('val_os')),
+            default=F('os_from_legacy'),
             output_field=DecimalField(max_digits=20, decimal_places=2)
         )
     )
 
     # Calculate NPL (Non-Performing Loan)
-    # NPL = KL + D + M
+    # NEW FORMULA: SUM(OS) WHERE KOL_ADK IN ('3', '4', '5')
+    # Use val_os if > 0, otherwise use legacy calculation
     qs = qs.annotate(
-        npl=ExpressionWrapper(
-            F('val_kl') + F('val_d') + F('val_m'),
+        npl=Case(
+            When(kol_adk__in=['3', '4', '5'], val_os__gt=0, then=F('val_os')),
+            When(kol_adk__in=['3', '4', '5'], val_os=0, then=F('val_kl') + F('val_d') + F('val_m')),
+            default=Value(0),
             output_field=DecimalField(max_digits=20, decimal_places=2)
         )
     )
 
-    # Calculate SML (Special Mention Loan)
-    # SML = DPK only
+    # Calculate SML (Special Mention Loan) / DPK
+    # NEW FORMULA: SUM(OS) WHERE KOL_ADK = '2'
+    # Use val_os if > 0, otherwise use legacy calculation
     qs = qs.annotate(
-        sml=F('val_dpk')
+        sml=Case(
+            When(kol_adk='2', val_os__gt=0, then=F('val_os')),
+            When(kol_adk='2', val_os=0, then=F('val_dpk')),
+            default=Value(0),
+            output_field=DecimalField(max_digits=20, decimal_places=2)
+        )
     )
 
     # Calculate LR (Loan Restructured - Current)

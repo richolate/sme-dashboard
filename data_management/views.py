@@ -3,9 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.http import JsonResponse
 from .models import UploadHistory
 from .forms import UploadDataForm
-from .utils import process_uploaded_file
+from .utils import process_uploaded_file, validate_file_structure
 from dashboard.models import LW321
 
 
@@ -20,6 +21,54 @@ def admin_required(view_func):
             return redirect('dashboard:home')
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+@admin_required
+def validate_upload_preview(request):
+    """
+    AJAX endpoint untuk validasi file dan preview 10 sample data
+    Dipanggil saat user memilih file sebelum upload
+    """
+    if request.method == 'POST' and request.FILES.get('file'):
+        upload_file = request.FILES['file']
+        
+        # Save temporary file
+        import tempfile
+        import os
+        
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, upload_file.name)
+        
+        try:
+            with open(temp_path, 'wb+') as destination:
+                for chunk in upload_file.chunks():
+                    destination.write(chunk)
+            
+            # Validate file structure
+            validation_result = validate_file_structure(temp_path)
+            
+            # Cleanup
+            os.remove(temp_path)
+            os.rmdir(temp_dir)
+            
+            return JsonResponse(validation_result)
+            
+        except Exception as e:
+            # Cleanup on error
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            if os.path.exists(temp_dir):
+                os.rmdir(temp_dir)
+            
+            return JsonResponse({
+                'valid': False,
+                'error': str(e)
+            })
+    
+    return JsonResponse({
+        'valid': False,
+        'error': 'No file provided'
+    })
 
 
 @admin_required
@@ -72,19 +121,35 @@ def upload_data_view(request):
     else:
         form = UploadDataForm()
     
-    # Get statistics for display
-    from django.db.models import Count
-    available_dates = LW321.objects.values('periode').annotate(
-        count=Count('id')
-    ).order_by('-periode')[:10]
+    # Get statistics for display - Daftar Tanggal yang Tersedia (lebih informatif)
+    from django.db.models import Count, Min, Max
+    
+    # Get all available dates with record count
+    date_stats = LW321.objects.values('periode').annotate(
+        record_count=Count('id'),
+        unique_customers=Count('cif_no', distinct=True),
+        unique_ukers=Count('kode_uker', distinct=True)
+    ).order_by('-periode')
     
     total_records = LW321.objects.count()
+    total_dates = date_stats.count()
+    
+    # Get date range
+    if date_stats.exists():
+        oldest_date = date_stats.last()['periode']
+        newest_date = date_stats.first()['periode']
+    else:
+        oldest_date = None
+        newest_date = None
     
     context = {
         'form': form,
         'page_title': 'Upload Data',
-        'available_dates': available_dates,
+        'date_stats': date_stats,  # Daftar tanggal yang tersedia dengan detail
         'total_records': total_records,
+        'total_dates': total_dates,
+        'oldest_date': oldest_date,
+        'newest_date': newest_date,
     }
     return render(request, 'data_management/upload_data.html', context)
 

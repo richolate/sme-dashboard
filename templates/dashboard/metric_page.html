@@ -7,6 +7,15 @@
 
 {% block content %}
 
+{% if no_data %}
+<div class="alert alert-warning" role="alert">
+    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Tidak Ada Data</h5>
+    <p>Belum ada data yang tersedia di database. Silakan upload data terlebih dahulu melalui menu <a href="{% url 'data_management:upload_data' %}" class="alert-link">Upload Data</a>.</p>
+    <hr>
+    <p class="mb-0">Setelah data berhasil di-upload, halaman ini akan menampilkan tabel dan grafik yang sesuai.</p>
+</div>
+{% else %}
+
 {% if show_chart %}
 <div class="card mb-4">
     <div class="card-header bg-white">
@@ -2058,4 +2067,7 @@ END SECTION: OS Tables
         Belum ada konfigurasi tabel khusus untuk halaman ini. Gunakan area ini untuk menampilkan ringkasan atau visualisasi sesuai kebutuhan.
     </div>
 {% endif %}
+
+{% endif %} {# End of no_data check #}
+
 {% endblock %}

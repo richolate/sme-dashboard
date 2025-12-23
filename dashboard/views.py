@@ -77,6 +77,12 @@ def metric_page_view(request, slug):
         'tables': page.tables,
         'description': page.description,
     }
+    
+    # Check if database has data
+    has_data = LW321.objects.exists()
+    if not has_data:
+        context['no_data'] = True
+        return render(request, 'dashboard/metric_page.html', context)
 
     # =================================================================================
     # SECTION: Timeseries OS Logic (Grouped by Month-Year)

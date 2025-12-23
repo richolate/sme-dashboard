@@ -3,7 +3,84 @@
 
 {% block page_title %}Upload Data{% endblock %}
 
+{% block extra_css %}
+<style>
+    .column-status-ok { background-color: #d4edda; }
+    .column-status-missing { background-color: #f8d7da; }
+    .validation-table { font-size: 0.85rem; }
+    .validation-table th { position: sticky; top: 0; background-color: #fff; z-index: 1; }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Modal Preview & Validation -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i class="fas fa-search"></i> Preview & Validasi Data
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="validationLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Memvalidasi struktur file...</p>
+                </div>
+                
+                <div id="validationResult" style="display: none;">
+                    <!-- Validation Summary -->
+                    <div id="validationSummary" class="alert" role="alert">
+                        <h6 class="alert-heading"><i class="fas fa-check-circle"></i> Status Validasi</h6>
+                        <div id="validationMessage"></div>
+                    </div>
+                    
+                    <!-- Missing Columns Warning -->
+                    <div id="missingColumnsAlert" class="alert alert-danger" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Kolom yang Hilang/Tidak Sesuai:</h6>
+                        <ul id="missingColumnsList" class="mb-0"></ul>
+                        <p class="mb-0 mt-2"><small>Pastikan nama kolom di Excel <strong>persis sama</strong> dengan yang diharapkan (huruf besar/kecil, spasi, dll).</small></p>
+                    </div>
+                    
+                    <!-- Extra Columns Info -->
+                    <div id="extraColumnsAlert" class="alert alert-warning" style="display: none;">
+                        <h6><i class="fas fa-info-circle"></i> Kolom Tambahan di File (akan diabaikan):</h6>
+                        <ul id="extraColumnsList" class="mb-0"></ul>
+                    </div>
+                    
+                    <!-- Sample Data Table -->
+                    <h6 class="mt-3">Preview 10 Baris Pertama:</h6>
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-sm table-bordered validation-table">
+                            <thead id="previewTableHead"></thead>
+                            <tbody id="previewTableBody"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <p class="text-muted small">
+                            <i class="fas fa-info-circle"></i> 
+                            <span style="background-color: #d4edda; padding: 2px 6px;">Hijau</span> = Kolom ada di file dengan nama yang benar | 
+                            <span style="background-color: #f8d7da; padding: 2px 6px;">Merah</span> = Kolom tidak ada atau nama tidak sesuai
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Batal
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmUploadBtn" disabled>
+                    <i class="fas fa-upload"></i> Lanjutkan Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Loading Overlay -->
 <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 9999;">
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white;">
@@ -39,15 +116,15 @@
                         <li>File maksimal 100MB</li>
                         <li>Format yang didukung: .xlsx, .xls, .csv</li>
                         <li>Data akan diproses dan disimpan ke database PostgreSQL</li>
-                        <li><strong>Pastikan kolom PERIODE berisi tanggal dengan format DD/MM/YYYY</strong></li>
+                        <li><strong>Kolom wajib: PERIODE, NOMOR REKENING, CIFNO, KOL_ADK, OS</strong></li>
                     </ul>
                 </div>
 
                 <form method="post" enctype="multipart/form-data" id="uploadForm">
                     {% csrf_token %}
                     {{ form.as_p }}
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <i class="fas fa-upload"></i> Upload File
+                    <button type="button" class="btn btn-primary" id="previewBtn" disabled>
+                        <i class="fas fa-eye"></i> Preview & Validasi
                     </button>
                     <a href="{% url 'data_management:upload_history' %}" class="btn btn-secondary">
                         <i class="fas fa-history"></i> Lihat Riwayat
@@ -58,78 +135,66 @@
     </div>
 
     <div class="col-md-4">
-
+        <!-- Statistik Data -->
         <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informasi</h6>
-            </div>
-            <div class="card-body">
-                <h6>Struktur File:</h6>
-                <p class="small text-muted">
-                    File harus memiliki kolom-kolom berikut (38 kolom total):
-                </p>
-                <ul class="small text-muted">
-                    <li>customer_id</li>
-                    <li>loan_id</li>
-                    <li>loan_date</li>
-                    <li>amount</li>
-                    <li>status</li>
-                    <li>... dan kolom lainnya</li>
-                </ul>
-
-                <hr>
-
-                <h6>Download Template:</h6>
-                <button class="btn btn-sm btn-outline-primary w-100">
-                    <i class="fas fa-download"></i> Download Template Excel
-                </button>
-            </div>
-        </div>
-
-        {% comment %} <div class="card mt-3">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-clock"></i> Upload Terakhir</h6>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small">Belum ada data upload</p>
-            </div>
-        </div> {% endcomment %}
-
-        <!-- ========================= -->
-        <!-- Card Statistik Data Baru -->
-        <!-- ========================= -->
-        <div class="card mt-3">
             <div class="card-header">
                 <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Statistik Data</h6>
             </div>
             <div class="card-body">
-                <div class="mb-3">
-                    <small class="text-muted">Total Data</small>
-                    <h4>{{ total_records|default:0|floatformat:0 }}</h4>
-                </div>
-
-                {% if available_dates %}
-                <div class="mb-3">
-                    <small class="text-muted">Tanggal Tersedia</small>
-                    <h4>{{ available_dates|length }}</h4>
-                </div>
-                
-                <hr>
-                
-                <h6 class="small">10 Tanggal Terakhir:</h6>
-                <div class="list-group list-group-flush">
-                    {% for item in available_dates %}
-                    <div class="list-group-item px-0 py-1 small">
-                        <i class="fas fa-calendar text-primary"></i> 
-                        <strong>{{ item.periode }}</strong>
-                        <span class="badge bg-secondary float-end">{{ item.count }} records</span>
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Total Records</small>
+                        <h4 class="mb-0">{{ total_records|default:0|floatformat:0 }}</h4>
                     </div>
-                    {% endfor %}
+                    <div class="col-6">
+                        <small class="text-muted d-block">Total Tanggal</small>
+                        <h4 class="mb-0">{{ total_dates|default:0 }}</h4>
+                    </div>
+                </div>
+                
+                {% if oldest_date and newest_date %}
+                <div class="alert alert-light mb-0 small">
+                    <i class="fas fa-calendar-alt"></i> 
+                    <strong>Range:</strong> {{ oldest_date }} - {{ newest_date }}
                 </div>
                 {% endif %}
             </div>
         </div>
-        
+
+        <!-- Daftar Tanggal yang Tersedia -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-calendar-check"></i> Daftar Tanggal yang Tersedia</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if date_stats %}
+                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    {% for item in date_stats %}
+                    <div class="list-group-item px-3 py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <i class="fas fa-calendar text-primary"></i> 
+                                <strong>{{ item.periode }}</strong>
+                            </div>
+                            <span class="badge bg-primary">{{ item.record_count }} rows</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-users"></i> {{ item.unique_customers }} customers | 
+                            <i class="fas fa-building"></i> {{ item.unique_ukers }} ukers
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p class="mb-0">Belum ada data tersedia</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tips Upload -->
         <div class="card mt-3">
             <div class="card-header">
                 <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Tips Upload</h6>
@@ -137,13 +202,13 @@
             <div class="card-body">
                 <ul class="small mb-0">
                     <li>Upload data harian secara rutin</li>
-                    <li>Pastikan kolom <strong>PERIODE</strong> terisi dengan benar</li>
-                    <li>Nomor rekening <strong>boleh duplikat</strong> untuk tanggal berbeda</li>
+                    <li>Pastikan kolom <strong>PERIODE, CIFNO, KOL_ADK, OS</strong> terisi dengan benar</li>
+                    <li>Data akan otomatis di-TRIM (spasi dihapus)</li>
+                    <li>Preview validasi akan muncul setelah pilih file</li>
                     <li>Jika salah upload, gunakan <strong>Delete by Date</strong></li>
                 </ul>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -151,70 +216,184 @@
 
 {% block extra_js %}
 <script>
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    document.addEventListener('DOMContentLoaded', function() {
         const fileInput = document.querySelector('input[type="file"]');
-        const submitBtn = document.getElementById('submitBtn');
-        const loadingOverlay = document.getElementById('loadingOverlay');
+        const previewBtn = document.getElementById('previewBtn');
+        const confirmUploadBtn = document.getElementById('confirmUploadBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
         
-        // Check if file is selected
-        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            e.preventDefault();
-            alert('Harap pilih file terlebih dahulu');
-            return false;
-        }
+        let validationPassed = false;
         
-        // Check file size (max 100MB)
-        const file = fileInput.files[0];
-        const maxSize = 100 * 1024 * 1024; // 100MB in bytes
-        if (file.size > maxSize) {
-            e.preventDefault();
-            alert('Ukuran file terlalu besar! Maksimal 100MB');
-            return false;
-        }
+        // Enable preview button when file selected
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                previewBtn.disabled = false;
+            } else {
+                previewBtn.disabled = true;
+            }
+        });
         
-        // Check file extension
-        const validExtensions = ['.xlsx', '.xls', '.csv'];
-        const fileName = file.name.toLowerCase();
-        const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
-        
-        if (!isValidExtension) {
-            e.preventDefault();
-            alert('Format file tidak valid! Gunakan format .xlsx, .xls, atau .csv');
-            return false;
-        }
-        
-        // Show loading overlay
-        loadingOverlay.style.display = 'block';
-        
-        // Disable submit button
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengupload...';
-        
-        // Allow form to submit
-        return true;
-    });
-    
-    // File input validation and preview
-    document.querySelector('input[type="file"]')?.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
-            const fileName = file.name;
-            
-            // Show file info
-            const existingInfo = document.getElementById('fileInfo');
-            if (existingInfo) {
-                existingInfo.remove();
+        // Show preview modal and validate
+        previewBtn.addEventListener('click', function() {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Pilih file terlebih dahulu');
+                return;
             }
             
-            const fileInfo = document.createElement('div');
-            fileInfo.id = 'fileInfo';
-            fileInfo.className = 'alert alert-info mt-2';
-            fileInfo.innerHTML = `
-                <i class="fas fa-file"></i> 
-                <strong>${fileName}</strong> (${fileSize} MB)
-            `;
-            e.target.parentElement.appendChild(fileInfo);
+            // Show modal
+            previewModal.show();
+            
+            // Show loading
+            document.getElementById('validationLoading').style.display = 'block';
+            document.getElementById('validationResult').style.display = 'none';
+            confirmUploadBtn.disabled = true;
+            validationPassed = false;
+            
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            // Send to validation endpoint
+            fetch('{% url "data_management:validate_upload" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading
+                document.getElementById('validationLoading').style.display = 'none';
+                document.getElementById('validationResult').style.display = 'block';
+                
+                if (data.error) {
+                    showValidationError(data.error);
+                    return;
+                }
+                
+                // Show validation result
+                showValidationResult(data);
+                
+                // Enable upload button if valid
+                if (data.valid) {
+                    confirmUploadBtn.disabled = false;
+                    validationPassed = true;
+                } else {
+                    confirmUploadBtn.disabled = true;
+                    validationPassed = false;
+                }
+            })
+            .catch(error => {
+                document.getElementById('validationLoading').style.display = 'none';
+                showValidationError('Gagal memvalidasi file: ' + error.message);
+            });
+        });
+        
+        // Confirm upload
+        confirmUploadBtn.addEventListener('click', function() {
+            if (validationPassed) {
+                previewModal.hide();
+                document.getElementById('loadingOverlay').style.display = 'block';
+                uploadForm.submit();
+            }
+        });
+        
+        function showValidationError(message) {
+            const summary = document.getElementById('validationSummary');
+            summary.className = 'alert alert-danger';
+            document.getElementById('validationMessage').innerHTML = '<p><strong>Error:</strong> ' + message + '</p>';
+        }
+        
+        function showValidationResult(data) {
+            const summary = document.getElementById('validationSummary');
+            const message = document.getElementById('validationMessage');
+            const missingAlert = document.getElementById('missingColumnsAlert');
+            const missingList = document.getElementById('missingColumnsList');
+            const extraAlert = document.getElementById('extraColumnsAlert');
+            const extraList = document.getElementById('extraColumnsList');
+            
+            if (data.valid) {
+                summary.className = 'alert alert-success';
+                message.innerHTML = '<p><i class="fas fa-check-circle"></i> <strong>File valid!</strong> Semua kolom yang diperlukan tersedia.</p>';
+                missingAlert.style.display = 'none';
+            } else {
+                summary.className = 'alert alert-warning';
+                message.innerHTML = '<p><i class="fas fa-exclamation-triangle"></i> <strong>File tidak valid.</strong> Ada kolom yang hilang atau nama tidak sesuai.</p>';
+                
+                if (data.missing_columns && data.missing_columns.length > 0) {
+                    missingAlert.style.display = 'block';
+                    missingList.innerHTML = '';
+                    data.missing_columns.forEach(col => {
+                        const li = document.createElement('li');
+                        li.innerHTML = '<strong>' + col + '</strong>';
+                        missingList.appendChild(li);
+                    });
+                }
+            }
+            
+            // Show extra columns if any
+            if (data.extra_columns && data.extra_columns.length > 0) {
+                extraAlert.style.display = 'block';
+                extraList.innerHTML = '';
+                data.extra_columns.forEach(col => {
+                    const li = document.createElement('li');
+                    li.textContent = col;
+                    extraList.appendChild(li);
+                });
+            } else {
+                extraAlert.style.display = 'none';
+            }
+            
+            // Show sample data table
+            if (data.sample_data && data.sample_data.length > 0) {
+                renderSampleTable(data.sample_data, data.expected_columns);
+            }
+        }
+        
+        function renderSampleTable(sampleData, expectedColumns) {
+            const thead = document.getElementById('previewTableHead');
+            const tbody = document.getElementById('previewTableBody');
+            
+            // Clear previous data
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            
+            // Create header
+            const headerRow = document.createElement('tr');
+            expectedColumns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                th.style.fontSize = '0.75rem';
+                th.style.whiteSpace = 'nowrap';
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            
+            // Create rows
+            sampleData.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                expectedColumns.forEach(col => {
+                    const td = document.createElement('td');
+                    const cellData = row[col];
+                    
+                    if (cellData) {
+                        td.textContent = cellData.value !== null && cellData.value !== undefined ? cellData.value : '-';
+                        td.className = cellData.status === 'ok' ? 'column-status-ok' : 'column-status-missing';
+                    } else {
+                        td.textContent = '-';
+                        td.className = 'column-status-missing';
+                    }
+                    
+                    td.style.fontSize = '0.75rem';
+                    td.style.whiteSpace = 'nowrap';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
         }
     });
 </script>
