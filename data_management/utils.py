@@ -33,38 +33,11 @@ COLUMN_FIELD_MAP = {
     'CODE': 'code',
     'DESCRIPTION': 'description',
     'KOL_ADK': 'kol_adk',
-    'PN RM': 'pn_rm',  # Ganti nama kolom
+    'PN RM': 'pn_rm',
     'NAMA RM': 'nama_rm',
-    'OS': 'os',  # Kolom baru, berisi angka
+    'OS': 'os',
 }
 
-# Alternative column names (dengan underscore) - untuk fleksibilitas user
-COLUMN_FIELD_MAP_ALTERNATIVE = {
-    'KODE_UKER': 'kode_uker',
-    'LN_TYPE': 'ln_type',
-    'NOMOR_REKENING': 'nomor_rekening',
-    'NAMA_DEBITUR': 'nama_debitur',
-    'NEXT_PMT_DATE': 'next_pmt_date',
-    'NEXT_INT_PMT_DATE': 'next_int_pmt_date',
-    'TGL_MENUNGGAK': 'tgl_menunggak',
-    'TGL_REALISASI': 'tgl_realisasi',
-    'TGL_JATUH_TEMPO': 'tgl_jatuh_tempo',
-    'JANGKA_WAKTU': 'jangka_waktu',
-    'FLAG_RESTRUK': 'flag_restruk',
-    'KOLEKTIBILITAS_LANCAR': 'kolektibilitas_lancar',
-    'KOLEKTIBILITAS_DPK': 'kolektibilitas_dpk',
-    'KOLEKTIBILITAS_KURANG_LANCAR': 'kolektibilitas_kurang_lancar',
-    'KOLEKTIBILITAS_DIRAGUKAN': 'kolektibilitas_diragukan',
-    'KOLEKTIBILITAS_MACET': 'kolektibilitas_macet',
-    'TUNGGAKAN_POKOK': 'tunggakan_pokok',
-    'TUNGGAKAN_BUNGA': 'tunggakan_bunga',
-    'TUNGGAKAN_PINALTI': 'tunggakan_pinalti',
-    'PN_RM': 'pn_rm',
-    'NAMA_RM': 'nama_rm',
-}
-
-# Gabungkan kedua mapping untuk lookup
-COLUMN_FIELD_MAP_COMBINED = {**COLUMN_FIELD_MAP, **COLUMN_FIELD_MAP_ALTERNATIVE}
 
 DATE_FIELDS = {
     'next_pmt_date',
@@ -132,30 +105,10 @@ def _parse_string(value):
     return str(value).strip()
 
 
-def has_column(col_name, columns_list):
-    """
-    Helper function untuk cek apakah kolom ada dengan fleksibilitas format.
-    Support format dengan spasi atau underscore.
-    
-    Args:
-        col_name: Nama kolom yang dicari
-        columns_list: List kolom yang tersedia
-    
-    Returns:
-        bool: True jika kolom ditemukan (dengan format spasi atau underscore)
-    """
-    if col_name in columns_list:
-        return True
-    if col_name.replace(' ', '_') in columns_list:
-        return True
-    if col_name.replace('_', ' ') in columns_list:
-        return True
-    return False
-
-
 def validate_file_structure(file_path):
     """
-    Validasi struktur file dan return sample data untuk preview
+    Validasi struktur file dan return sample data untuk preview.
+    STRICT VALIDATION: Hanya menerima format kolom dengan spasi (tidak ada keringanan underscore).
     
     Args:
         file_path: Path ke file yang akan divalidasi
@@ -224,62 +177,35 @@ def validate_file_structure(file_path):
         expected_columns = set(expected_columns_ordered)
         actual_columns = set(df.columns)
         
-        # Fungsi helper untuk mengecek apakah kolom ada (termasuk alternatif underscore)
-        def find_column_in_file(expected_col, actual_cols):
-            """
-            Cari kolom di file, support format spasi atau underscore
-            Returns: (found_column_name, is_found)
-            """
-            # Cek exact match
-            if expected_col in actual_cols:
-                return expected_col, True
-            
-            # Cek alternative dengan underscore
-            alt_col = expected_col.replace(' ', '_')
-            if alt_col in actual_cols:
-                return alt_col, True
-            
-            return None, False
+        # STRICT VALIDATION: Hanya terima format dengan spasi (sesuai expected_columns_ordered)
+        # Kolom yang hilang (tidak ada exact match)
+        missing_columns = expected_columns - actual_columns
         
-        # Mapping kolom yang ditemukan
-        found_columns = {}  # expected_col -> actual_col (di file)
-        for col in expected_columns_ordered:
-            found_col, is_found = find_column_in_file(col, actual_columns)
-            if is_found:
-                found_columns[col] = found_col
-        
-        # Kolom yang hilang (tidak ada dalam format spasi atau underscore)
-        missing_columns = set([col for col in expected_columns_ordered if col not in found_columns])
-        
-        # Kolom extra (ada di file tapi tidak diharapkan)
-        all_expected_variations = set(expected_columns_ordered)
-        for col in expected_columns_ordered:
-            all_expected_variations.add(col.replace(' ', '_'))
-        extra_columns = actual_columns - all_expected_variations
+        # Kolom extra (ada di file tapi tidak ada di expected)
+        extra_columns = actual_columns - expected_columns
         
         # Prepare sample data dengan status validasi per kolom
         # IMPORTANT: Urutan kolom sesuai expected_columns_ordered
-        # Status kolom: 'ok' = kolom ada di file, 'missing' = kolom tidak ada di file
+        # Status kolom: 'ok' = kolom ada di file (exact match), 'missing' = kolom tidak ada
         sample_data = []
         for index, row in df.iterrows():
             row_data = {}
             for col in expected_columns_ordered:  # Gunakan urutan yang sudah ditentukan
-                if col in found_columns:
-                    # Kolom ada di file Excel (dengan format spasi atau underscore) - status OK (hijau)
-                    actual_col = found_columns[col]
-                    value = row.get(actual_col)
+                if col in actual_columns:
+                    # Kolom ada di file Excel dengan nama yang persis - status OK (hijau)
+                    value = row.get(col)
                     # Apply TRIM untuk string values
                     if pd.notna(value) and isinstance(value, str):
                         value = value.strip()
                     row_data[col] = {
                         'value': value,
-                        'status': 'ok'  # Hijau: kolom ada
+                        'status': 'ok'  # Hijau: kolom ada dengan nama yang benar
                     }
                 else:
-                    # Kolom tidak ada di file Excel - status MISSING (merah)
+                    # Kolom tidak ada di file Excel (atau nama tidak sesuai) - status MISSING (merah)
                     row_data[col] = {
                         'value': '-',
-                        'status': 'missing'  # Merah: kolom tidak ada
+                        'status': 'missing'  # Merah: kolom tidak ada atau nama salah
                     }
             sample_data.append(row_data)
         
@@ -333,19 +259,14 @@ def process_uploaded_file(upload_history):
         # Debug: Log kolom yang ditemukan
         print(f"[DEBUG] Kolom di file Excel: {list(df.columns)}")
         
-        # Check kolom yang diperlukan (support format spasi atau underscore)
-        required_columns_check = []
-        for req_col in ['PERIODE', 'NOMOR REKENING', 'CIFNO']:
-            col_exists = has_column(req_col, df.columns)
-            print(f"[DEBUG] Checking '{req_col}': {col_exists}")
-            if not col_exists:
-                required_columns_check.append(req_col)
+        # Check kolom yang diperlukan (STRICT: hanya format spasi)
+        required_columns = ['PERIODE', 'NOMOR REKENING', 'CIFNO']
+        missing_columns = [col for col in required_columns if col not in df.columns]
         
-        if required_columns_check:
-            print(f"[DEBUG] Missing columns: {required_columns_check}")
+        if missing_columns:
             return {
                 'success': False,
-                'error': f'Kolom yang diperlukan tidak ditemukan: {", ".join(required_columns_check)}. Kolom yang ada: {", ".join(df.columns)}'
+                'error': f'Kolom yang diperlukan tidak ditemukan: {", ".join(missing_columns)}. Kolom yang ada: {", ".join(df.columns)}'
             }
 
         total_rows = len(df)
@@ -358,8 +279,8 @@ def process_uploaded_file(upload_history):
             try:
                 record = {}
 
-                # Gunakan COLUMN_FIELD_MAP_COMBINED untuk support format spasi dan underscore
-                for source_column, target_field in COLUMN_FIELD_MAP_COMBINED.items():
+                # Process setiap kolom berdasarkan COLUMN_FIELD_MAP (format dengan spasi)
+                for source_column, target_field in COLUMN_FIELD_MAP.items():
                     # Skip jika kolom tidak ada di DataFrame
                     if source_column not in df.columns:
                         continue
@@ -381,17 +302,11 @@ def process_uploaded_file(upload_history):
 
                 nomor_rekening = record.get('nomor_rekening')
                 if not nomor_rekening:
-                    # Debug: cek apakah kolom NOMOR REKENING ada di file (format spasi atau underscore)
-                    if not has_column('NOMOR REKENING', df.columns):
-                        raise ValueError('Kolom "NOMOR REKENING" atau "NOMOR_REKENING" tidak ditemukan di file Excel. Kolom yang tersedia: ' + ', '.join(df.columns))
+                    # Debug: cek apakah kolom NOMOR REKENING ada di file
+                    if 'NOMOR REKENING' not in df.columns:
+                        raise ValueError('Kolom "NOMOR REKENING" tidak ditemukan di file Excel. Kolom yang tersedia: ' + ', '.join(df.columns))
                     else:
-                        # Cari actual column name
-                        actual_col = None
-                        if 'NOMOR REKENING' in df.columns:
-                            actual_col = 'NOMOR REKENING'
-                        elif 'NOMOR_REKENING' in df.columns:
-                            actual_col = 'NOMOR_REKENING'
-                        raise ValueError(f'Nomor rekening tidak boleh kosong. Nilai: {row.get(actual_col) if actual_col else "N/A"}')
+                        raise ValueError(f'Nomor rekening tidak boleh kosong. Nilai: {row.get("NOMOR REKENING")}')
                 
                 # Ensure nomor_rekening is string and preserve leading zeros
                 # Convert float/int to string with proper formatting
@@ -409,19 +324,17 @@ def process_uploaded_file(upload_history):
 
                 periode = record.get('periode') or ''
                 if not periode:
-                    if not has_column('PERIODE', df.columns):
+                    if 'PERIODE' not in df.columns:
                         raise ValueError('Kolom "PERIODE" tidak ditemukan di file Excel')
                     else:
                         raise ValueError(f'Periode tidak boleh kosong. Nilai: {row.get("PERIODE")}')
 
                 cif_no = record.get('cif_no') or ''
                 if not cif_no:
-                    if not has_column('CIFNO', df.columns):
+                    if 'CIFNO' not in df.columns:
                         raise ValueError('Kolom "CIFNO" tidak ditemukan di file Excel')
                     else:
-                        # Cari actual column name
-                        actual_cif = 'CIFNO' if 'CIFNO' in df.columns else 'CIF_NO' if 'CIF_NO' in df.columns else None
-                        raise ValueError(f'CIF tidak boleh kosong. Nilai: {row.get(actual_cif) if actual_cif else "N/A"}')
+                        raise ValueError(f'CIF tidak boleh kosong. Nilai: {row.get("CIFNO")}')
 
                 record['periode'] = periode
                 record['cif_no'] = cif_no
