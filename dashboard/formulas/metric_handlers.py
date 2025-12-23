@@ -370,6 +370,53 @@ def handle_lr_view(request, segment_filter='SMALL'):
 
 
 # ============================================================================
+# NSB (Nasabah/Customer Count) Handler
+# ============================================================================
+
+def handle_nsb_view(request, segment_filter='SMALL'):
+    """
+    Handle NSB (Nasabah) metric view.
+    NSB counts unique customers (distinct CIFNO) for the segment.
+    Structure identical to OS SMALL, but counts customers instead of summing amounts.
+    
+    Args:
+        request: Django request object
+        segment_filter: Segment to filter
+    
+    Returns:
+        dict: Context data for template
+    """
+    # Get selected date
+    selected_date_str = request.GET.get('selected_date', datetime.now().strftime('%Y-%m-%d'))
+    try:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        selected_date = datetime.now().date()
+    
+    # Build tables for NSB metric (counts distinct CIFNO)
+    # Uses 'nsb' as metric_field which will trigger customer counting in table_builder
+    table_data = build_metric_tables(
+        selected_date=selected_date,
+        segment_filter=segment_filter,
+        metric_field='nsb'  # Special field for customer counting
+    )
+    
+    context = {
+        'show_os_tables': True,
+        'metric_type': 'nsb',  # NSB uses normal colors (more customers = positive)
+        'tables': table_data,
+        'selected_date_str': selected_date.strftime('%Y-%m-%d'),
+        'date_columns': table_data['date_columns'],
+        'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
+        'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
+        'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
+        'ytd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['A']['date'].strftime('%d %b')}",
+    }
+    
+    return context
+
+
+# ============================================================================
 # Metric Handler Mapper
 # ============================================================================
 

@@ -1433,5 +1433,20 @@ def metric_page_view(request, slug):
     # END SECTION: LAR Small Tables
     # =================================================================================
 
+    # =================================================================================
+    # SECTION: NSB Small Tables
+    #       - NSB = COUNT(DISTINCT cifno) for segment SMALL
+    #       - Counts unique customers (nasabah)
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-nsb':
+        from .formulas.metric_handlers import handle_nsb_view
+        
+        # Use modular handler - NSB counts distinct CIFNO
+        context.update(handle_nsb_view(request, segment_filter='SMALL'))
+    # =================================================================================
+    # END SECTION: NSB Small Tables
+    # =================================================================================
+
 
     return render(request, 'dashboard/metric_page.html', context)

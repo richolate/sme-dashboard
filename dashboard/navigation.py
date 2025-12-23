@@ -68,24 +68,25 @@ METRIC_GROUPS = [
     },
     {
         "key": "summary",
-        "label": "Summary",
+        "label": "SUMMARY",
         "icon": "fas fa-layer-group",
+        "color": "#538dd5",
         "pages": [
             {
                 "slug": "summary-medium-only",
-                "title": "Summary Medium Only",
+                "title": "SUMMARY MEDIUM ONLY",
                 "tables": [],
                 "description": "Halaman ringkas untuk menampilkan highlight segmen medium only.",
             },
             {
                 "slug": "summary-konsol",
-                "title": "Summary Konsol",
+                "title": "SUMMARY KONSOL",
                 "tables": [],
                 "description": "Placeholder untuk ringkasan konsolidasi seluruh segmen.",
             },
             {
                 "slug": "summary-only",
-                "title": "Summary Only",
+                "title": "SUMMARY ONLY",
                 "tables": [],
                 "description": "Gunakan halaman ini untuk highlight summary only sesuai kebutuhan bisnis.",
             },

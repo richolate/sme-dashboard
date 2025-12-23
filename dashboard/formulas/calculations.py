@@ -1,4 +1,4 @@
-from django.db.models import Sum, F, Case, When, Value, DecimalField, ExpressionWrapper
+from django.db.models import Sum, F, Case, When, Value, DecimalField, ExpressionWrapper, Count
 from .utils import cast_to_decimal
 
 def annotate_metrics(queryset):
@@ -32,17 +32,9 @@ def annotate_metrics(queryset):
     )
 
     # Calculate SML (Special Mention Loan)
-    # SML = DPK + (Lancar if kol_adk == '2')
-    # Assuming if kol_adk is 2, the Lancar portion is considered SML.
+    # SML = DPK only
     qs = qs.annotate(
-        sml=ExpressionWrapper(
-            F('val_dpk') + Case(
-                When(kol_adk='2', then=F('val_lancar')),
-                default=Value(0),
-                output_field=DecimalField(max_digits=20, decimal_places=2)
-            ),
-            output_field=DecimalField(max_digits=20, decimal_places=2)
-        )
+        sml=F('val_dpk')
     )
 
     # Calculate LR (Loan Restructured - Current)
@@ -65,3 +57,27 @@ def annotate_metrics(queryset):
     )
 
     return qs
+
+
+def count_unique_customers(queryset, segment='SMALL'):
+    """
+    Counts unique customers (distinct CIF_NO) for a given segment.
+    This is used for NSB (Nasabah/Customer count) metric.
+    
+    Args:
+        queryset: The base queryset to filter
+        segment: The segment to filter by (default: 'SMALL')
+    
+    Returns:
+        Count of distinct CIF_NO values
+    """
+    from .segmentation import get_segment_annotation
+    
+    # Annotate with segment
+    qs = queryset.annotate(segment=get_segment_annotation())
+    
+    # Filter by segment
+    qs = qs.filter(segment=segment)
+    
+    # Count distinct CIF_NO (field name is cif_no with underscore)
+    return qs.values('cif_no').distinct().count()

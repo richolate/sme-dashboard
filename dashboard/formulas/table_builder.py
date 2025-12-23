@@ -6,7 +6,7 @@ for different metrics (OS, DPK, NPL, LAR, etc.)
 
 from decimal import Decimal
 from datetime import datetime, timedelta
-from django.db.models import Sum, Q, F
+from django.db.models import Sum, Q, F, Count
 from ..models import LW321
 from .segmentation import get_segment_annotation
 from .calculations import annotate_metrics
@@ -153,11 +153,14 @@ def calculate_percentage_metric(metric_value, base_value):
 def get_metric_by_uker(target_date, segment_filter, metric_field='os', kol_adk_filter=None):
     """
     Get metric sum grouped by UKER.
-    Handles special percentage metrics (dpk_pct, npl_pct).
+    Handles special percentage metrics (dpk_pct, npl_pct) and NSB (customer count).
     
     DPK Logic:
     - DPK = SUM(kolektibilitas_dpk) 
     - No kol_adk filter needed, DPK is already its own column
+    
+    NSB Logic:
+    - NSB = COUNT(DISTINCT cifno) - counts unique customers
     
     Args:
         kol_adk_filter: Optional filter for kol_adk field (not used for DPK)
@@ -167,8 +170,18 @@ def get_metric_by_uker(target_date, segment_filter, metric_field='os', kol_adk_f
     """
     qs = get_base_queryset(target_date, segment_filter, metric_field, kol_adk_filter)
     
+    # Handle NSB (customer count) specially
+    if metric_field == 'nsb':
+        # Count distinct CIF_NO per UKER (field name is cif_no with underscore)
+        result = qs.values('kode_uker').annotate(
+            total=Count('cif_no', distinct=True)
+        ).order_by('kode_uker')
+        
+        # Convert count to Decimal for consistency with other metrics
+        return {item['kode_uker']: Decimal(str(item['total'] or 0)) for item in result}
+    
     # Handle percentage metrics specially
-    if metric_field == 'dpk_pct':
+    elif metric_field == 'dpk_pct':
         # %DPK = (kolektibilitas_dpk / os) * 100
         # First cast to decimal
         from .utils import cast_to_decimal
@@ -246,6 +259,12 @@ def get_kode_kanca_from_uker(kode_uker_str):
 def get_metric_by_kanca(target_date, segment_filter, metric_field='os', kol_adk_filter=None):
     """
     Get metric sum grouped by parent KANCA (dynamically calculated).
+    
+    This sums values from all UKERs under each KANCA.
+    For all metrics (OS, DPK, NPL, LAR, LR, NSB), we sum the values from each UKER
+    that belongs to the KANCA induk.
+    
+    Formula: KONSOL = KANCA ONLY + KCP ONLY (must be valid for all metrics)
     
     Args:
         kol_adk_filter: Optional filter for kol_adk field

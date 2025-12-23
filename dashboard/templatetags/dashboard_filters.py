@@ -118,3 +118,48 @@ def format_number_parentheses(value, decimals=0):
         return final_number
     except (ValueError, TypeError):
         return '-'
+
+
+@register.filter
+def format_integer(value, decimals=0):
+    """
+    Format integer with thousand separator WITHOUT dividing by 1 million
+    Used for counts like NSB (customer count)
+    Example: 1234 -> 1,234
+    Example: 5678901 -> 5,678,901
+    """
+    try:
+        if value is None or value == '' or value == '-':
+            return '-'
+        num = int(float(value))
+        return '{:,}'.format(num)
+    except (ValueError, TypeError):
+        return '-'
+
+
+@register.filter
+def format_integer_parentheses(value, decimals=0):
+    """
+    Format integer with thousand separator WITHOUT dividing by 1 million
+    Negative numbers shown with parentheses instead of minus sign
+    Used for counts like NSB (customer count)
+    Example: -1234 -> (1,234)
+    Example: 5678 -> 5,678
+    """
+    try:
+        if value is None or value == '' or value == '-':
+            return '-'
+        num = int(float(value))
+        
+        # Check if negative
+        is_negative = num < 0
+        num = abs(num)
+        
+        formatted = '{:,}'.format(num)
+        
+        # Return with parentheses if negative
+        if is_negative:
+            return f'({formatted})'
+        return formatted
+    except (ValueError, TypeError):
+        return '-'
