@@ -6,22 +6,22 @@ class LW321(models.Model):
     Model untuk menyimpan data pinjaman nasabah dengan 38 kolom sesuai kebutuhan
     """
 
-    periode = models.CharField(max_length=30, db_index=True)
-    kanca = models.CharField(max_length=150, blank=True)
-    kode_uker = models.CharField(max_length=50, blank=True)
-    uker = models.CharField(max_length=150, blank=True)
-    ln_type = models.CharField(max_length=50, blank=True)
+    periode = models.CharField(max_length=20, db_index=True)  # Diubah dari 30 ke 20
+    kanca = models.CharField(max_length=50, blank=True)  # Diubah dari 150 ke 50
+    kode_uker = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
+    uker = models.CharField(max_length=50, blank=True)  # Diubah dari 150 ke 50
+    ln_type = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
     nomor_rekening = models.CharField(max_length=50, db_index=True)
-    nama_debitur = models.CharField(max_length=200, blank=True)
+    nama_debitur = models.CharField(max_length=50, blank=True)  # Diubah dari 200 ke 50
     plafon = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
-    next_pmt_date = models.DateField(null=True, blank=True)
-    next_int_pmt_date = models.DateField(null=True, blank=True)
-    rate = models.DecimalField(max_digits=7, decimal_places=4, null=True, blank=True)
-    tgl_menunggak = models.DateField(null=True, blank=True)
-    tgl_realisasi = models.DateField(null=True, blank=True)
-    tgl_jatuh_tempo = models.DateField(null=True, blank=True)
-    jangka_waktu = models.IntegerField(null=True, blank=True)
-    flag_restruk = models.CharField(max_length=50, blank=True)
+    next_pmt_date = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
+    next_int_pmt_date = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
+    rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # Diubah dari (7,4) ke (5,2)
+    tgl_menunggak = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
+    tgl_realisasi = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
+    tgl_jatuh_tempo = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
+    jangka_waktu = models.CharField(max_length=10, null=True, blank=True)  # Diubah dari IntegerField ke CharField (contoh: 106M)
+    flag_restruk = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
     cif_no = models.CharField(max_length=50, blank=True)
     kolektibilitas_lancar = models.CharField(max_length=50, blank=True)
     kolektibilitas_dpk = models.CharField(max_length=50, blank=True)
@@ -33,10 +33,12 @@ class LW321(models.Model):
     tunggakan_pinalti = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     code = models.CharField(max_length=50, blank=True)
     description = models.CharField(max_length=255, blank=True)
-    kol_adk = models.CharField(max_length=50, blank=True)
-    pn_rm = models.CharField(max_length=150, blank=True)  # PN RM (renamed from pn_pengelola_singlepn)
-    nama_rm = models.CharField(max_length=150, blank=True)
+    kol_adk = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
+    pn_rm = models.CharField(max_length=20, blank=True)  # Diubah dari 150 ke 20
+    nama_rm = models.CharField(max_length=50, blank=True)  # Diubah dari 150 ke 50
     os = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)  # OS kolom baru
+    nasabah = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)  # NASABAH (angka)
+    dub_nasabah = models.CharField(max_length=10, null=True, blank=True)  # DUB NASABAH - VARCHAR untuk simpan "TRUE"/"FALSE"
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

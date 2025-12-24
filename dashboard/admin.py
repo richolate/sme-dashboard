@@ -26,7 +26,7 @@ class LW321Admin(admin.ModelAdmin):
         'code',
         'description',
     )
-    date_hierarchy = 'next_pmt_date'
+    # date_hierarchy dihapus karena next_pmt_date sudah jadi CharField
     list_per_page = 50
 
 

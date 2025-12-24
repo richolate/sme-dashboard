@@ -36,10 +36,18 @@ COLUMN_FIELD_MAP = {
     'PN RM': 'pn_rm',
     'NAMA RM': 'nama_rm',
     'OS': 'os',
+    'NASABAH': 'nasabah',
+    'DUB NASABAH': 'dub_nasabah',
 }
 
 
-DATE_FIELDS = {
+# Fields yang sekarang menjadi VARCHAR (tidak perlu parsing khusus)
+# next_pmt_date, next_int_pmt_date, tgl_menunggak, tgl_realisasi, tgl_jatuh_tempo
+# semuanya sudah menjadi CharField, jadi tidak perlu DATE_FIELDS lagi
+DATE_FIELDS = set()  # Kosongkan karena semua tanggal sudah jadi varchar
+
+# Date string fields - perlu preserve format MM/DD/YYYY
+DATE_STRING_FIELDS = {
     'next_pmt_date',
     'next_int_pmt_date',
     'tgl_menunggak',
@@ -54,11 +62,19 @@ DECIMAL_FIELDS = {
     'tunggakan_bunga',
     'tunggakan_pinalti',
     'os',  # Kolom OS baru (angka)
+    'nasabah',  # Kolom NASABAH (angka)
+    'kolektibilitas_lancar',
+    'kolektibilitas_dpk',
+    'kolektibilitas_kurang_lancar',
+    'kolektibilitas_diragukan',
+    'kolektibilitas_macet',
 }
 
-INTEGER_FIELDS = {
-    'jangka_waktu',
-}
+# INTEGER_FIELDS juga dikosongkan karena jangka_waktu sudah jadi varchar
+INTEGER_FIELDS = set()  # Kosongkan karena jangka_waktu sudah jadi varchar
+
+# BOOLEAN_FIELDS dikosongkan karena dub_nasabah sekarang VARCHAR
+BOOLEAN_FIELDS = set()  # Kosongkan karena dub_nasabah sudah jadi varchar
 
 
 def _parse_date(value):
@@ -99,10 +115,113 @@ def _parse_int(value):
 
 
 def _parse_string(value):
+    """
+    Parse string value dari Excel.
+    Untuk date fields, preserve format original (MM/DD/YYYY).
+    Untuk nilai 'None' text, return empty string.
+    Nilai 0 (numeric) tetap di-preserve.
+    """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return ''
+    
     # TRIM: Strip whitespace dari depan dan belakang
+    result = str(value).strip()
+    
+    # Jika hasilnya 'None' (text), return empty string
+    # Tapi JANGAN convert numeric 0 ke empty string
+    if result in ['None', 'none', 'NONE']:
+        return ''
+    
+    return result
+
+
+def _parse_date_string(value):
+    """
+    Parse date string dengan preserve format MM/DD/YYYY.
+    Jika value adalah datetime, convert ke MM/DD/YYYY.
+    Jika value adalah 0 (integer/float), return "0" sebagai string.
+    Jika value kosong atau None, return empty string.
+    """
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return ''
+    
+    # Handle numeric 0 - return "0" sebagai string (bukan empty)
+    if isinstance(value, (int, float)) and value == 0:
+        return '0'
+    
+    # Handle string '0' - return "0" as-is (bukan empty)
+    if isinstance(value, str) and value.strip() == '0':
+        return '0'
+    
+    # Handle empty string
+    if isinstance(value, str) and value.strip() in ['', '0.0']:
+        return ''
+    
+    # If it's already a datetime object (from pandas), convert to MM/DD/YYYY
+    if isinstance(value, pd.Timestamp):
+        return value.strftime('%m/%d/%Y')
+    
+    # If it has strftime (datetime-like), convert to MM/DD/YYYY
+    if hasattr(value, 'strftime') and not isinstance(value, str):
+        return value.strftime('%m/%d/%Y')
+    
+    # If it's a string, check if it looks like a date
+    if isinstance(value, str):
+        value_clean = value.strip()
+        
+        # If empty, return empty
+        if not value_clean:
+            return ''
+        
+        # Check if already in MM/DD/YYYY format - preserve it
+        if '/' in value_clean:
+            parts = value_clean.split('/')
+            if len(parts) == 3 and all(p.isdigit() for p in parts):
+                # Already in slash format, assume it's correct
+                return value_clean
+        
+        # Try to parse any date format and convert to MM/DD/YYYY
+        try:
+            # Try multiple date formats
+            parsed = pd.to_datetime(value_clean, errors='coerce', infer_datetime_format=True)
+            if pd.notna(parsed):
+                return parsed.strftime('%m/%d/%Y')
+        except:
+            pass
+        
+        # If can't parse, return as-is
+        return value_clean
+    
+    # Fallback: convert to string
     return str(value).strip()
+
+
+def _parse_boolean(value):
+    """
+    Parse boolean value dari Excel.
+    Accepts: TRUE, FALSE, True, False, true, false, 1, 0, Yes, No, Y, N
+    Returns: True, False, or None
+    """
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    
+    # If already boolean
+    if isinstance(value, bool):
+        return value
+    
+    # Convert to string and normalize
+    str_value = str(value).strip().upper()
+    
+    # True values
+    if str_value in ['TRUE', '1', 'YES', 'Y', 'T']:
+        return True
+    
+    # False values
+    if str_value in ['FALSE', '0', 'NO', 'N', 'F']:
+        return False
+    
+    # Invalid value
+    return None
 
 
 def validate_file_structure(file_path):
@@ -171,7 +290,9 @@ def validate_file_structure(file_path):
             'KOL_ADK',
             'PN RM',
             'NAMA RM',
-            'OS'
+            'OS',
+            'NASABAH',
+            'DUB NASABAH'
         ]
         
         expected_columns = set(expected_columns_ordered)
@@ -243,8 +364,9 @@ def process_uploaded_file(upload_history):
         
         # Baca file berdasarkan ekstensi
         # PENTING: dtype=str untuk kolom yang harus preserve leading zeros
+        # Jangan parse dates otomatis, kita akan handle manual
         if file_ext == '.csv':
-            df = pd.read_csv(file_path, dtype={'NOMOR REKENING': str, 'NOMOR_REKENING': str})
+            df = pd.read_csv(file_path, dtype={'NOMOR REKENING': str, 'NOMOR_REKENING': str}, parse_dates=False)
         elif file_ext in ['.xlsx', '.xls']:
             df = pd.read_excel(file_path, dtype={'NOMOR REKENING': str, 'NOMOR_REKENING': str})
         else:
@@ -291,12 +413,20 @@ def process_uploaded_file(upload_history):
                     if pd.notna(raw_value) and isinstance(raw_value, str):
                         raw_value = raw_value.strip()
 
+                    # Debug: Log date field values
+                    if target_field in DATE_STRING_FIELDS and index < 3:
+                        print(f"[DEBUG] Row {index}, Field {target_field}: raw_value={repr(raw_value)} (type: {type(raw_value).__name__})")
+
                     if target_field in DATE_FIELDS:
                         record[target_field] = _parse_date(raw_value)
+                    elif target_field in DATE_STRING_FIELDS:
+                        record[target_field] = _parse_date_string(raw_value)
                     elif target_field in DECIMAL_FIELDS:
                         record[target_field] = _parse_decimal(raw_value)
                     elif target_field in INTEGER_FIELDS:
                         record[target_field] = _parse_int(raw_value)
+                    elif target_field in BOOLEAN_FIELDS:
+                        record[target_field] = _parse_boolean(raw_value)
                     else:
                         record[target_field] = _parse_string(raw_value)
 
