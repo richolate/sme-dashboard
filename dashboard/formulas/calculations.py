@@ -45,8 +45,17 @@ def annotate_metrics(queryset):
     )
 
     # Calculate NPL (Non-Performing Loan)
-    # NEW FORMULA: SUM(OS) WHERE KOL_ADK IN ('3', '4', '5')
+    # FORMULA: SUM(OS) WHERE KOL_ADK IN ('3', '4', '5')
+    # - Kol 3 = Kurang Lancar
+    # - Kol 4 = Diragukan
+    # - Kol 5 = Macet
     # Use val_os if > 0, otherwise use legacy calculation
+    #
+    # %NPL Calculation (used in npl_pct metric):
+    # %NPL = (NPL / Total OS) × 100
+    # Where:
+    # - NPL = SUM(OS WHERE kol_adk IN ('3','4','5'))
+    # - Total OS = SUM(OS all kol_adk)
     qs = qs.annotate(
         npl=Case(
             When(kol_adk__in=['3', '4', '5'], val_os__gt=0, then=F('val_os')),
@@ -57,8 +66,14 @@ def annotate_metrics(queryset):
     )
 
     # Calculate SML (Special Mention Loan) / DPK
-    # NEW FORMULA: SUM(OS) WHERE KOL_ADK = '2'
+    # FORMULA: SUM(OS) WHERE KOL_ADK = '2'
     # Use val_os if > 0, otherwise use legacy calculation
+    #
+    # %DPK Calculation (used in dpk_pct metric):
+    # %DPK = (DPK / Total OS) × 100
+    # Where:
+    # - DPK = SML = SUM(OS WHERE kol_adk = '2')
+    # - Total OS = SUM(OS all kol_adk)
     qs = qs.annotate(
         sml=Case(
             When(kol_adk='2', val_os__gt=0, then=F('val_os')),

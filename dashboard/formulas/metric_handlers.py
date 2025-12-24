@@ -222,6 +222,7 @@ def handle_npl_pct_view(request, segment_filter='SMALL'):
     
     context = {
         'show_os_tables': True,
+        'metric_type': 'npl_pct',  # For percentage formatting and inverse color logic
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],

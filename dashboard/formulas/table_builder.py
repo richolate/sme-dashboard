@@ -213,19 +213,37 @@ def get_metric_by_uker(target_date, segment_filter, metric_field='os', kol_adk_f
         return result
     
     elif metric_field == 'npl_pct':
-        # %NPL = (npl / os) * 100
-        result = qs.values('kode_uker').annotate(
-            metric_sum=Sum('npl'),
-            base_sum=Sum('os')
+        # %NPL = (NPL where kol_adk IN ('3','4','5') / OS all kol_adk) * 100
+        # IMPORTANT: NPL uses kol_adk IN ('3','4','5'), but OS uses all kol_adk
+        # This measures what % of total portfolio is NPL
+        
+        # Get NPL values (npl annotation already filters kol_adk IN ('3','4','5'))
+        # But for clarity, we'll use explicit filter
+        qs_npl = get_base_queryset(target_date, segment_filter, 'npl', kol_adk_filter=None)
+        # Filter for NPL kol_adk manually since annotation handles it
+        npl_by_uker = qs_npl.values('kode_uker').annotate(
+            npl_sum=Sum('npl')  # npl annotation already has the filter
         ).order_by('kode_uker')
         
-        return {
-            item['kode_uker']: calculate_percentage_metric(
-                item['metric_sum'] or 0, 
-                item['base_sum'] or 0
-            ) 
-            for item in result
-        }
+        # Get OS values (without kol_adk filter - all portfolio)
+        qs_os = get_base_queryset(target_date, segment_filter, 'os', kol_adk_filter=None)
+        os_by_uker = qs_os.values('kode_uker').annotate(
+            os_sum=Sum('os')
+        ).order_by('kode_uker')
+        
+        # Build dictionaries
+        npl_dict = {item['kode_uker']: item['npl_sum'] or Decimal('0') for item in npl_by_uker}
+        os_dict = {item['kode_uker']: item['os_sum'] or Decimal('0') for item in os_by_uker}
+        
+        # Calculate percentage for each UKER
+        result = {}
+        all_uker_codes = set(npl_dict.keys()) | set(os_dict.keys())
+        for kode_uker in all_uker_codes:
+            npl_val = npl_dict.get(kode_uker, Decimal('0'))
+            os_val = os_dict.get(kode_uker, Decimal('0'))
+            result[kode_uker] = calculate_percentage_metric(npl_val, os_val)
+        
+        return result
     
     else:
         # Regular metrics (os, npl, lar, lr, sml/dpk, etc.)
