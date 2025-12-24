@@ -160,7 +160,8 @@ def get_metric_by_uker(target_date, segment_filter, metric_field='os', kol_adk_f
     - No kol_adk filter needed, DPK is already its own column
     
     NSB Logic:
-    - NSB = COUNT(DISTINCT cifno) - counts unique customers
+    - NSB = SUM(NASABAH) WHERE DUB_NASABAH='TRUE'
+    - Filter: segment and dub_nasabah='TRUE'
     
     Args:
         kol_adk_filter: Optional filter for kol_adk field (not used for DPK)
@@ -172,12 +173,15 @@ def get_metric_by_uker(target_date, segment_filter, metric_field='os', kol_adk_f
     
     # Handle NSB (customer count) specially
     if metric_field == 'nsb':
-        # Count distinct CIF_NO per UKER (field name is cif_no with underscore)
-        result = qs.values('kode_uker').annotate(
-            total=Count('cif_no', distinct=True)
+        # Sum NASABAH column per UKER where DUB_NASABAH='TRUE' (case-insensitive)
+        from django.db.models import Q
+        result = qs.filter(
+            Q(dub_nasabah__iexact='TRUE')  # Case-insensitive: 'TRUE', 'True', 'true'
+        ).values('kode_uker').annotate(
+            total=Sum('nasabah')
         ).order_by('kode_uker')
         
-        # Convert count to Decimal for consistency with other metrics
+        # Convert to Decimal for consistency with other metrics
         return {item['kode_uker']: Decimal(str(item['total'] or 0)) for item in result}
     
     # Handle percentage metrics specially

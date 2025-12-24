@@ -107,23 +107,35 @@ def annotate_metrics(queryset):
 
 def count_unique_customers(queryset, segment='SMALL'):
     """
-    Counts unique customers (distinct CIF_NO) for a given segment.
+    Counts total customers by summing NASABAH column for a given segment.
     This is used for NSB (Nasabah/Customer count) metric.
+    
+    FORMULA: SUM(NASABAH) WHERE segment=SMALL AND DUB_NASABAH='TRUE' (case-insensitive)
     
     Args:
         queryset: The base queryset to filter
         segment: The segment to filter by (default: 'SMALL')
     
     Returns:
-        Count of distinct CIF_NO values
+        Sum of NASABAH field for unique customers (DUB_NASABAH='TRUE' or 'True')
     """
     from .segmentation import get_segment_annotation
+    from django.db.models import Q
     
     # Annotate with segment
     qs = queryset.annotate(segment=get_segment_annotation())
     
-    # Filter by segment
-    qs = qs.filter(segment=segment)
+    # Filter by segment and DUB_NASABAH = 'TRUE' (case-insensitive: 'TRUE', 'True', 'true')
+    qs = qs.filter(
+        segment=segment
+    ).filter(
+        Q(dub_nasabah__iexact='TRUE')  # Case-insensitive exact match
+    )
     
-    # Count distinct CIF_NO (field name is cif_no with underscore)
-    return qs.values('cif_no').distinct().count()
+    # Sum NASABAH column (handle NULL values)
+    result = qs.aggregate(
+        total_nasabah=Sum('nasabah')
+    )
+    
+    # Return 0 if NULL
+    return result['total_nasabah'] or 0

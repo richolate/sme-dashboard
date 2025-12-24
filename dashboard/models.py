@@ -7,12 +7,12 @@ class LW321(models.Model):
     """
 
     periode = models.CharField(max_length=20, db_index=True)  # Diubah dari 30 ke 20
-    kanca = models.CharField(max_length=50, blank=True)  # Diubah dari 150 ke 50
+    kanca = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
     kode_uker = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
-    uker = models.CharField(max_length=50, blank=True)  # Diubah dari 150 ke 50
+    uker = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
     ln_type = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
-    nomor_rekening = models.CharField(max_length=50, db_index=True)
-    nama_debitur = models.CharField(max_length=50, blank=True)  # Diubah dari 200 ke 50
+    nomor_rekening = models.CharField(max_length=100, db_index=True)  # Diubah dari 50 ke 100 untuk keamanan
+    nama_debitur = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
     plafon = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     next_pmt_date = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
     next_int_pmt_date = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
@@ -22,20 +22,20 @@ class LW321(models.Model):
     tgl_jatuh_tempo = models.CharField(max_length=20, null=True, blank=True)  # Diubah dari DateField ke CharField
     jangka_waktu = models.CharField(max_length=10, null=True, blank=True)  # Diubah dari IntegerField ke CharField (contoh: 106M)
     flag_restruk = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
-    cif_no = models.CharField(max_length=50, blank=True)
-    kolektibilitas_lancar = models.CharField(max_length=50, blank=True)
-    kolektibilitas_dpk = models.CharField(max_length=50, blank=True)
-    kolektibilitas_kurang_lancar = models.CharField(max_length=50, blank=True)
-    kolektibilitas_diragukan = models.CharField(max_length=50, blank=True)
-    kolektibilitas_macet = models.CharField(max_length=50, blank=True)
+    cif_no = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
+    kolektibilitas_lancar = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
+    kolektibilitas_dpk = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
+    kolektibilitas_kurang_lancar = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
+    kolektibilitas_diragukan = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
+    kolektibilitas_macet = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
     tunggakan_pokok = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     tunggakan_bunga = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     tunggakan_pinalti = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
-    code = models.CharField(max_length=50, blank=True)
+    code = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
     description = models.CharField(max_length=255, blank=True)
     kol_adk = models.CharField(max_length=10, blank=True)  # Diubah dari 50 ke 10
     pn_rm = models.CharField(max_length=20, blank=True)  # Diubah dari 150 ke 20
-    nama_rm = models.CharField(max_length=50, blank=True)  # Diubah dari 150 ke 50
+    nama_rm = models.CharField(max_length=100, blank=True)  # Diubah dari 50 ke 100 untuk keamanan
     os = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)  # OS kolom baru
     nasabah = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)  # NASABAH (angka)
     dub_nasabah = models.CharField(max_length=10, null=True, blank=True)  # DUB NASABAH - VARCHAR untuk simpan "TRUE"/"FALSE"

@@ -55,6 +55,9 @@ DATE_STRING_FIELDS = {
     'tgl_jatuh_tempo',
 }
 
+# Periode field - needs special format: DD-Mon-YY (e.g., 30-Nov-25)
+PERIODE_FIELD = 'periode'
+
 DECIMAL_FIELDS = {
     'plafon',
     'rate',
@@ -133,6 +136,33 @@ def _parse_string(value):
         return ''
     
     return result
+
+
+def _parse_periode(value):
+    """
+    Parse periode field - preserve original format from Excel.
+    Typically: DD/MM/YYYY (e.g., 30/11/2025)
+    
+    Just clean and return the value as-is, don't convert format.
+    """
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return ''
+    
+    # If it's a Timestamp, convert to DD/MM/YYYY format
+    if isinstance(value, pd.Timestamp):
+        return value.strftime('%d/%m/%Y')
+    
+    # If it has strftime (datetime-like), convert to DD/MM/YYYY
+    if hasattr(value, 'strftime') and not isinstance(value, str):
+        return value.strftime('%d/%m/%Y')
+    
+    # If it's a string, clean and return as-is
+    if isinstance(value, str):
+        value_clean = value.strip()
+        return value_clean if value_clean else ''
+    
+    # Fallback: return as-is
+    return str(value).strip()
 
 
 def _parse_date_string(value):
@@ -417,7 +447,10 @@ def process_uploaded_file(upload_history):
                     if target_field in DATE_STRING_FIELDS and index < 3:
                         print(f"[DEBUG] Row {index}, Field {target_field}: raw_value={repr(raw_value)} (type: {type(raw_value).__name__})")
 
-                    if target_field in DATE_FIELDS:
+                    # Parse periode field to DD-Mon-YY format
+                    if target_field == PERIODE_FIELD:
+                        record[target_field] = _parse_periode(raw_value)
+                    elif target_field in DATE_FIELDS:
                         record[target_field] = _parse_date(raw_value)
                     elif target_field in DATE_STRING_FIELDS:
                         record[target_field] = _parse_date_string(raw_value)
@@ -469,6 +502,47 @@ def process_uploaded_file(upload_history):
                 record['periode'] = periode
                 record['cif_no'] = cif_no
 
+                # Truncate VARCHAR fields to prevent "value too long" errors
+                # Based on model field max_length definitions
+                MAX_LENGTHS = {
+                    'periode': 20,
+                    'kanca': 100,
+                    'kode_uker': 10,
+                    'uker': 100,
+                    'ln_type': 10,
+                    'nomor_rekening': 100,
+                    'nama_debitur': 100,
+                    'next_pmt_date': 20,
+                    'next_int_pmt_date': 20,
+                    'tgl_menunggak': 20,
+                    'tgl_realisasi': 20,
+                    'tgl_jatuh_tempo': 20,
+                    'jangka_waktu': 10,
+                    'flag_restruk': 10,
+                    'cif_no': 100,
+                    'kolektibilitas_lancar': 100,
+                    'kolektibilitas_dpk': 100,
+                    'kolektibilitas_kurang_lancar': 100,
+                    'kolektibilitas_diragukan': 100,
+                    'kolektibilitas_macet': 100,
+                    'code': 100,
+                    'description': 255,
+                    'kol_adk': 10,
+                    'pn_rm': 20,
+                    'nama_rm': 100,
+                    'dub_nasabah': 10,
+                }
+                
+                # Truncate string fields if they exceed max_length
+                for field_name, max_length in MAX_LENGTHS.items():
+                    if field_name in record and isinstance(record[field_name], str):
+                        if len(record[field_name]) > max_length:
+                            original_value = record[field_name]
+                            record[field_name] = record[field_name][:max_length]
+                            print(f"[WARNING] Row {index + 1}, Field {field_name}: Truncated from {len(original_value)} to {max_length} chars")
+                            print(f"  Original: {original_value[:100]}...")
+                            print(f"  Truncated: {record[field_name]}")
+
                 # Selalu insert setiap row sebagai record baru
                 # Setiap upload file = data baru ditambahkan (append-only)
                 LW321.objects.create(**record)
@@ -477,7 +551,9 @@ def process_uploaded_file(upload_history):
                 
             except Exception as e:
                 failed_rows += 1
-                error_messages.append(f"Row {index + 1}: {str(e)}")
+                error_msg = f"Row {index + 1}: {str(e)}"
+                error_messages.append(error_msg)
+                print(f"[ERROR] {error_msg}")
                 continue
         
         return {
