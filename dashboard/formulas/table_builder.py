@@ -320,23 +320,35 @@ def get_metric_by_kanca(target_date, segment_filter, metric_field='os', kol_adk_
 def calculate_changes(A, B, C, D, E):
     """
     Calculate DtD, MoM, MtD, YtD and their percentages.
+    
+    Note: Jika nilai pembanding (A/B/C/D) adalah None atau 0, tetap hitung perubahan.
+    Contoh: E=100, A=None -> YtD=100 (bukan 0)
+            E=None, A=100 -> YtD=-100 (bukan 0)
     """
     def safe_divide(num, den):
         if den == 0 or den is None:
             return Decimal('0')
         return (num / den) * Decimal('100')
     
-    DtD = E - D if E and D else Decimal('0')
-    DtD_pct = safe_divide(DtD, D) if D else Decimal('0')
+    # Convert None to 0 for calculation
+    E_val = E if E is not None else Decimal('0')
+    D_val = D if D is not None else Decimal('0')
+    B_val = B if B is not None else Decimal('0')
+    C_val = C if C is not None else Decimal('0')
+    A_val = A if A is not None else Decimal('0')
     
-    MoM = E - B if E and B else Decimal('0')
-    MoM_pct = safe_divide(MoM, B) if B else Decimal('0')
+    # Calculate changes (always calculate even if one side is 0/None)
+    DtD = E_val - D_val
+    DtD_pct = safe_divide(DtD, D_val) if D_val != 0 else Decimal('0')
     
-    MtD = E - C if E and C else Decimal('0')
-    MtD_pct = safe_divide(MtD, C) if C else Decimal('0')
+    MoM = E_val - B_val
+    MoM_pct = safe_divide(MoM, B_val) if B_val != 0 else Decimal('0')
     
-    YtD = E - A if E and A else Decimal('0')
-    YtD_pct = safe_divide(YtD, A) if A else Decimal('0')
+    MtD = E_val - C_val
+    MtD_pct = safe_divide(MtD, C_val) if C_val != 0 else Decimal('0')
+    
+    YtD = E_val - A_val
+    YtD_pct = safe_divide(YtD, A_val) if A_val != 0 else Decimal('0')
     
     return {
         'DtD': DtD,
