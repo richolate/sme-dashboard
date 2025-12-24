@@ -115,10 +115,10 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     
     # KC Kuningan (KODE_KANCA: 133)
     133: ("KC Kuningan", 133),
-    137: ("KC Cimahi", 133),  # Note: This appears to be UKER under Kuningan
-    656: ("KCP PADALARANG", 133),
-    
-    # KC Cimahi (KODE_KANCA: 137) - Also appears as standalone KANCA
+
+    # KC Cimahi (KODE_KANCA: 137)
+    137: ("KC Cimahi", 137),
+    656: ("KCP PADALARANG", 137),
     1070: ("KCP CIJERAH", 137),
     1071: ("KCP CIMINDI", 137),
     
@@ -136,10 +136,10 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     181: ("KC Cibadak", 181),
     543: ("KCP Pelabuhan Ratu", 181),
     1355: ("KCP CICURUG", 181),
-    286: ("KC Bandung Dewi Sartika", 181),  # Note: Also standalone KANCA
-    650: ("KCP OTTO ISKANDARDINATA", 181),
     
     # KC Bandung Dewi Sartika (KODE_KANCA: 286)
+    286: ("KC Bandung Dewi Sartika", 286),
+    650: ("KCP OTTO ISKANDARDINATA", 286),
     1077: ("KCP PETA", 286),
     1596: ("KCP TELKOM BANDUNG", 286),
     2202: ("KCP KOSAMBI BANDUNG", 286),

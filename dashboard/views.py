@@ -1398,6 +1398,20 @@ def metric_page_view(request, slug):
     # =================================================================================
 
     # =================================================================================
+    # SECTION: %DPK Small Tables
+    #       - %DPK = (DPK / OS) * 100
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-dpk-pct':
+        from .formulas.metric_handlers import handle_dpk_pct_view
+        
+        # Use modular handler - %DPK calculated as (DPK/OS)*100
+        context.update(handle_dpk_pct_view(request, segment_filter='SMALL'))
+    # =================================================================================
+    # END SECTION: %DPK Small Tables
+    # =================================================================================
+
+    # =================================================================================
     # SECTION: NPL Small Tables
     #       - NPL = KL + D + M (from calculations.py)
     #       - Uses refactored modular metric handler

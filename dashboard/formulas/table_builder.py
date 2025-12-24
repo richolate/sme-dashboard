@@ -182,25 +182,35 @@ def get_metric_by_uker(target_date, segment_filter, metric_field='os', kol_adk_f
     
     # Handle percentage metrics specially
     elif metric_field == 'dpk_pct':
-        # %DPK = (kolektibilitas_dpk / os) * 100
-        # First cast to decimal
-        from .utils import cast_to_decimal
-        qs = qs.annotate(
-            val_dpk=cast_to_decimal('kolektibilitas_dpk')
-        )
+        # %DPK = (DPK where kol_adk='2' / OS all kol_adk) * 100
+        # IMPORTANT: DPK uses kol_adk='2', but OS uses all kol_adk
+        # This measures what % of total portfolio is DPK
         
-        result = qs.values('kode_uker').annotate(
-            metric_sum=Sum('val_dpk'),
-            base_sum=Sum('os')
+        # Get DPK values (with kol_adk='2' filter)
+        qs_dpk = get_base_queryset(target_date, segment_filter, 'sml', kol_adk_filter='2')
+        dpk_by_uker = qs_dpk.values('kode_uker').annotate(
+            dpk_sum=Sum('os')  # Use OS field directly with kol_adk='2' filter
         ).order_by('kode_uker')
         
-        return {
-            item['kode_uker']: calculate_percentage_metric(
-                item['metric_sum'] or 0, 
-                item['base_sum'] or 0
-            ) 
-            for item in result
-        }
+        # Get OS values (without kol_adk filter - all portfolio)
+        qs_os = get_base_queryset(target_date, segment_filter, 'os', kol_adk_filter=None)
+        os_by_uker = qs_os.values('kode_uker').annotate(
+            os_sum=Sum('os')
+        ).order_by('kode_uker')
+        
+        # Build dictionaries
+        dpk_dict = {item['kode_uker']: item['dpk_sum'] or Decimal('0') for item in dpk_by_uker}
+        os_dict = {item['kode_uker']: item['os_sum'] or Decimal('0') for item in os_by_uker}
+        
+        # Calculate percentage for each UKER
+        result = {}
+        all_uker_codes = set(dpk_dict.keys()) | set(os_dict.keys())
+        for kode_uker in all_uker_codes:
+            dpk_val = dpk_dict.get(kode_uker, Decimal('0'))
+            os_val = os_dict.get(kode_uker, Decimal('0'))
+            result[kode_uker] = calculate_percentage_metric(dpk_val, os_val)
+        
+        return result
     
     elif metric_field == 'npl_pct':
         # %NPL = (npl / os) * 100
@@ -326,53 +336,159 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
     """
     Build KONSOL table (grouped by KANCA - includes both KANCA and their KCPs).
     
+    For percentage metrics (dpk_pct, npl_pct):
+    - Each row shows: (SUM DPK for KANCA+KCP) / (SUM OS for KANCA+KCP) × 100
+    - Total row shows: (SUM DPK all) / (SUM OS all) × 100
+    
     Args:
         kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
     """
     rows = []
     
-    # Get data for each date
-    data_by_date = {}
-    for col_name, col_info in date_columns.items():
-        data_by_date[col_name] = get_metric_by_kanca(
-            col_info['date'], 
-            segment_filter, 
-            metric_field,
-            kol_adk_filter
-        )
-    
-    # Build rows for each KANCA
-    for idx, kode_kanca in enumerate(KANCA_CODES, start=1):
-        kanca_name = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+    # For percentage metrics, we need raw data (DPK/NPL and OS) instead of pre-calculated percentages
+    if metric_field in ['dpk_pct', 'npl_pct']:
+        # Determine which raw metrics to use and their filters
+        if metric_field == 'dpk_pct':
+            metric_raw = 'sml'  # DPK
+            base_raw = 'os'     # OS
+            # IMPORTANT: For %DPK calculation:
+            # - DPK uses kol_adk='2' filter
+            # - OS uses ALL kol_adk (no filter)
+            # This measures what % of TOTAL portfolio is DPK
+            metric_filter = '2'
+            base_filter = None   # OS includes all kol_adk
+        elif metric_field == 'npl_pct':
+            metric_raw = 'npl'  # NPL
+            base_raw = 'os'     # OS
+            metric_filter = None  # NPL uses kol_adk 3,4,5 (handled in annotation)
+            base_filter = None    # OS for NPL uses all kol_adk
         
-        A = data_by_date['A'].get(kode_kanca, Decimal('0'))
-        B = data_by_date['B'].get(kode_kanca, Decimal('0'))
-        C = data_by_date['C'].get(kode_kanca, Decimal('0'))
-        D = data_by_date['D'].get(kode_kanca, Decimal('0'))
-        E = data_by_date['E'].get(kode_kanca, Decimal('0'))
+        # Get raw data for each date
+        metric_data_by_date = {}
+        os_data_by_date = {}
+        for col_name, col_info in date_columns.items():
+            metric_data_by_date[col_name] = get_metric_by_kanca(
+                col_info['date'], segment_filter, metric_raw, metric_filter
+            )
+            os_data_by_date[col_name] = get_metric_by_kanca(
+                col_info['date'], segment_filter, base_raw, base_filter
+            )
         
-        changes = calculate_changes(A, B, C, D, E)
+        # Build rows for each KANCA
+        for idx, kode_kanca in enumerate(KANCA_CODES, start=1):
+            kanca_name = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+            
+            # Get raw metric (DPK or NPL) for each date
+            metric_A = metric_data_by_date['A'].get(kode_kanca, Decimal('0'))
+            metric_B = metric_data_by_date['B'].get(kode_kanca, Decimal('0'))
+            metric_C = metric_data_by_date['C'].get(kode_kanca, Decimal('0'))
+            metric_D = metric_data_by_date['D'].get(kode_kanca, Decimal('0'))
+            metric_E = metric_data_by_date['E'].get(kode_kanca, Decimal('0'))
+            
+            # Get OS for each date
+            os_A = os_data_by_date['A'].get(kode_kanca, Decimal('0'))
+            os_B = os_data_by_date['B'].get(kode_kanca, Decimal('0'))
+            os_C = os_data_by_date['C'].get(kode_kanca, Decimal('0'))
+            os_D = os_data_by_date['D'].get(kode_kanca, Decimal('0'))
+            os_E = os_data_by_date['E'].get(kode_kanca, Decimal('0'))
+            
+            # Calculate percentage for each date
+            A = calculate_percentage_metric(metric_A, os_A)
+            B = calculate_percentage_metric(metric_B, os_B)
+            C = calculate_percentage_metric(metric_C, os_C)
+            D = calculate_percentage_metric(metric_D, os_D)
+            E = calculate_percentage_metric(metric_E, os_E)
+            
+            changes = calculate_changes(A, B, C, D, E)
+            
+            rows.append({
+                'no': idx,
+                'kode_kanca': kode_kanca,
+                'kanca': kanca_name,
+                'A': A,
+                'B': B,
+                'C': C,
+                'D': D,
+                'E': E,
+                **changes
+            })
+    else:
+        # For non-percentage metrics, use existing logic
+        # Get data for each date
+        data_by_date = {}
+        for col_name, col_info in date_columns.items():
+            data_by_date[col_name] = get_metric_by_kanca(
+                col_info['date'], 
+                segment_filter, 
+                metric_field,
+                kol_adk_filter
+            )
         
-        rows.append({
-            'no': idx,
-            'kode_kanca': kode_kanca,
-            'kanca': kanca_name,
-            'A': A,
-            'B': B,
-            'C': C,
-            'D': D,
-            'E': E,
-            **changes
-        })
+        # Build rows for each KANCA
+        for idx, kode_kanca in enumerate(KANCA_CODES, start=1):
+            kanca_name = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+            
+            A = data_by_date['A'].get(kode_kanca, Decimal('0'))
+            B = data_by_date['B'].get(kode_kanca, Decimal('0'))
+            C = data_by_date['C'].get(kode_kanca, Decimal('0'))
+            D = data_by_date['D'].get(kode_kanca, Decimal('0'))
+            E = data_by_date['E'].get(kode_kanca, Decimal('0'))
+            
+            changes = calculate_changes(A, B, C, D, E)
+            
+            rows.append({
+                'no': idx,
+                'kode_kanca': kode_kanca,
+                'kanca': kanca_name,
+                'A': A,
+                'B': B,
+                'C': C,
+                'D': D,
+                'E': E,
+                **changes
+            })
     
     # Calculate totals
-    totals = {
-        'A': sum(row['A'] for row in rows),
-        'B': sum(row['B'] for row in rows),
-        'C': sum(row['C'] for row in rows),
-        'D': sum(row['D'] for row in rows),
-        'E': sum(row['E'] for row in rows),
-    }
+    # For percentage metrics (dpk_pct, npl_pct), we need to recalculate from raw data
+    # Total %DPK = (Total DPK / Total OS) × 100, NOT sum of individual percentages
+    if metric_field in ['dpk_pct', 'npl_pct']:
+        # Get raw metric and base (OS) data for each date
+        if metric_field == 'dpk_pct':
+            # Need DPK (sml) and OS
+            metric_raw = 'sml'
+            base_raw = 'os'
+            metric_filter = '2'   # DPK uses kol_adk='2'
+            base_filter = None    # OS uses all kol_adk
+        elif metric_field == 'npl_pct':
+            # Need NPL and OS
+            metric_raw = 'npl'
+            base_raw = 'os'
+            metric_filter = None
+            base_filter = None
+        
+        # Get totals for each date
+        totals = {}
+        for col_name, col_info in date_columns.items():
+            # Get metric sum (DPK or NPL)
+            metric_data = get_metric_by_kanca(col_info['date'], segment_filter, metric_raw, metric_filter)
+            metric_sum = sum(metric_data.values())
+            
+            # Get OS sum (all kol_adk)
+            os_data = get_metric_by_kanca(col_info['date'], segment_filter, base_raw, base_filter)
+            os_sum = sum(os_data.values())
+            
+            # Calculate percentage
+            totals[col_name] = calculate_percentage_metric(metric_sum, os_sum)
+    else:
+        # For non-percentage metrics, simple sum works
+        totals = {
+            'A': sum(row['A'] for row in rows),
+            'B': sum(row['B'] for row in rows),
+            'C': sum(row['C'] for row in rows),
+            'D': sum(row['D'] for row in rows),
+            'E': sum(row['E'] for row in rows),
+        }
+    
     totals.update(calculate_changes(
         totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
     ))
@@ -458,6 +574,41 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
         totals['E'] += E_val
     
     # Calculate totals changes
+    # For percentage metrics, recalculate from raw data instead of summing percentages
+    if metric_field in ['dpk_pct', 'npl_pct']:
+        # Determine which raw metrics to use
+        if metric_field == 'dpk_pct':
+            metric_raw = 'sml'
+            base_raw = 'os'
+            metric_filter = '2'   # DPK uses kol_adk='2'
+            base_filter = None    # OS uses all kol_adk
+        elif metric_field == 'npl_pct':
+            metric_raw = 'npl'
+            base_raw = 'os'
+            metric_filter = None
+            base_filter = None
+        
+        # Recalculate totals for each date from raw data
+        totals_recalc = {}
+        for col_name, col_info in date_columns.items():
+            # Get metric sum (DPK or NPL) - only KANCA codes
+            metric_data = get_metric_by_uker(col_info['date'], segment_filter, metric_raw, metric_filter)
+            metric_sum = sum(v for k, v in metric_data.items() if str(k) in [str(kc) for kc in KANCA_CODES])
+            
+            # Get OS sum - only KANCA codes, all kol_adk
+            os_data = get_metric_by_uker(col_info['date'], segment_filter, base_raw, base_filter)
+            os_sum = sum(v for k, v in os_data.items() if str(k) in [str(kc) for kc in KANCA_CODES])
+            
+            # Calculate percentage
+            totals_recalc[col_name] = calculate_percentage_metric(metric_sum, os_sum)
+        
+        # Replace totals with recalculated values
+        totals['A'] = totals_recalc['A']
+        totals['B'] = totals_recalc['B']
+        totals['C'] = totals_recalc['C']
+        totals['D'] = totals_recalc['D']
+        totals['E'] = totals_recalc['E']
+    
     totals_changes = calculate_changes(
         totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
     )
@@ -561,6 +712,41 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
         totals['E'] += E_val
     
     # Calculate totals changes
+    # For percentage metrics, recalculate from raw data instead of summing percentages
+    if metric_field in ['dpk_pct', 'npl_pct']:
+        # Determine which raw metrics to use
+        if metric_field == 'dpk_pct':
+            metric_raw = 'sml'
+            base_raw = 'os'
+            metric_filter = '2'   # DPK uses kol_adk='2'
+            base_filter = None    # OS uses all kol_adk
+        elif metric_field == 'npl_pct':
+            metric_raw = 'npl'
+            base_raw = 'os'
+            metric_filter = None
+            base_filter = None
+        
+        # Recalculate totals for each date from raw data
+        totals_recalc = {}
+        for col_name, col_info in date_columns.items():
+            # Get metric sum (DPK or NPL) - only KCP codes
+            metric_data = get_metric_by_uker(col_info['date'], segment_filter, metric_raw, metric_filter)
+            metric_sum = sum(v for k, v in metric_data.items() if str(k) in [str(kcp) for kcp in KCP_CODES])
+            
+            # Get OS sum - only KCP codes, all kol_adk
+            os_data = get_metric_by_uker(col_info['date'], segment_filter, base_raw, base_filter)
+            os_sum = sum(v for k, v in os_data.items() if str(k) in [str(kcp) for kcp in KCP_CODES])
+            
+            # Calculate percentage
+            totals_recalc[col_name] = calculate_percentage_metric(metric_sum, os_sum)
+        
+        # Replace totals with recalculated values
+        totals['A'] = totals_recalc['A']
+        totals['B'] = totals_recalc['B']
+        totals['C'] = totals_recalc['C']
+        totals['D'] = totals_recalc['D']
+        totals['E'] = totals_recalc['E']
+    
     totals_changes = calculate_changes(
         totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
     )
