@@ -65,7 +65,7 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     
     # KC Garut (KODE_KANCA: 25)
     25: ("KC Garut", 25),
-    1345: ("KCP GUNTUR", 25),
+    # 1345: ("KCP GUNTUR", 25), #penyesuaian baru
     1346: ("KCP CIKAJANG", 25),
     
     # KC Indramayu (KODE_KANCA: 28)
@@ -74,14 +74,14 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     
     # KC Majalengka (KODE_KANCA: 46)
     46: ("KC Majalengka", 46),
-    1108: ("KCP ABDUL FATAH", 46),
+    # 1108: ("KCP ABDUL FATAH", 46), #penyesuaian baru
     
     # KC Purwakarta (KODE_KANCA: 75)
     75: ("KC Purwakarta", 75),
     
     # KC Sukabumi (KODE_KANCA: 92)
     92: ("KC Sukabumi", 92),
-    2162: ("KCP PASAR PELITA", 92),
+    # 2162: ("KCP PASAR PELITA", 92), #penyesuaian baru
     2229: ("KCP SURADE", 92),
     
     # KC Sumedang (KODE_KANCA: 94)
@@ -90,7 +90,7 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     
     # KC Tasikmalaya (KODE_KANCA: 100)
     100: ("KC Tasikmalaya", 100),
-    1337: ("KCP CIKURUBUK", 100),
+    # 1337: ("KCP CIKURUBUK", 100), #penyesuaian baru
     1437: ("KCP CIAWI TASIKMALAYA", 100),
     
     # KC Ciamis (KODE_KANCA: 104)
@@ -140,9 +140,9 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     # KC Bandung Dewi Sartika (KODE_KANCA: 286)
     286: ("KC Bandung Dewi Sartika", 286),
     650: ("KCP OTTO ISKANDARDINATA", 286),
-    1077: ("KCP PETA", 286),
+    # 1077: ("KCP PETA", 286), #penyesuaian baru
     1596: ("KCP TELKOM BANDUNG", 286),
-    2202: ("KCP KOSAMBI BANDUNG", 286),
+    # 2202: ("KCP KOSAMBI BANDUNG", 286), #penyesuaian baru
     
     # KC Bandung Naripan (KODE_KANCA: 337)
     337: ("KC Bandung Naripan", 337),
@@ -162,7 +162,7 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     # KC Bandung Kopo (KODE_KANCA: 401)
     401: ("KC Bandung Kopo", 401),
     600: ("KCP SUMBER SARI", 401),
-    2103: ("KCP Mekarwangi", 401),
+    # 2103: ("KCP Mekarwangi", 401), #penyesuaian baru
     2155: ("KCP TAMAN KOPO INDAH", 401),
     2184: ("KCP TAMAN KOPO INDAH II", 401),
     
@@ -184,7 +184,7 @@ UKER_MASTER: Dict[int, Tuple[str, int]] = {
     # KC Bandung Setiabudi (KODE_KANCA: 408)
     408: ("KC Bandung Setiabudi", 408),
     655: ("KCP SETRASARI", 408),
-    2000: ("KCP CIHAMPELAS", 408),
+    # 2000: ("KCP CIHAMPELAS", 408), #penyesuaian baru
     2016: ("KCP LEMBANG", 408),
     
     # KC Soreang (KODE_KANCA: 544)
