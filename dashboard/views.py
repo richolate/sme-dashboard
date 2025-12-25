@@ -2067,4 +2067,90 @@ def metric_page_view(request, slug):
     # END SECTION: LR KUR Tables
     # =================================================================================
 
+    # =================================================================================
+    # SECTION: OS MEDIUM Tables
+    #       - OS/Outstanding = Total loan amount for MEDIUM segment
+    #       - 1 table: KANCA KONSOL only (no KANCA ONLY, no KCP ONLY)
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'medium-os':
+        from .formulas.metric_handlers import handle_os_view
+        
+        # Use modular handler - OS calculated from 'outstanding' field in calculations.py
+        context.update(handle_os_view(request, segment_filter='MEDIUM'))
+    # =================================================================================
+    # END SECTION: OS MEDIUM Tables
+    # =================================================================================
+    
+    # =================================================================================
+    # SECTION: DPK MEDIUM Tables
+    #       - DPK/Special Mention Loans = Loans with KOL_ADK = '2' (collectibility 2)
+    #       - 1 table: KANCA KONSOL only (no KANCA ONLY, no KCP ONLY)
+    #       - Uses refactored modular metric handler
+    #       - FORMULA: SUM(outstanding) WHERE segment='MEDIUM' AND kol_adk='2'
+    # =================================================================================
+    elif slug == 'medium-dpk':
+        from .formulas.metric_handlers import handle_dpk_view
+        
+        # Use modular handler - DPK calculated from 'sml' field in calculations.py
+        # sml = outstanding for records where kol_adk='2'
+        context.update(handle_dpk_view(request, segment_filter='MEDIUM'))
+    # =================================================================================
+    # END SECTION: DPK MEDIUM Tables
+    # =================================================================================
+    
+    # =================================================================================
+    # SECTION: NPL MEDIUM Tables
+    #       - NPL/Non-Performing Loans = Loans with KOL_ADK IN ('3', '4', '5')
+    #       - 1 table: KANCA KONSOL only (no KANCA ONLY, no KCP ONLY)
+    #       - Uses refactored modular metric handler
+    #       - FORMULA: SUM(outstanding) WHERE segment='MEDIUM' AND kol_adk IN ('3','4','5')
+    #       - Includes: Kurang Lancar (3), Diragukan (4), Macet (5)
+    # =================================================================================
+    elif slug == 'medium-npl':
+        from .formulas.metric_handlers import handle_npl_view
+        
+        # Use modular handler - NPL calculated from 'npl' field in calculations.py
+        # npl = outstanding for records where kol_adk IN ('3', '4', '5')
+        context.update(handle_npl_view(request, segment_filter='MEDIUM'))
+    # =================================================================================
+    # END SECTION: NPL MEDIUM Tables
+    # =================================================================================
+    
+    # =================================================================================
+    # SECTION: NSB MEDIUM Tables
+    #       - NSB/Nasabah = Customer count for MEDIUM segment
+    #       - 1 table: KANCA KONSOL only (no KANCA ONLY, no KCP ONLY)
+    #       - Uses refactored modular metric handler
+    #       - FORMULA: SUM(NASABAH) WHERE segment='MEDIUM' AND dub_nasabah='TRUE'
+    #       - dub_nasabah='TRUE' ensures unique customer count (deduplicated)
+    # =================================================================================
+    elif slug == 'medium-nsb':
+        from .formulas.metric_handlers import handle_nsb_view
+        
+        # Use modular handler - NSB calculated from count_unique_customers() in calculations.py
+        # Counts unique customers where dub_nasabah='TRUE'
+        context.update(handle_nsb_view(request, segment_filter='MEDIUM'))
+    # =================================================================================
+    # END SECTION: NSB MEDIUM Tables
+    # =================================================================================
+    
+    # =================================================================================
+    # SECTION: LR MEDIUM Tables
+    #       - LR/Loan Restructuring = Restructured loans (KOL_ADK='1' AND flag_restruk='Y')
+    #       - 1 table: KANCA KONSOL only (no KANCA ONLY, no KCP ONLY)
+    #       - Uses refactored modular metric handler
+    #       - FORMULA: SUM(outstanding) WHERE segment='MEDIUM' AND kol_adk='1' AND flag_restruk='Y'
+    #       - Only includes performing loans (Lancar) that have been restructured
+    # =================================================================================
+    elif slug == 'medium-lr':
+        from .formulas.metric_handlers import handle_lr_view
+        
+        # Use modular handler - LR calculated from 'lr' field in calculations.py
+        # lr = outstanding for records where kol_adk='1' AND flag_restruk='Y'
+        context.update(handle_lr_view(request, segment_filter='MEDIUM'))
+    # =================================================================================
+    # END SECTION: LR MEDIUM Tables
+    # =================================================================================
+
     return render(request, 'dashboard/metric_page.html', context)
