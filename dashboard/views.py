@@ -1926,5 +1926,71 @@ def metric_page_view(request, slug):
     # END SECTION: NSB Small Tables
     # =================================================================================
 
+    # =================================================================================
+    # SECTION: CC (CashCol) Segment
+    #       - CC codes: 42110, 42120, 42140
+    #       - All metrics use segment_filter='CC'
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: OS CC Tables
+    #       - OS = Outstanding from 'os' field
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'cc-os':
+        from .formulas.metric_handlers import handle_os_view
+        
+        # Use modular handler - OS calculated from 'os' field
+        context.update(handle_os_view(request, segment_filter='CC'))
+    # =================================================================================
+    # END SECTION: OS CC Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: DPK CC Tables
+    #       - DPK/SML = SUM(OS) WHERE KOL_ADK = '2'
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'cc-dpk':
+        from .formulas.metric_handlers import handle_dpk_view
+        
+        # Use modular handler - DPK calculated from 'sml' field in calculations.py
+        context.update(handle_dpk_view(request, segment_filter='CC'))
+    # =================================================================================
+    # END SECTION: DPK CC Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: NPL CC Tables
+    #       - NPL = SUM(OS) WHERE KOL_ADK IN ('3', '4', '5')
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'cc-npl':
+        from .formulas.metric_handlers import handle_npl_view
+        
+        # Use modular handler - NPL calculated from 'npl' field in calculations.py
+        context.update(handle_npl_view(request, segment_filter='CC'))
+    # =================================================================================
+    # END SECTION: NPL CC Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: NSB CC Tables
+    #       - NSB = SUM(NASABAH) WHERE segment='CC' AND DUB_NASABAH='TRUE'
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'cc-nsb':
+        from .formulas.metric_handlers import handle_nsb_view
+        
+        # Use modular handler - NSB counts unique customers (dub_nasabah='TRUE')
+        context.update(handle_nsb_view(request, segment_filter='CC'))
+    # =================================================================================
+    # END SECTION: NSB CC Tables
+    # =================================================================================
+
 
     return render(request, 'dashboard/metric_page.html', context)
