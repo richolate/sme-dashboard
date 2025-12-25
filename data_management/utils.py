@@ -485,3 +485,182 @@ def process_data_for_dashboard(data_type, sub_type=None, date_range=None):
     }
     
     return processed_data
+
+
+# ==================== KOMITMEN UTILITIES ====================
+
+def compare_komitmen_data(new_df, periode):
+    """
+    Compare new upload with existing data to show preview of changes
+    Uses INDEX-BASED reading from DataFrame
+    
+    Args:
+        new_df: pandas DataFrame with new data (index-based, no headers)
+        periode: datetime.date object
+    
+    Returns:
+        dict dengan keys:
+        - is_new: bool (True jika belum ada data untuk periode ini)
+        - new_rows: int (jumlah uker baru)
+        - updated_rows: int (jumlah uker yang akan di-update)
+        - deleted_rows: int (jumlah uker yang akan dihapus)
+        - changes: list of dict (sample changes untuk preview)
+        - existing_upload: KomitmenUpload object or None
+    """
+    from dashboard.models import KomitmenData, KomitmenUpload
+    from data_management.validators import COLUMN_INDICES, CLOSED_UKER_CODES, clean_numeric_value
+    
+    # Filter out closed uker codes from new data
+    new_df = new_df[~new_df[COLUMN_INDICES['kode_uker']].astype(str).str.strip().isin(CLOSED_UKER_CODES)].copy()
+    
+    try:
+        existing_upload = KomitmenUpload.objects.get(periode=periode)
+        existing_qs = KomitmenData.objects.filter(periode=periode)
+        
+        if existing_qs.count() == 0:
+            return {
+                'is_new': True,
+                'new_rows': len(new_df),
+                'updated_rows': 0,
+                'deleted_rows': 0,
+                'changes': [],
+                'existing_upload': None
+            }
+        
+        # Convert existing data to dict for comparison
+        existing_dict = {}
+        for data in existing_qs:
+            existing_dict[str(data.kode_uker)] = {
+                'kur_os': float(data.kur_os) if data.kur_os else 0,
+                'kur_pl': float(data.kur_pl) if data.kur_pl else 0,
+                'small_deb': float(data.small_deb) if data.small_deb else 0,
+                'nama_uker': data.nama_uker,
+            }
+        
+        # Compare - using index-based reading
+        new_ukers = set(new_df[COLUMN_INDICES['kode_uker']].astype(str).str.strip())
+        old_ukers = set(existing_dict.keys())
+        
+        changes = []
+        for uker in new_ukers & old_ukers:  # Intersection
+            new_row = new_df[new_df[COLUMN_INDICES['kode_uker']].astype(str).str.strip() == uker].iloc[0]
+            old_data = existing_dict[uker]
+            
+            # Check sample columns
+            new_kur_os = clean_numeric_value(new_row[COLUMN_INDICES['kur_os']]) or 0
+            old_kur_os = old_data['kur_os']
+            
+            if abs(new_kur_os - old_kur_os) > 0.01:  # Changed
+                changes.append({
+                    'uker': old_data['nama_uker'],
+                    'kode_uker': uker,
+                    'column': 'KUR RITEL OS',
+                    'old_value': old_kur_os,
+                    'new_value': new_kur_os
+                })
+            
+            if len(changes) >= 10:  # Limit to 10 sample changes
+                break
+        
+        return {
+            'is_new': False,
+            'new_rows': len(new_ukers - old_ukers),
+            'updated_rows': len(new_ukers & old_ukers),
+            'deleted_rows': len(old_ukers - new_ukers),
+            'changes': changes,
+            'existing_upload': existing_upload
+        }
+        
+    except KomitmenUpload.DoesNotExist:
+        return {
+            'is_new': True,
+            'new_rows': len(new_df),
+            'updated_rows': 0,
+            'deleted_rows': 0,
+            'changes': [],
+            'existing_upload': None
+        }
+
+
+def save_komitmen_data(df, periode, upload_obj):
+    """
+    Save komitmen data from DataFrame to database
+    Uses INDEX-BASED reading from DataFrame
+    
+    Args:
+        df: pandas DataFrame (cleaned data without total rows, index-based)
+        periode: datetime.date object
+        upload_obj: KomitmenUpload instance
+    
+    Returns:
+        int: Number of rows saved
+    """
+    from dashboard.models import KomitmenData
+    from data_management.validators import COLUMN_INDICES, CLOSED_UKER_CODES, clean_numeric_value
+    
+    # Delete existing data for this periode
+    KomitmenData.objects.filter(periode=periode).delete()
+    
+    # Prepare bulk create list
+    komitmen_list = []
+    skipped_closed = 0
+    
+    for _, row in df.iterrows():
+        kode_uker = str(row[COLUMN_INDICES['kode_uker']]).strip()
+        
+        # Skip if kode_uker is empty
+        if not kode_uker or kode_uker == 'nan':
+            continue
+        
+        # Skip if kode_uker is closed
+        if kode_uker in CLOSED_UKER_CODES:
+            skipped_closed += 1
+            continue
+        
+        komitmen_obj = KomitmenData(
+            upload=upload_obj,
+            periode=periode,
+            kode_kanca=str(row[COLUMN_INDICES['kode_kanca']]).strip(),
+            kode_uker=kode_uker,
+            nama_kanca=str(row[COLUMN_INDICES['nama_kanca']]).strip(),
+            nama_uker=str(row[COLUMN_INDICES['nama_uker']]).strip(),
+            
+            # KUR RITEL
+            kur_deb=clean_numeric_value(row[COLUMN_INDICES['kur_deb']]),
+            kur_os=clean_numeric_value(row[COLUMN_INDICES['kur_os']]),
+            kur_pl=clean_numeric_value(row[COLUMN_INDICES['kur_pl']]),
+            kur_npl=clean_numeric_value(row[COLUMN_INDICES['kur_npl']]),
+            kur_dpk=clean_numeric_value(row[COLUMN_INDICES['kur_dpk']]),
+            
+            # SMALL SD 5M
+            small_deb=clean_numeric_value(row[COLUMN_INDICES['small_deb']]),
+            small_os=clean_numeric_value(row[COLUMN_INDICES['small_os']]),
+            small_pl=clean_numeric_value(row[COLUMN_INDICES['small_pl']]),
+            small_npl=clean_numeric_value(row[COLUMN_INDICES['small_npl']]),
+            small_dpk=clean_numeric_value(row[COLUMN_INDICES['small_dpk']]),
+            
+            # KECIL NCC
+            kecil_ncc_deb=clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_deb']]),
+            kecil_ncc_os=clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_os']]),
+            kecil_ncc_pl=clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_pl']]),
+            kecil_ncc_npl=clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_npl']]),
+            kecil_ncc_dpk=clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_dpk']]),
+            
+            # KECIL CC
+            kecil_cc_deb=clean_numeric_value(row[COLUMN_INDICES['kecil_cc_deb']]),
+            kecil_cc_os=clean_numeric_value(row[COLUMN_INDICES['kecil_cc_os']]),
+            kecil_cc_pl=clean_numeric_value(row[COLUMN_INDICES['kecil_cc_pl']]),
+            kecil_cc_npl=clean_numeric_value(row[COLUMN_INDICES['kecil_cc_npl']]),
+            kecil_cc_dpk=clean_numeric_value(row[COLUMN_INDICES['kecil_cc_dpk']]),
+        )
+        
+        komitmen_list.append(komitmen_obj)
+    
+    # Bulk create
+    KomitmenData.objects.bulk_create(komitmen_list, batch_size=500)
+    
+    # Log skipped rows if any
+    if skipped_closed > 0:
+        print(f"ℹ️  Skipped {skipped_closed} rows from closed uker codes")
+    
+    return len(komitmen_list)

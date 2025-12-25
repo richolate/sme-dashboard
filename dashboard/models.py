@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.conf import settings
 
 
 class LW321(models.Model):
@@ -84,3 +86,99 @@ class ProcessedData(models.Model):
     
     def __str__(self):
         return f"{self.data_type} - {self.date}"
+
+
+class KomitmenUpload(models.Model):
+    """
+    Model untuk tracking history upload file komitmen
+    """
+    STATUS_CHOICES = [
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    
+    periode = models.DateField(unique=True, db_index=True, help_text="Periode bulan komitmen (contoh: 2025-11-01)")
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    file_name = models.CharField(max_length=255, help_text="Nama file yang diupload")
+    row_count = models.IntegerField(default=0, help_text="Jumlah baris data (tidak termasuk total row)")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='processing')
+    notes = models.TextField(blank=True, help_text="Catatan validasi atau error messages")
+    
+    class Meta:
+        db_table = 'komitmen_upload'
+        verbose_name = 'Komitmen Upload'
+        verbose_name_plural = 'Komitmen Uploads'
+        ordering = ['-periode']
+    
+    def __str__(self):
+        return f"Komitmen {self.periode.strftime('%B %Y')} - {self.status}"
+    
+    def periode_display(self):
+        """Return formatted periode for display"""
+        months = {
+            1: 'Januari', 2: 'Februari', 3: 'Maret', 4: 'April',
+            5: 'Mei', 6: 'Juni', 7: 'Juli', 8: 'Agustus',
+            9: 'September', 10: 'Oktober', 11: 'November', 12: 'Desember'
+        }
+        return f"{months[self.periode.month]} {self.periode.year}"
+
+
+class KomitmenData(models.Model):
+    """
+    Model untuk menyimpan data komitmen per uker
+    1 row = 1 uker dengan semua produk (KUR, SMALL, KECIL NCC, KECIL CC)
+    """
+    upload = models.ForeignKey(KomitmenUpload, on_delete=models.CASCADE, related_name='data')
+    periode = models.DateField(db_index=True, help_text="Periode bulan komitmen")
+    
+    # Identifiers
+    kode_kanca = models.CharField(max_length=10, db_index=True)
+    kode_uker = models.CharField(max_length=20, db_index=True)
+    nama_kanca = models.CharField(max_length=100)
+    nama_uker = models.CharField(max_length=100)
+    
+    # KUR RITEL - bisa angka, 0, atau NULL (untuk - atau kosong)
+    kur_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kur_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kur_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kur_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kur_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    
+    # SMALL SD 5M
+    small_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    small_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    small_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    small_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    small_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    
+    # KECIL NCC
+    kecil_ncc_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_ncc_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_ncc_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_ncc_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_ncc_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    
+    # KECIL CC
+    kecil_cc_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_cc_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_cc_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_cc_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_cc_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'komitmen_data'
+        verbose_name = 'Komitmen Data'
+        verbose_name_plural = 'Komitmen Data'
+        unique_together = ['periode', 'kode_uker']
+        indexes = [
+            models.Index(fields=['periode', 'kode_uker']),
+            models.Index(fields=['periode', 'kode_kanca']),
+        ]
+        ordering = ['kode_kanca', 'kode_uker']
+    
+    def __str__(self):
+        return f"{self.nama_uker} - {self.periode.strftime('%b %Y')}"

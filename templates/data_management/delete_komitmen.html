@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <!-- Warning Alert -->
+        <div class="alert alert-danger border-danger">
+            <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Konfirmasi Penghapusan</h4>
+            <p class="mb-0">Anda akan menghapus data komitmen berikut. <strong>Tindakan ini tidak dapat dibatalkan!</strong></p>
+        </div>
+        
+        <!-- Upload Information Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informasi Data</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td width="140"><strong>Periode:</strong></td>
+                                <td>
+                                    <span class="badge bg-dark" style="font-size: 1rem;">
+                                        {{ upload.periode_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>File Name:</strong></td>
+                                <td>
+                                    <i class="fas fa-file-excel text-success"></i> 
+                                    {{ upload.file_name }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Jumlah Data:</strong></td>
+                                <td><span class="badge bg-info">{{ data_count }}</span> baris</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td width="140"><strong>Diupload Oleh:</strong></td>
+                                <td>
+                                    {% if upload.uploaded_by %}
+                                    <i class="fas fa-user"></i> {{ upload.uploaded_by.username }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tanggal Upload:</strong></td>
+                                <td>{{ upload.uploaded_at|date:"d M Y, H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    {% if upload.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ upload.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if upload.notes %}
+                <hr>
+                <p class="mb-0"><strong>Catatan:</strong> {{ upload.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Danger Zone Card -->
+        <div class="card border-danger mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-radiation"></i> Danger Zone</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-3">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-circle"></i> Dampak Penghapusan</h6>
+                    <ul class="mb-0">
+                        <li>Record upload history untuk periode <strong>{{ upload.periode_display }}</strong> akan dihapus</li>
+                        <li><strong>{{ data_count }}</strong> baris data komitmen akan dihapus permanent</li>
+                        <li>Kolom komitmen di dashboard untuk periode ini akan kosong</li>
+                        <li>Anda harus upload ulang file untuk mengembalikan data</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-light p-3 rounded">
+                    <p class="mb-2"><strong>Checklist sebelum menghapus:</strong></p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check1">
+                        <label class="form-check-label" for="check1">
+                            Saya sudah backup file Excel jika diperlukan
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check2">
+                        <label class="form-check-label" for="check2">
+                            Saya paham data tidak bisa dikembalikan setelah dihapus
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check3">
+                        <label class="form-check-label" for="check3">
+                            Saya sudah koordinasi dengan tim terkait
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'data_management:komitmen_history' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Batal & Kembali
+                    </a>
+                    
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-lg" id="confirmDelete" disabled>
+                            <i class="fas fa-trash-alt"></i> Hapus Data Komitmen
+                        </button>
+                    </form>
+                </div>
+                
+                <hr class="mt-3 mb-2">
+                <p class="text-muted text-center mb-0">
+                    <small>
+                        <i class="fas fa-shield-alt"></i> 
+                        Centang semua checklist untuk mengaktifkan tombol hapus
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Enable delete button only when all checkboxes are checked
+    const checkboxes = document.querySelectorAll('.form-check-input');
+    const deleteBtn = document.getElementById('confirmDelete');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            deleteBtn.disabled = !allChecked;
+            
+            if (allChecked) {
+                deleteBtn.classList.remove('btn-danger');
+                deleteBtn.classList.add('btn-danger', 'pulse');
+            } else {
+                deleteBtn.classList.remove('pulse');
+            }
+        });
+    });
+    
+    // Double confirmation on submit
+    document.getElementById('deleteForm').addEventListener('submit', function(e) {
+        const confirmed = confirm(
+            '⚠️ KONFIRMASI TERAKHIR ⚠️\n\n' +
+            'Apakah Anda BENAR-BENAR YAKIN ingin menghapus data komitmen {{ upload.periode_display }}?\n\n' +
+            '❌ {{ data_count }} baris data akan HILANG PERMANENT!\n' +
+            '❌ Tindakan ini TIDAK DAPAT DIBATALKAN!\n\n' +
+            'Klik OK untuk melanjutkan penghapusan, atau Cancel untuk batal.'
+        );
+        
+        if (!confirmed) {
+            e.preventDefault();
+        }
+    });
+</script>
+
+<style>
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .pulse {
+        animation: pulse 1s infinite;
+    }
+    
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+</style>
+{% endblock %}

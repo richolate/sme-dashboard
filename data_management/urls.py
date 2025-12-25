@@ -9,4 +9,12 @@ urlpatterns = [
     path('upload/validate/', views.validate_upload_preview, name='validate_upload'),
     path('history/', views.upload_history_view, name='upload_history'),
     path('delete/', views.delete_data_view, name='delete_data'),
+    
+    # Komitmen routes
+    path('komitmen/validate/', views.validate_komitmen_ajax, name='validate_komitmen'),  # AJAX validation
+    path('komitmen/upload/', views.upload_komitmen, name='upload_komitmen'),
+    path('komitmen/preview/', views.preview_komitmen, name='preview_komitmen'),
+    path('komitmen/confirm/', views.confirm_komitmen_upload, name='confirm_komitmen'),
+    path('komitmen/history/', views.komitmen_history, name='komitmen_history'),
+    path('komitmen/delete/<int:upload_id>/', views.delete_komitmen, name='delete_komitmen'),
 ]

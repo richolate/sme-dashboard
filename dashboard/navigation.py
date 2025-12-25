@@ -395,6 +395,22 @@ DATA_MANAGEMENT_CHILDREN = [
 ]
 
 
+KOMITMEN_MANAGEMENT_CHILDREN = [
+    {
+        "key": "upload-komitmen",
+        "label": "Upload Komitmen",
+        "url_name": "data_management:upload_komitmen",
+        "requires_admin": True,
+    },
+    {
+        "key": "history-komitmen",
+        "label": "History Komitmen",
+        "url_name": "data_management:komitmen_history",
+        "requires_admin": True,
+    },
+]
+
+
 METRIC_PAGES: Dict[str, MetricPage] = {}
 for group in METRIC_GROUPS:
     for page in group["pages"]:
@@ -493,6 +509,37 @@ def build_menu(
                 "icon": "fas fa-database",
                 "url": "#",
                 "children": data_children,
+                "collapse_id": collapse_id,
+                "open": is_open,
+                "active": is_open,
+            }
+        )
+
+    # Komitmen Management group
+    komitmen_children = []
+    for child in KOMITMEN_MANAGEMENT_CHILDREN:
+        if child.get("requires_admin") and not user_is_admin:
+            continue
+        url = reverse(child["url_name"])
+        komitmen_children.append(
+            {
+                "key": child["key"],
+                "label": child["label"],
+                "url": url,
+                "active": current_url_name == child["url_name"],
+            }
+        )
+
+    if komitmen_children:
+        collapse_id = "menu-komitmen-management"
+        is_open = any(child["active"] for child in komitmen_children)
+        menu.append(
+            {
+                "key": "komitmen-management",
+                "label": "Komitmen",
+                "icon": "fas fa-clipboard-check",
+                "url": "#",
+                "children": komitmen_children,
                 "collapse_id": collapse_id,
                 "open": is_open,
                 "active": is_open,

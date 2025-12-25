@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<!-- File Information -->
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-file-excel text-success"></i> {{ filename }}</h5>
+        <span class="badge bg-dark" style="font-size: 1rem;">{{ periode|date:"F Y" }}</span>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-2"><strong>Periode:</strong> {{ periode|date:"F Y" }}</p>
+                <p class="mb-0"><strong>Total Baris Data:</strong> <span class="badge bg-info">{{ validation.data_row_count }}</span> uker</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-2"><strong>Status Validasi:</strong> 
+                    {% if validation.valid %}
+                    <span class="badge bg-success"><i class="fas fa-check"></i> Valid</span>
+                    {% else %}
+                    <span class="badge bg-danger"><i class="fas fa-times"></i> Invalid</span>
+                    {% endif %}
+                </p>
+                {% if notes %}
+                <p class="mb-0"><strong>Catatan:</strong> {{ notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column: Validation & Compare -->
+    <div class="col-md-8">
+        <!-- Validation Summary -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-check-circle"></i> Hasil Validasi</h5>
+            </div>
+            <div class="card-body">
+                {% if validation.errors %}
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-circle"></i> Errors ({{ validation.errors|length }})</h6>
+                    <ul class="mb-0">
+                        {% for error in validation.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% if validation.warnings %}
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Warnings ({{ validation.warnings|length }})</h6>
+                    <ul class="mb-0">
+                        {% for warning in validation.warnings %}
+                        <li>{{ warning }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% if validation.valid and not validation.warnings %}
+                <div class="alert alert-success mb-0">
+                    <i class="fas fa-check-circle"></i> <strong>Validasi Sukses!</strong> File siap untuk diupload.
+                </div>
+                {% endif %}
+                
+                {% if validation.total_rows %}
+                <div class="mt-3">
+                    <h6>Total Rows (Validasi):</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="background-color: #2c3e50; color: #fff;">Uker</th>
+                                    <th class="text-end" style="background-color: #2980b9; color: #fff;">KUR OS</th>
+                                    <th class="text-end" style="background-color: #27ae60; color: #fff;">SMALL OS</th>
+                                    <th class="text-end" style="background-color: #f39c12; color: #fff;">KECIL NCC OS</th>
+                                    <th class="text-end" style="background-color: #e74c3c; color: #fff;">KECIL CC OS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for total in validation.total_rows %}
+                                <tr class="table-warning">
+                                    <td><span class="badge bg-dark fs-6">{{ total.uker }}</span></td>
+                                    <td class="text-end fw-bold">{{ total.kur_os|floatformat:0|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ total.small_os|floatformat:0|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ total.kecil_ncc_os|floatformat:0|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ total.kecil_cc_os|floatformat:0|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Comparison Results -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-exchange-alt"></i> Perbandingan Data</h5>
+            </div>
+            <div class="card-body">
+                {% if compare.is_new %}
+                <div class="alert alert-info">
+                    <i class="fas fa-plus-circle"></i> <strong>Upload Baru</strong><br>
+                    <small>Belum ada data untuk periode {{ periode|date:"F Y" }}</small>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-sync-alt"></i> <strong>Replace Data Existing</strong><br>
+                    <small>Data existing diupload oleh <strong>{{ compare.existing_upload.uploaded_by }}</strong> 
+                    pada {{ compare.existing_upload.uploaded_at|date:"d M Y H:i" }}</small>
+                </div>
+                {% endif %}
+                
+                <div class="row text-center g-3 mt-2">
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-body bg-success bg-opacity-10">
+                                <h2 class="text-success mb-0">{{ compare.new_rows }}</h2>
+                                <small class="text-muted">Baris Baru</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-warning">
+                            <div class="card-body bg-warning bg-opacity-10">
+                                <h2 class="text-warning mb-0">{{ compare.updated_rows }}</h2>
+                                <small class="text-muted">Baris di-Update</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-danger">
+                            <div class="card-body bg-danger bg-opacity-10">
+                                <h2 class="text-danger mb-0">{{ compare.deleted_rows }}</h2>
+                                <small class="text-muted">Baris Dihapus</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if compare.changes %}
+                <div class="mt-4">
+                    <h6 class="border-bottom pb-2">Sample Perubahan ({{ compare.changes|length|slice:":10" }} pertama):</h6>
+                    <div class="list-group">
+                        {% for change in compare.changes|slice:":10" %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ change.uker }}</strong> 
+                                    <span class="badge bg-secondary">{{ change.kode_uker }}</span>
+                                </div>
+                                <small class="text-muted">{{ change.column }}</small>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-danger"><i class="fas fa-arrow-right"></i> {{ change.old_value|floatformat:0 }}</span>
+                                <i class="fas fa-long-arrow-alt-right mx-2"></i>
+                                <span class="text-success">{{ change.new_value|floatformat:0 }} <i class="fas fa-arrow-left"></i></span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if compare.changes|length > 10 %}
+                    <p class="text-muted mt-2 mb-0"><small>Dan {{ compare.changes|length|add:"-10" }} perubahan lainnya...</small></p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column: Actions -->
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-tasks"></i> Aksi</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if validation.valid %}
+                    <form method="post" action="{% url 'data_management:confirm_komitmen' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-save"></i> Konfirmasi & Simpan
+                        </button>
+                    </form>
+                    {% else %}
+                    <button class="btn btn-success btn-lg w-100" disabled>
+                        <i class="fas fa-ban"></i> Data Invalid
+                    </button>
+                    <div class="alert alert-danger mt-2">
+                        <small>Perbaiki error di atas sebelum melanjutkan</small>
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{% url 'data_management:upload_komitmen' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Kembali
+                    </a>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-info mb-0">
+                    <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Informasi</h6>
+                    <ul class="mb-0 small">
+                        <li>Data akan disimpan setelah konfirmasi</li>
+                        {% if not compare.is_new %}
+                        <li class="text-warning"><strong>Perhatian:</strong> Data existing akan diganti</li>
+                        {% endif %}
+                        <li>Proses tidak dapat dibatalkan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FULL DATA PREVIEW - ALL ROWS & ALL COLUMNS -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-table"></i> Preview SEMUA Data ({{ all_data|length }} Baris × {{ total_columns }} Kolom)
+                </h5>
+                <small>Scroll horizontal dan vertical untuk melihat semua data</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 600px; overflow: auto;">
+                    <table class="table table-sm table-bordered table-hover mb-0" style="font-size: 0.85rem;">
+                        <thead class="sticky-top">
+                            <tr>
+                                <th class="text-center" style="min-width: 50px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">#</th>
+                                <th style="min-width: 80px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Kode Kanca</th>
+                                <th style="min-width: 80px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Kode Uker</th>
+                                <th style="min-width: 150px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Nama Kanca</th>
+                                <th style="min-width: 150px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Nama Uker</th>
+                                <!-- KUR RITEL -->
+                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR DPK</th>
+                                <!-- SMALL SD 5M -->
+                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL DPK</th>
+                                <!-- KECIL NCC -->
+                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC DPK</th>
+                                <!-- KECIL CC -->
+                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC DPK</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in all_data %}
+                            <tr>
+                                <td class="text-center" style="background-color: #f8f9fa;">{{ forloop.counter }}</td>
+                                <td style="background-color: #f8f9fa;">{{ row.kode_kanca }}</td>
+                                <td style="background-color: #f8f9fa;"><strong>{{ row.kode_uker }}</strong></td>
+                                <td style="background-color: #f8f9fa;">{{ row.nama_kanca }}</td>
+                                <td style="background-color: #f8f9fa;">{{ row.nama_uker }}</td>
+                                <!-- KUR RITEL -->
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_deb|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_os|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_pl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_npl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_dpk|floatformat:0|default:"-" }}</td>
+                                <!-- SMALL SD 5M -->
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_deb|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_os|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_pl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_npl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_dpk|floatformat:0|default:"-" }}</td>
+                                <!-- KECIL NCC -->
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_deb|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_os|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_pl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_npl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_dpk|floatformat:0|default:"-" }}</td>
+                                <!-- KECIL CC -->
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_deb|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_os|floatformat:0|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_pl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_npl|floatformat:2|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_dpk|floatformat:0|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Menampilkan <strong>{{ all_data|length }}</strong> baris data × <strong>24</strong> kolom (A-X)
+                        </small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">
+                            <span class="badge bg-info">KUR</span>
+                            <span class="badge bg-success">SMALL</span>
+                            <span class="badge bg-warning text-dark">NCC</span>
+                            <span class="badge bg-danger">CC</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-responsive {
+        border: 1px solid #dee2e6;
+    }
+    
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    /* Zebra striping for better readability */
+    .table-hover tbody tr:hover {
+        background-color: rgba(255, 193, 7, 0.1) !important;
+    }
+    
+    /* Make first 2 columns (Kode Kanca, Kode Uker) sticky */
+    .table td:nth-child(1),
+    .table th:nth-child(1) {
+        position: sticky;
+        left: 0;
+        background-color: #fff;
+        z-index: 5;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    
+    .table thead th:nth-child(1) {
+        background-color: #212529 !important;
+        z-index: 11;
+    }
+</style>
+{% endblock %}

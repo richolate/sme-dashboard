@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-history"></i> History Upload Komitmen</h5>
+        <a href="{% url 'data_management:upload_komitmen' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Upload Baru
+        </a>
+    </div>
+    <div class="card-body">
+        {% if uploads %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            Total <strong>{{ total_uploads }}</strong> periode komitmen telah diupload
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Periode</th>
+                        <th>Nama File</th>
+                        <th>Diupload Oleh</th>
+                        <th>Tanggal Upload</th>
+                        <th>Total Baris</th>
+                        <th>Status</th>
+                        <th>Catatan</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in uploads %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <span class="badge bg-dark" style="font-size: 0.9rem;">
+                                {{ upload.periode|date:"M Y" }}
+                            </span>
+                        </td>
+                        <td>
+                            <i class="fas fa-file-excel text-success"></i>
+                            {{ upload.file_name }}
+                        </td>
+                        <td>
+                            {% if upload.uploaded_by %}
+                            <i class="fas fa-user"></i> {{ upload.uploaded_by.username }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ upload.uploaded_at|date:"d M Y H:i" }}</td>
+                        <td><span class="badge bg-info">{{ upload.row_count|default:"-" }}</span></td>
+                        <td>
+                            {% if upload.status == 'completed' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Selesai</span>
+                            {% elif upload.status == 'processing' %}
+                                <span class="badge bg-warning"><i class="fas fa-spinner fa-spin"></i> Sedang Diproses</span>
+                            {% elif upload.status == 'failed' %}
+                                <span class="badge bg-danger"><i class="fas fa-times"></i> Gagal</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ upload.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if upload.notes %}
+                            <button class="btn btn-sm btn-outline-info" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ upload.notes|truncatewords:50 }}">
+                                <i class="fas fa-sticky-note"></i>
+                            </button>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'data_management:delete_komitmen' upload.id %}" 
+                               class="btn btn-sm btn-danger"
+                               title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if uploads.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if uploads.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ uploads.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for num in uploads.paginator.page_range %}
+                {% if uploads.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > uploads.number|add:'-3' and num < uploads.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if uploads.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ uploads.next_page_number }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Belum ada riwayat upload komitmen</p>
+            <a href="{% url 'data_management:upload_komitmen' %}" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Upload Komitmen Sekarang
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Auto-refresh jika ada status processing
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasProcessing = document.querySelector('.badge.bg-warning');
+        
+        if (hasProcessing) {
+            setTimeout(function() {
+                location.reload();
+            }, 5000);
+            
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 80px; right: 20px; z-index: 1050; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="fas fa-info-circle"></i>
+                <strong>Auto-refresh aktif</strong><br>
+                <small>Halaman akan refresh otomatis untuk update status</small>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(function() {
+                notification.classList.remove('show');
+                setTimeout(function() {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        }
+    });
+</script>
+{% endblock %}

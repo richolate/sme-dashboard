@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .validation-table { font-size: 0.85rem; }
+    .validation-table th { position: sticky; top: 0; background-color: #fff; z-index: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Modal Preview & Validation -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i class="fas fa-search"></i> Preview & Validasi Komitmen
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="validationLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Memvalidasi struktur file...</p>
+                </div>
+                
+                <div id="validationResult" style="display: none;">
+                    <!-- Validation Summary -->
+                    <div id="validationSummary" class="alert" role="alert">
+                        <h6 class="alert-heading"><i class="fas fa-check-circle"></i> Status Validasi</h6>
+                        <div id="validationMessage"></div>
+                    </div>
+                    
+                    <!-- Errors -->
+                    <div id="errorsAlert" class="alert alert-danger" style="display: none;">
+                        <h6><i class="fas fa-times-circle"></i> Error:</h6>
+                        <ul id="errorsList" class="mb-0"></ul>
+                    </div>
+                    
+                    <!-- Warnings -->
+                    <div id="warningsAlert" class="alert alert-warning" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Peringatan:</h6>
+                        <ul id="warningsList" class="mb-0"></ul>
+                    </div>
+                    
+                    <!-- Summary Stats -->
+                    <div class="row text-center mb-3">
+                        <div class="col-md-4">
+                            <div class="p-3 bg-info bg-opacity-10 rounded">
+                                <h3 class="text-info mb-0" id="dataRowCount">0</h3>
+                                <small>Baris Data</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-warning bg-opacity-10 rounded">
+                                <h3 class="text-warning mb-0" id="totalRowCount">0</h3>
+                                <small>Baris Total (RO/Region)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-success bg-opacity-10 rounded">
+                                <h3 class="text-success mb-0" id="periodeDisplay">-</h3>
+                                <small>Periode</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Data (10 Baris Pertama) -->
+                    <div id="previewDataSection" style="display: none;">
+                        <hr>
+                        <h6><i class="fas fa-table"></i> Preview Data (Sampel 10 Baris Pertama - Lihat semua di halaman Preview)</h6>
+                        <p class="text-muted small mb-2">Untuk melihat <strong>SEMUA data dengan SEMUA kolom</strong>, klik "Lanjutkan ke Preview"</p>
+                        <div class="table-responsive" style="max-height: 300px; overflow: auto;">
+                            <table class="table table-sm table-bordered table-hover">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Kode Kanca</th>
+                                        <th>Kode Uker</th>
+                                        <th>Nama Kanca</th>
+                                        <th>Nama Uker</th>
+                                        <th class="text-end">KUR OS</th>
+                                        <th class="text-end">SMALL OS</th>
+                                        <th class="text-end">KECIL NCC OS</th>
+                                        <th class="text-end">KECIL CC OS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewTableBody">
+                                    <!-- Filled by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="alert alert-info mt-2 mb-0">
+                            <small>
+                                <i class="fas fa-arrow-right"></i> 
+                                Ini hanya preview 10 baris dengan 8 kolom. Klik <strong>"Lanjutkan ke Preview"</strong> untuk melihat <strong>semua {{ dataRowCount }} baris × 24 kolom</strong>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Batal
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmUploadBtn" disabled>
+                    <i class="fas fa-upload"></i> Lanjutkan ke Preview
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 9999;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white;">
+        <div class="spinner-border text-light mb-3" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4>Sedang memproses file komitmen...</h4>
+        <p>Mohon tunggu, jangan tutup atau refresh halaman ini</p>
+        <div class="progress mt-3" style="width: 300px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-upload"></i> Upload Komitmen</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Info:</strong> Upload file komitmen bulanan untuk perhitungan target achievement. 
+                    Jika periode sudah ada, data lama akan <strong>di-replace</strong>.
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Perhatian:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Format nama file: <code>KOMITMEN_NOV_2025.xlsx</code></li>
+                        <li>File maksimal 50MB, format Excel (.xlsx, .xls)</li>
+                        <li>Data dimulai dari <strong>baris 3</strong> (setelah header)</li>
+                        <li>Kolom berdasarkan <strong>posisi</strong>: A=Kode Kanca, B=Kode Uker, dst</li>
+                        <li>Baris total (RO/Region) hanya untuk validasi, tidak disimpan</li>
+                        <li>Nilai bisa berupa angka, "-", atau kosong</li>
+                    </ul>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="button" class="btn btn-primary" id="previewBtn" disabled>
+                        <i class="fas fa-eye"></i> Preview & Validasi
+                    </button>
+                    <a href="{% url 'data_management:komitmen_history' %}" class="btn btn-secondary">
+                        <i class="fas fa-history"></i> Lihat Riwayat
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Contoh Format -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-table"></i> Contoh Format Excel</h6>
+            </div>
+            <div class="card-body">
+                <p class="small mb-2"><strong>Baris 1-2:</strong> Header (diabaikan)</p>
+                <p class="small mb-2"><strong>Baris 3 dst:</strong> Data</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered" style="font-size: 0.75rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>197</td>
+                                <td>197</td>
+                                <td>KC Bdg</td>
+                                <td>KC Bdg AA</td>
+                                <td>2,198</td>
+                                <td>67,845</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small text-muted mb-0">
+                    A=Kode Kanca, B=Kode Uker, C=Nama Kanca, D=Nama Uker, 
+                    E=KUR DEB, F=KUR OS, dst...
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('input[type="file"]');
+    const previewBtn = document.getElementById('previewBtn');
+    const uploadForm = document.getElementById('uploadForm');
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    const confirmUploadBtn = document.getElementById('confirmUploadBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    // Enable preview button when file is selected
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            previewBtn.disabled = !this.files.length;
+        });
+    }
+    
+    // Preview button click
+    previewBtn.addEventListener('click', function() {
+        const fileInput = document.querySelector('input[type="file"]');
+        if (!fileInput.files.length) {
+            alert('Pilih file terlebih dahulu');
+            return;
+        }
+        
+        // Show modal
+        previewModal.show();
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        // Send AJAX request
+        fetch('{% url "data_management:validate_komitmen" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('validationLoading').style.display = 'none';
+            document.getElementById('validationResult').style.display = 'block';
+            
+            // Update summary
+            document.getElementById('dataRowCount').textContent = data.data_row_count || 0;
+            document.getElementById('totalRowCount').textContent = data.total_row_count || 0;
+            document.getElementById('periodeDisplay').textContent = data.periode || '-';
+            
+            // Show errors
+            if (data.errors && data.errors.length > 0) {
+                const errorsList = document.getElementById('errorsList');
+                errorsList.innerHTML = data.errors.map(err => `<li>${err}</li>`).join('');
+                document.getElementById('errorsAlert').style.display = 'block';
+                
+                document.getElementById('validationSummary').className = 'alert alert-danger';
+                document.getElementById('validationMessage').textContent = '❌ Validasi Gagal! Perbaiki error berikut.';
+                confirmUploadBtn.disabled = true;
+            } else {
+                document.getElementById('errorsAlert').style.display = 'none';
+                document.getElementById('validationSummary').className = 'alert alert-success';
+                document.getElementById('validationMessage').textContent = '✅ Validasi Berhasil! File siap diupload.';
+                confirmUploadBtn.disabled = false;
+            }
+            
+            // Show warnings
+            if (data.warnings && data.warnings.length > 0) {
+                const warningsList = document.getElementById('warningsList');
+                warningsList.innerHTML = data.warnings.map(warn => `<li>${warn}</li>`).join('');
+                document.getElementById('warningsAlert').style.display = 'block';
+            } else {
+                document.getElementById('warningsAlert').style.display = 'none';
+            }
+            
+            // Show preview data (10 rows)
+            if (data.preview_rows && data.preview_rows.length > 0) {
+                const previewTableBody = document.getElementById('previewTableBody');
+                previewTableBody.innerHTML = data.preview_rows.map(row => `
+                    <tr>
+                        <td>${row.kode_kanca}</td>
+                        <td>${row.kode_uker}</td>
+                        <td>${row.nama_kanca}</td>
+                        <td>${row.nama_uker}</td>
+                        <td class="text-end">${row.kur_os}</td>
+                        <td class="text-end">${row.small_os}</td>
+                        <td class="text-end">${row.kecil_ncc_os}</td>
+                        <td class="text-end">${row.kecil_cc_os}</td>
+                    </tr>
+                `).join('');
+                document.getElementById('previewDataSection').style.display = 'block';
+            } else {
+                document.getElementById('previewDataSection').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            document.getElementById('validationLoading').style.display = 'none';
+            document.getElementById('validationResult').style.display = 'block';
+            document.getElementById('validationSummary').className = 'alert alert-danger';
+            document.getElementById('validationMessage').textContent = '❌ Error: ' + error.message;
+        });
+    });
+    
+    // Confirm upload button
+    confirmUploadBtn.addEventListener('click', function() {
+        previewModal.hide();
+        loadingOverlay.style.display = 'block';
+        uploadForm.submit();
+    });
+});
+</script>
+{% endblock %}
+
