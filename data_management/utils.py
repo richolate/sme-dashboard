@@ -1,8 +1,6 @@
 import pandas as pd
 from decimal import Decimal, InvalidOperation
-from django.utils import timezone
 from dashboard.models import LW321
-
 
 COLUMN_FIELD_MAP = {
     'PERIODE': 'periode',
@@ -40,55 +38,28 @@ COLUMN_FIELD_MAP = {
     'DUB NASABAH': 'dub_nasabah',
 }
 
-
-# Fields yang sekarang menjadi VARCHAR (tidak perlu parsing khusus)
-# next_pmt_date, next_int_pmt_date, tgl_menunggak, tgl_realisasi, tgl_jatuh_tempo
-# semuanya sudah menjadi CharField, jadi tidak perlu DATE_FIELDS lagi
-DATE_FIELDS = set()  # Kosongkan karena semua tanggal sudah jadi varchar
-
-# Date string fields - perlu preserve format MM/DD/YYYY
 DATE_STRING_FIELDS = {
-    'next_pmt_date',
-    'next_int_pmt_date',
-    'tgl_menunggak',
-    'tgl_realisasi',
-    'tgl_jatuh_tempo',
+    'next_pmt_date', 'next_int_pmt_date', 'tgl_menunggak',
+    'tgl_realisasi', 'tgl_jatuh_tempo',
 }
 
-# Periode field - needs special format: DD-Mon-YY (e.g., 30-Nov-25)
 PERIODE_FIELD = 'periode'
 
 DECIMAL_FIELDS = {
-    'plafon',
-    'rate',
-    'tunggakan_pokok',
-    'tunggakan_bunga',
-    'tunggakan_pinalti',
-    'os',  # Kolom OS baru (angka)
-    'nasabah',  # Kolom NASABAH (angka)
-    'kolektibilitas_lancar',
-    'kolektibilitas_dpk',
-    'kolektibilitas_kurang_lancar',
-    'kolektibilitas_diragukan',
-    'kolektibilitas_macet',
+    'plafon', 'rate', 'tunggakan_pokok', 'tunggakan_bunga', 'tunggakan_pinalti',
+    'os', 'nasabah', 'kolektibilitas_lancar', 'kolektibilitas_dpk',
+    'kolektibilitas_kurang_lancar', 'kolektibilitas_diragukan', 'kolektibilitas_macet',
 }
 
-# INTEGER_FIELDS juga dikosongkan karena jangka_waktu sudah jadi varchar
-INTEGER_FIELDS = set()  # Kosongkan karena jangka_waktu sudah jadi varchar
-
-# BOOLEAN_FIELDS dikosongkan karena dub_nasabah sekarang VARCHAR
-BOOLEAN_FIELDS = set()  # Kosongkan karena dub_nasabah sudah jadi varchar
+DATE_FIELDS = INTEGER_FIELDS = BOOLEAN_FIELDS = set()
 
 
 def _parse_date(value):
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return None
-
     try:
         parsed = pd.to_datetime(value, errors='coerce')
-        if pd.isna(parsed):
-            return None
-        return parsed.date()
+        return None if pd.isna(parsed) else parsed.date()
     except (ValueError, TypeError):
         return None
 
@@ -96,7 +67,6 @@ def _parse_date(value):
 def _parse_decimal(value):
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return None
-
     try:
         if isinstance(value, str):
             value = value.replace(',', '').strip()
@@ -110,7 +80,6 @@ def _parse_decimal(value):
 def _parse_int(value):
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return None
-
     try:
         return int(float(value))
     except (ValueError, TypeError):
@@ -118,96 +87,36 @@ def _parse_int(value):
 
 
 def _parse_string(value):
-    """
-    Parse string value dari Excel.
-    Untuk date fields, preserve format original (MM/DD/YYYY).
-    Untuk nilai 'None' text, return empty string.
-    Nilai 0 (numeric) tetap di-preserve.
-    """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return ''
-    
-    # TRIM: Strip whitespace dari depan dan belakang
     result = str(value).strip()
-    
-    # Jika hasilnya 'None' (text), return empty string
-    # Tapi JANGAN convert numeric 0 ke empty string
-    if result in ['None', 'none', 'NONE']:
-        return ''
-    
-    return result
+    return '' if result in ['None', 'none', 'NONE'] else result
 
 
 def _parse_periode(value):
-    """
-    Parse periode field - preserve original format from Excel.
-    Typically: DD/MM/YYYY (e.g., 30/11/2025)
-    
-    Just clean and return the value as-is, don't convert format.
-    """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return ''
-    
-    # If it's a Timestamp, convert to DD/MM/YYYY format
-    if isinstance(value, pd.Timestamp):
+    if isinstance(value, pd.Timestamp) or hasattr(value, 'strftime') and not isinstance(value, str):
         return value.strftime('%d/%m/%Y')
-    
-    # If it has strftime (datetime-like), convert to DD/MM/YYYY
-    if hasattr(value, 'strftime') and not isinstance(value, str):
-        return value.strftime('%d/%m/%Y')
-    
-    # If it's a string, clean and return as-is
-    if isinstance(value, str):
-        value_clean = value.strip()
-        return value_clean if value_clean else ''
-    
-    # Fallback: return as-is
-    return str(value).strip()
+    return str(value).strip() if isinstance(value, str) else str(value).strip()
 
 
 def _parse_date_string(value):
-    """
-    Parse date string dengan preserve format MM/DD/YYYY.
-    Jika value adalah datetime, convert ke MM/DD/YYYY.
-    Jika value adalah 0 (integer/float), return "0" sebagai string.
-    Jika value kosong atau None, return empty string.
-    """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return ''
     
-    # Handle numeric 0 - return "0" sebagai string (bukan empty)
     if isinstance(value, (int, float)) and value == 0:
         return '0'
     
-    # Handle string '0' - return "0" as-is (bukan empty)
-    if isinstance(value, str) and value.strip() == '0':
-        return '0'
-    
-    # Handle empty string
-    if isinstance(value, str) and value.strip() in ['', '0.0']:
-        return ''
-    
-    # If it's already a datetime object (from pandas), convert to MM/DD/YYYY
-    if isinstance(value, pd.Timestamp):
-        return value.strftime('%m/%d/%Y')
-    
-    # If it has strftime (datetime-like), convert to MM/DD/YYYY
-    if hasattr(value, 'strftime') and not isinstance(value, str):
-        return value.strftime('%m/%d/%Y')
-    
-    # If it's a string, check if it looks like a date
     if isinstance(value, str):
         value_clean = value.strip()
-        
-        # If empty, return empty
-        if not value_clean:
+        if value_clean == '0':
+            return '0'
+        if not value_clean or value_clean == '0.0':
             return ''
-        
-        # Check if already in MM/DD/YYYY format - preserve it
         if '/' in value_clean:
             parts = value_clean.split('/')
             if len(parts) == 3 and all(p.isdigit() for p in parts):
-                # Already in slash format, assume it's correct
                 return value_clean
         
         # Try to parse any date format and convert to MM/DD/YYYY
@@ -405,13 +314,8 @@ def process_uploaded_file(upload_history):
                 'error': 'Format file tidak didukung'
             }
         
-        # Normalisasi nama kolom (hilangkan spasi depan/belakang dan ubah ke uppercase)
         df.columns = [str(col).strip().upper() for col in df.columns]
         
-        # Debug: Log kolom yang ditemukan
-        print(f"[DEBUG] Kolom di file Excel: {list(df.columns)}")
-        
-        # Check kolom yang diperlukan (STRICT: hanya format spasi)
         required_columns = ['PERIODE', 'NOMOR REKENING', 'CIFNO']
         missing_columns = [col for col in required_columns if col not in df.columns]
         
@@ -439,15 +343,9 @@ def process_uploaded_file(upload_history):
                     
                     raw_value = row.get(source_column)
 
-                    # Apply TRIM untuk semua string values sebelum parsing
                     if pd.notna(raw_value) and isinstance(raw_value, str):
                         raw_value = raw_value.strip()
 
-                    # Debug: Log date field values
-                    if target_field in DATE_STRING_FIELDS and index < 3:
-                        print(f"[DEBUG] Row {index}, Field {target_field}: raw_value={repr(raw_value)} (type: {type(raw_value).__name__})")
-
-                    # Parse periode field to DD-Mon-YY format
                     if target_field == PERIODE_FIELD:
                         record[target_field] = _parse_periode(raw_value)
                     elif target_field in DATE_FIELDS:
@@ -533,27 +431,17 @@ def process_uploaded_file(upload_history):
                     'dub_nasabah': 10,
                 }
                 
-                # Truncate string fields if they exceed max_length
                 for field_name, max_length in MAX_LENGTHS.items():
                     if field_name in record and isinstance(record[field_name], str):
                         if len(record[field_name]) > max_length:
-                            original_value = record[field_name]
                             record[field_name] = record[field_name][:max_length]
-                            print(f"[WARNING] Row {index + 1}, Field {field_name}: Truncated from {len(original_value)} to {max_length} chars")
-                            print(f"  Original: {original_value[:100]}...")
-                            print(f"  Truncated: {record[field_name]}")
 
-                # Selalu insert setiap row sebagai record baru
-                # Setiap upload file = data baru ditambahkan (append-only)
                 LW321.objects.create(**record)
-                
                 successful_rows += 1
                 
             except Exception as e:
                 failed_rows += 1
-                error_msg = f"Row {index + 1}: {str(e)}"
-                error_messages.append(error_msg)
-                print(f"[ERROR] {error_msg}")
+                error_messages.append(f"Row {index + 1}: {str(e)}")
                 continue
         
         return {

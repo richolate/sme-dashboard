@@ -7,9 +7,7 @@ from django.views.decorators.http import require_http_methods
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
-    """
-    Login view untuk user
-    """
+    """Login view for user authentication"""
     if request.user.is_authenticated:
         return redirect('dashboard:home')
     
@@ -35,9 +33,7 @@ def login_view(request):
 
 @login_required
 def logout_view(request):
-    """
-    Logout view
-    """
+    """Logout view"""
     logout(request)
     messages.success(request, 'Anda telah berhasil logout.')
     return redirect('accounts:login')

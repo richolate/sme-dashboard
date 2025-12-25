@@ -11,9 +11,7 @@ from dashboard.models import LW321
 
 
 def admin_required(view_func):
-    """
-    Decorator untuk memastikan hanya admin yang bisa akses
-    """
+    """Decorator to ensure only admin users can access"""
     @login_required
     def wrapper(request, *args, **kwargs):
         if not request.user.is_admin():
@@ -25,14 +23,10 @@ def admin_required(view_func):
 
 @admin_required
 def validate_upload_preview(request):
-    """
-    AJAX endpoint untuk validasi file dan preview 10 sample data
-    Dipanggil saat user memilih file sebelum upload
-    """
+    """AJAX endpoint for file validation and preview of 10 sample data"""
     if request.method == 'POST' and request.FILES.get('file'):
         upload_file = request.FILES['file']
         
-        # Save temporary file
         import tempfile
         import os
         
@@ -44,10 +38,8 @@ def validate_upload_preview(request):
                 for chunk in upload_file.chunks():
                     destination.write(chunk)
             
-            # Validate file structure
             validation_result = validate_file_structure(temp_path)
             
-            # Cleanup
             os.remove(temp_path)
             os.rmdir(temp_dir)
             

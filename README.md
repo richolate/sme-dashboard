@@ -1,97 +1,192 @@
-# 📊 Dashboard Performance Highlights SME
+# SME Dashboard - Performance Highlight# 📊 Dashboard Performance Highlights SME
 
-![Django](https://img.shields.io/badge/Django-4.2.7-green.svg)
+
+
+Django-based dashboard untuk monitoring performance SME (Small Medium Enterprise) dengan visualisasi data real-time.![Django](https://img.shields.io/badge/Django-4.2.7-green.svg)
+
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.10+-yellow.svg)
+
+## 🚀 Quick Start![Python](https://img.shields.io/badge/Python-3.10+-yellow.svg)
+
 ![License](https://img.shields.io/badge/License-BRI%20Internal-red.svg)
 
-Dashboard untuk monitoring dan analisis data pinjaman SME menggunakan Django dan PostgreSQL.
+### Prerequisites
 
-## 📋 Deskripsi
+- Python 3.8+Dashboard untuk monitoring dan analisis data pinjaman SME menggunakan Django dan PostgreSQL.
 
-Sistem dashboard interaktif untuk mengelola dan menganalisis data pinjaman nasabah SME dengan fitur:
+- PostgreSQL 12+
+
+- Redis Server## 📋 Deskripsi
+
+
+
+### InstallationSistem dashboard interaktif untuk mengelola dan menganalisis data pinjaman nasabah SME dengan fitur:
+
 - **Role-based Access Control** (Admin & User)
-- **Multiple Dashboard Views** (OS, Summary, Grafik Harian)
-- **Data Management** (Upload, History, Delete)
-- **PostgreSQL Integration** untuk handling data skala besar (10+ juta baris)
-- **Responsive UI** dengan Bootstrap 5
 
-## 🚀 Fitur Utama
+1. Clone dan setup environment:- **Multiple Dashboard Views** (OS, Summary, Grafik Harian)
 
-### Dashboard
-1. **Dashboard OS** - Monitoring Outstanding pinjaman
-2. **Dashboard Summary** - Ringkasan data dengan 3 sub-kategori:
-   - Summary Medium Only
-   - Summary Konsol
+```bash- **Data Management** (Upload, History, Delete)
+
+python -m venv venv- **PostgreSQL Integration** untuk handling data skala besar (10+ juta baris)
+
+venv\Scripts\activate- **Responsive UI** dengan Bootstrap 5
+
+pip install -r requirements.txt
+
+```## 🚀 Fitur Utama
+
+
+
+2. Configure database (.env):### Dashboard
+
+```env1. **Dashboard OS** - Monitoring Outstanding pinjaman
+
+DATABASE_URL=postgresql://postgres:password@localhost:5432/sme_dashboard2. **Dashboard Summary** - Ringkasan data dengan 3 sub-kategori:
+
+CELERY_BROKER_URL=redis://localhost:6379/0   - Summary Medium Only
+
+```   - Summary Konsol
+
    - Summary Only
-3. **Dashboard Grafik Harian** - Trend dan analisis harian
 
-### Role & Permissions
+3. Run migrations:3. **Dashboard Grafik Harian** - Trend dan analisis harian
 
-#### Admin
+```bash
+
+python manage.py migrate### Role & Permissions
+
+python manage.py createsuperuser
+
+```#### Admin
+
 - ✅ Akses semua dashboard
-- ✅ Upload data pinjaman (Excel/CSV)
-- ✅ Lihat riwayat upload
-- ✅ Hapus data
+
+4. Start services:- ✅ Upload data pinjaman (Excel/CSV)
+
+```bash- ✅ Lihat riwayat upload
+
+# Terminal 1 - Django- ✅ Hapus data
+
+python manage.py runserver
 
 #### User
-- ✅ Akses semua dashboard (read-only)
 
-## 📦 Prerequisites
+# Terminal 2 - Celery- ✅ Akses semua dashboard (read-only)
 
-- Python 3.10 atau lebih tinggi
+celery -A config worker --loglevel=info --pool=solo
+
+```## 📦 Prerequisites
+
+
+
+## 📊 Features- Python 3.10 atau lebih tinggi
+
 - PostgreSQL 12 atau lebih tinggi
-- pip (Python package manager)
-- Virtual environment (recommended)
 
-## 🔧 Instalasi
+- Real-time metrics: OS, DPK, NPL, LAR, LR, NSB- pip (Python package manager)
+
+- Data segmentation: SMALL, MEDIUM, COMMERCIAL- Virtual environment (recommended)
+
+- Excel/CSV upload with background processing
+
+- Dynamic date filtering## 🔧 Instalasi
+
+- User authentication
 
 ### 1. Clone atau Download Project
 
-```powershell
-cd "E:\BRI\Performance Highlight SME Dashboard"
-```
-
-### 2. Setup Virtual Environment
+## 🗂️ Structure
 
 ```powershell
+
+```cd "E:\BRI\Performance Highlight SME Dashboard"
+
+├── dashboard/          # Main app dengan formulas & views```
+
+├── data_management/    # Upload & Celery tasks
+
+├── accounts/           # Authentication### 2. Setup Virtual Environment
+
+└── config/             # Settings & Celery config
+
+``````powershell
+
 # Buat virtual environment
-python -m venv venv
 
-# Aktifkan virtual environment
-.\venv\Scripts\activate
-```
+## 📈 Key Metricspython -m venv venv
 
-### 3. Install Dependencies
 
-```powershell
+
+| Metric | Description |# Aktifkan virtual environment
+
+|--------|-------------|.\venv\Scripts\activate
+
+| OS     | Outstanding loan balance |```
+
+| DPK    | Special mention (kol_adk=2) |
+
+| NPL    | Non-performing (kol_adk=3,4,5) |### 3. Install Dependencies
+
+| LAR    | Loan at Risk (DPK+NPL+LR) |
+
+| NSB    | Nasabah count (SUM where DUB_NASABAH='TRUE') |```powershell
+
 pip install -r requirements.txt
-```
 
-### 4. Setup PostgreSQL Database
+## 📤 Data Upload```
 
-#### A. Install PostgreSQL (jika belum)
-1. Download PostgreSQL dari: https://www.postgresql.org/download/windows/
-2. Install PostgreSQL dengan default settings
-3. Catat password untuk user `postgres`
+
+
+Required Excel columns:### 4. Setup PostgreSQL Database
+
+- PERIODE (DD/MM/YYYY)
+
+- KANCA, KODE UKER, UKER#### A. Install PostgreSQL (jika belum)
+
+- NOMOR REKENING, NAMA DEBITUR1. Download PostgreSQL dari: https://www.postgresql.org/download/windows/
+
+- KOLEKTIBILITAS (LANCAR, DPK, KURANG LANCAR, DIRAGUKAN, MACET)2. Install PostgreSQL dengan default settings
+
+- OS, NASABAH, DUB NASABAH3. Catat password untuk user `postgres`
+
+- And more...
 
 #### B. Buat Database
 
+## 🛠️ Maintenance
+
 Buka **pgAdmin** atau **psql** command line:
 
-**Menggunakan psql:**
-```powershell
-# Login ke PostgreSQL
-psql -U postgres
+Clear cache:
+
+```bash**Menggunakan psql:**
+
+python manage.py shell```powershell
+
+>>> from django.core.cache import cache# Login ke PostgreSQL
+
+>>> cache.clear()psql -U postgres
+
+```
 
 # Buat database
-CREATE DATABASE sme_dashboard;
 
-# Buat user (optional, atau gunakan postgres user)
-CREATE USER sme_admin WITH PASSWORD 'your_password';
+Database backup:CREATE DATABASE sme_dashboard;
 
-# Berikan privileges
+```bash
+
+pg_dump sme_dashboard > backup.sql# Buat user (optional, atau gunakan postgres user)
+
+```CREATE USER sme_admin WITH PASSWORD 'your_password';
+
+
+
+## License# Berikan privileges
+
 GRANT ALL PRIVILEGES ON DATABASE sme_dashboard TO sme_admin;
+
+Bank BRI Internal Use Only
 
 # Keluar
 \q

@@ -1,6 +1,4 @@
-"""
-Background tasks untuk pengolahan data
-"""
+"""Background tasks for data processing"""
 from celery import shared_task
 from django.utils import timezone
 from dashboard.models import LW321
@@ -12,10 +10,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(bind=True, name='data_management.process_uploaded_data')
 def process_uploaded_data_task(self, upload_history_id):
-    """
-    Task untuk memproses data yang sudah diupload
-    Dijalankan di background setelah file berhasil disimpan
-    """
+    """Process uploaded data in background after file is saved"""
     try:
         upload_history = UploadHistory.objects.get(id=upload_history_id)
         upload_history.status = 'processing'
@@ -23,10 +18,8 @@ def process_uploaded_data_task(self, upload_history_id):
         
         logger.info(f"Starting data processing for upload ID: {upload_history_id}")
         
-        # Import fungsi process_uploaded_file dari utils
         from .utils import process_uploaded_file
         
-        # Proses file
         result = process_uploaded_file(upload_history)
         
         if result['success']:

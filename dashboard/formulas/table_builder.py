@@ -1,8 +1,4 @@
-"""
-Table Builder Module
-Handles the construction of KONSOL, KANCA ONLY, and KCP ONLY tables
-for different metrics (OS, DPK, NPL, LAR, etc.)
-"""
+"""Table Builder Module - Constructs KONSOL, KANCA ONLY, and KCP ONLY tables"""
 
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -11,40 +7,15 @@ from ..models import LW321
 from .segmentation import get_segment_annotation
 from .calculations import annotate_metrics
 from .uker_mapping import (
-    KANCA_MASTER,
-    UKER_MASTER,
-    KANCA_CODES,
-    KCP_CODES,
-    get_kanca_induk,
-    get_uker_name,
-    get_kcp_by_kanca
+    KANCA_MASTER, UKER_MASTER, KANCA_CODES, KCP_CODES,
+    get_kanca_induk, get_uker_name, get_kcp_by_kanca
 )
-
-
-# ============================================================================
-# KANCA and UKER Master Data - Imported from uker_mapping.py
-# ============================================================================
-# All KANCA/UKER data now comes from uker_mapping.py to ensure consistency
-
-
-# ============================================================================
-# Date Calculation Helpers
-# ============================================================================
 
 def get_date_columns(selected_date):
     """
-    Calculate the 5 date columns (A, B, C, D, E) based on selected date.
-    Follows the same logic as table_calculations.py for consistency.
-    
-    Logic:
-    - A: 31 December of previous year (fixed December)
-    - B: Same day but 1 month ago
-    - C: Last day of previous month
-    - D: Yesterday (H-1)
-    - E: Selected date
-    
-    Returns:
-        dict: Dictionary with date information for each column
+    Calculate 5 date columns (A-E) based on selected date.
+    A: 31 Dec previous year | B: Same day 1 month ago | C: Last day prev month
+    D: Yesterday (H-1) | E: Selected date
     """
     from dateutil.relativedelta import relativedelta
     

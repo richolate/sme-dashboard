@@ -40,18 +40,9 @@
             scrollbar-color: var(--primary-color) var(--sidebar-bg);
         }
 
-        .sidebar::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: var(--sidebar-bg);
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background-color: rgba(255,255,255,0.2);
-            border-radius: 4px;
-        }
+        .sidebar::-webkit-scrollbar { width: 8px; }
+        .sidebar::-webkit-scrollbar-track { background: var(--sidebar-bg); }
+        .sidebar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); border-radius: 4px; }
         
         .sidebar .brand {
             padding: 15px 20px;
@@ -399,186 +390,107 @@
             setInterval(updateLiveDatetime, 1000); 
         });
         
-        // ===============================================
-        // Global Loading Functions
-        // ===============================================
         function showPageLoading(message) {
             const overlay = document.getElementById('pageLoadingOverlay');
             if (overlay) {
                 const msgEl = overlay.querySelector('h4');
-                if (msgEl && message) {
-                    msgEl.textContent = message;
-                }
+                if (msgEl && message) msgEl.textContent = message;
                 overlay.classList.add('show');
             }
         }
         
         function hidePageLoading() {
             const overlay = document.getElementById('pageLoadingOverlay');
-            if (overlay) {
-                overlay.classList.remove('show');
-            }
+            if (overlay) overlay.classList.remove('show');
         }
         
-        // Auto-show loading for dashboard pages on load
         if (window.location.pathname.includes('/dashboard/')) {
-            // Show loading initially
             showPageLoading('Memuat data visualisasi...');
-            
-            // Hide after page fully loaded
-            window.addEventListener('load', function() {
-                setTimeout(hidePageLoading, 500);
-            });
+            window.addEventListener('load', () => setTimeout(hidePageLoading, 500));
         }
         
-        // ===============================================
-        // Date Filter Persistence
-        // ===============================================
         (function() {
             const STORAGE_KEY = 'dashboard_selected_date';
             
-            /**
-             * Get selected date from URL, localStorage, or default
-             */
             function getSelectedDate() {
-                // Priority 1: Check URL parameter
                 const urlParams = new URLSearchParams(window.location.search);
                 const urlDate = urlParams.get('selected_date');
                 if (urlDate) {
-                    // Save to localStorage for future use
                     localStorage.setItem(STORAGE_KEY, urlDate);
                     return urlDate;
                 }
-                
-                // Priority 2: Check localStorage
-                const storedDate = localStorage.getItem(STORAGE_KEY);
-                if (storedDate) {
-                    return storedDate;
-                }
-                
-                // Priority 3: Return null (will use server default)
-                return null;
+                return localStorage.getItem(STORAGE_KEY);
             }
             
-            /**
-             * Save selected date to localStorage
-             */
             function saveSelectedDate(date) {
-                if (date) {
-                    localStorage.setItem(STORAGE_KEY, date);
-                }
+                if (date) localStorage.setItem(STORAGE_KEY, date);
             }
             
-            /**
-             * Add selected_date parameter to URL
-             */
             function addDateToUrl(url) {
                 const selectedDate = getSelectedDate();
-                if (!selectedDate) {
-                    return url;
-                }
+                if (!selectedDate) return url;
                 
                 try {
                     const urlObj = new URL(url, window.location.origin);
-                    
-                    // Don't add date to non-page URLs
-                    if (!urlObj.pathname.includes('/page/') && 
-                        !urlObj.pathname.includes('/dashboard/')) {
+                    if (!urlObj.pathname.includes('/page/') && !urlObj.pathname.includes('/dashboard/')) {
                         return url;
                     }
-                    
-                    // Add or update selected_date parameter
                     urlObj.searchParams.set('selected_date', selectedDate);
                     return urlObj.toString();
                 } catch (e) {
-                    // If URL parsing fails, try relative URL
                     const separator = url.includes('?') ? '&' : '?';
                     return url + separator + 'selected_date=' + encodeURIComponent(selectedDate);
                 }
             }
             
-            /**
-             * Update all navigation links with selected date
-             */
             function updateNavigationLinks() {
                 const selectedDate = getSelectedDate();
-                if (!selectedDate) {
-                    return;
-                }
+                if (!selectedDate) return;
                 
-                // Update all sidebar navigation links
-                const navLinks = document.querySelectorAll('.sidebar .nav-link:not(.nav-link-toggle)');
-                navLinks.forEach(link => {
+                document.querySelectorAll('.sidebar .nav-link:not(.nav-link-toggle)').forEach(link => {
                     const href = link.getAttribute('href');
                     if (href && href !== '#' && !href.startsWith('javascript:')) {
-                        const newHref = addDateToUrl(href);
-                        link.setAttribute('href', newHref);
+                        link.setAttribute('href', addDateToUrl(href));
                     }
                 });
             }
             
-            /**
-             * Intercept link clicks to add date parameter
-             */
             function interceptLinkClicks() {
                 document.addEventListener('click', function(e) {
                     const link = e.target.closest('a.nav-link:not(.nav-link-toggle)');
-                    if (!link) {
-                        return;
-                    }
+                    if (!link) return;
                     
                     const href = link.getAttribute('href');
-                    if (!href || href === '#' || href.startsWith('javascript:')) {
-                        return;
-                    }
+                    if (!href || href === '#' || href.startsWith('javascript:')) return;
                     
-                    // Check if link is for a page URL
                     if (href.includes('/page/') || href.includes('/dashboard/')) {
                         const selectedDate = getSelectedDate();
                         if (selectedDate) {
                             e.preventDefault();
-                            const newHref = addDateToUrl(href);
-                            window.location.href = newHref;
+                            window.location.href = addDateToUrl(href);
                         }
                     }
                 });
             }
             
-            /**
-             * Monitor date input changes
-             */
             function monitorDateInput() {
                 const dateInput = document.querySelector('input[name="selected_date"]');
                 if (dateInput) {
-                    // Save date when input changes
-                    dateInput.addEventListener('change', function() {
-                        saveSelectedDate(this.value);
-                    });
-                    
-                    // If date input is empty but we have stored date, populate it
+                    dateInput.addEventListener('change', function() { saveSelectedDate(this.value); });
                     const storedDate = getSelectedDate();
-                    if (!dateInput.value && storedDate) {
-                        dateInput.value = storedDate;
-                    }
+                    if (!dateInput.value && storedDate) dateInput.value = storedDate;
                 }
             }
             
-            // Initialize on DOM ready
             document.addEventListener('DOMContentLoaded', function() {
                 updateNavigationLinks();
                 interceptLinkClicks();
                 monitorDateInput();
-                
-                // Re-update links after a short delay (in case menu is dynamically loaded)
                 setTimeout(updateNavigationLinks, 500);
             });
             
-            // Expose functions globally for debugging
             window.dashboardDateFilter = {
-                getSelectedDate: getSelectedDate,
-                saveSelectedDate: saveSelectedDate,
-                addDateToUrl: addDateToUrl,
-                updateNavigationLinks: updateNavigationLinks
+                getSelectedDate, saveSelectedDate, addDateToUrl, updateNavigationLinks
             };
         })();
     </script>

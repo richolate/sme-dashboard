@@ -1,63 +1,13 @@
 from django.db.models import Case, When, Value, CharField
 
-# Mapping berdasarkan CODE (kolom pertama di gambar)
 SEGMENT_MAPPING_BY_CODE = {
-    "MEDIUM": [
-        "42210",  # 10. RITKOM -> Rp. 5 M S/D 15 M
-        "42211",  # 11. RITKOM -> Rp. 15 M S/D 25 M
-        "43210",  # (PRT) 05. RITKOM -> Rp. 5 M S/D 15 M
-        "43211",  # (PRT) 06. RITKOM -> Rp. 15 M S/D 25 M
-    ],
-    "SMALL": [
-        "43206",  # (PRT) 01. RITKOM - > Rp 1 M S/D Rp 2 M
-        "43207",  # (PRT) 02. RITKOM - > Rp 2 M S/D Rp 3 M
-        "43208",  # (PRT) 03. RITKOM - > Rp 3 M S/D Rp 4 M
-        "43209",  # (PRT) 04. RITKOM - > Rp 4 M S/D Rp 5 M
-        "82201",  # 01. KECIL - S/D Rp 50 JUTA
-        "82202",  # 02. KECIL - > Rp.50 JUTA S/D Rp 100 JUTA
-        "82203",  # 03. KECIL - > Rp 100 JUTA S/D Rp 350 JUTA
-        "42203",  # 03. RITKOM - > Rp 100 JUTA S/D Rp 350 JUTA
-        "82204",  # 04. KECIL - > Rp 350 JUTA S/D Rp 500 JUTA
-        "42204",  # 04. RITKOM - > Rp 350 JUTA S/D Rp 500 JUTA
-        "82205",  # 05. KECIL - > Rp 500 JUTA S/D Rp 1 M
-        "42205",  # 05. RITKOM - > Rp 500 JUTA S/D Rp 1 M
-        "42206",  # 06. RITKOM - > Rp 1 M S/D Rp 2 M
-        "42207",  # 07. RITKOM - > Rp 2 M S/D Rp 3 M
-        "42208",  # 08. RITKOM - > Rp 3 M S/D Rp 4 M
-        "42209",  # 09. RITKOM - > Rp 4 M S/D Rp 5 M
-        "80064",  # KREDIT PANGAN
-        "42110",  # RITKOM - CASHCOL RITEL (> Rp 1 M S/D Rp 25 M)
-        "42120",  # RITKOM - CASHCOL MENENGAH (> Rp 25 M S/D Rp 200 M)
-        "42140",  # RITKOM - CASHCOL KECIL (S/D Rp 1 M)
-        "80065",  # 10. KUR Ritel 2015 New
-    ],
-    "SMALL NCC": [
-        "43206",  # (PRT) 01. RITKOM - > Rp 1 M S/D Rp 2 M
-        "43207",  # (PRT) 02. RITKOM - > Rp 2 M S/D Rp 3 M
-        "43208",  # (PRT) 03. RITKOM - > Rp 3 M S/D Rp 4 M
-        "43209",  # (PRT) 04. RITKOM - > Rp 4 M S/D Rp 5 M
-        "82201",  # 01. KECIL - S/D Rp 50 JUTA
-        "82202",  # 02. KECIL - > Rp.50 JUTA S/D Rp 100 JUTA
-        "82203",  # 03. KECIL - > Rp 100 JUTA S/D Rp 350 JUTA
-        "42203",  # 03. RITKOM - > Rp 100 JUTA S/D Rp 350 JUTA
-        "82204",  # 04. KECIL - > Rp 350 JUTA S/D Rp 500 JUTA
-        "42204",  # 04. RITKOM - > Rp 350 JUTA S/D Rp 500 JUTA
-        "82205",  # 05. KECIL - > Rp 500 JUTA S/D Rp 1 M
-        "42205",  # 05. RITKOM - > Rp 500 JUTA S/D Rp 1 M
-        "42206",  # 06. RITKOM - > Rp 1 M S/D Rp 2 M
-        "42207",  # 07. RITKOM - > Rp 2 M S/D Rp 3 M
-        "42208",  # 08. RITKOM - > Rp 3 M S/D Rp 4 M
-        "42209",  # 09. RITKOM - > Rp 4 M S/D Rp 5 M
-        "80064",  # KREDIT PANGAN
-    ],
-    "CC": [
-        "42110",  # RITKOM - CASHCOL RITEL (> Rp 1 M S/D Rp 25 M)
-        "42120",  # RITKOM - CASHCOL MENENGAH (> Rp 25 M S/D Rp 200 M)
-        "42140",  # RITKOM - CASHCOL KECIL (S/D Rp 1 M)
-    ],
-    "KUR": [
-        "80065",  # 10. KUR Ritel 2015 New
-    ]
+    "MEDIUM": ["42210", "42211", "43210", "43211"],
+    "SMALL": ["43206", "43207", "43208", "43209", "82201", "82202", "82203", "42203", "82204", "42204", 
+              "82205", "42205", "42206", "42207", "42208", "42209", "80064", "42110", "42120", "42140", "80065"],
+    "SMALL NCC": ["43206", "43207", "43208", "43209", "82201", "82202", "82203", "42203", "82204", "42204", 
+                  "82205", "42205", "42206", "42207", "42208", "42209", "80064"],
+    "CC": ["42110", "42120", "42140"],
+    "KUR": ["80065"]
 }
 
 # Legacy mapping for backward compatibility (if needed)

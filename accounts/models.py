@@ -3,9 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
-    """
-    Custom User Model dengan role-based access
-    """
+    """Custom User Model with role-based access"""
     ROLE_CHOICES = (
         ('admin', 'Admin'),
         ('user', 'User'),
