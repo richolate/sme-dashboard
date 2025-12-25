@@ -457,7 +457,19 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
                 'C': C,
                 'D': D,
                 'E': E,
-                **changes
+                **changes,
+                # Komitmen placeholders
+                'komitmen': 0,
+                'komitmen_pct_ach': 0,
+                'komitmen_gab_real': 0,
+                'komitmen_vs_c': 0,
+                'komitmen_vs_c_pct': 0,
+                'komitmen_vs_b': 0,
+                'komitmen_vs_b_pct': 0,
+                'rkap': 0,
+                'rkap_gab_real': 0,
+                'rkap_vs_komitmen': 0,
+                'rkap_pct_ach': 0,
             })
     
     # Calculate totals
@@ -504,6 +516,21 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
     totals.update(calculate_changes(
         totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
     ))
+    
+    # Add komitmen placeholders to totals
+    totals.update({
+        'komitmen': 0,
+        'komitmen_pct_ach': 0,
+        'komitmen_gab_real': 0,
+        'komitmen_vs_c': 0,
+        'komitmen_vs_c_pct': 0,
+        'komitmen_vs_b': 0,
+        'komitmen_vs_b_pct': 0,
+        'rkap': 0,
+        'rkap_gab_real': 0,
+        'rkap_vs_komitmen': 0,
+        'rkap_pct_ach': 0,
+    })
     
     return {
         'title': f'TOTAL {metric_field.upper()} {segment_filter} KANCA KONSOL',
@@ -575,6 +602,18 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
             'MtD_pct': changes['MtD_pct'],
             'YtD': changes['YtD'],
             'YtD_pct': changes['YtD_pct'],
+            # Komitmen placeholders
+            'komitmen': 0,
+            'komitmen_pct_ach': 0,
+            'komitmen_gab_real': 0,
+            'komitmen_vs_c': 0,
+            'komitmen_vs_c_pct': 0,
+            'komitmen_vs_b': 0,
+            'komitmen_vs_b_pct': 0,
+            'rkap': 0,
+            'rkap_gab_real': 0,
+            'rkap_vs_komitmen': 0,
+            'rkap_pct_ach': 0,
         }
         rows.append(row)
         
@@ -625,6 +664,21 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
         totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
     )
     totals.update(totals_changes)
+    
+    # Add komitmen placeholders to totals
+    totals.update({
+        'komitmen': 0,
+        'komitmen_pct_ach': 0,
+        'komitmen_gab_real': 0,
+        'komitmen_vs_c': 0,
+        'komitmen_vs_c_pct': 0,
+        'komitmen_vs_b': 0,
+        'komitmen_vs_b_pct': 0,
+        'rkap': 0,
+        'rkap_gab_real': 0,
+        'rkap_vs_komitmen': 0,
+        'rkap_pct_ach': 0,
+    })
     
     return {
         'title': f'TOTAL {metric_field.upper()} {segment_filter} KANCA ONLY',
@@ -713,6 +767,18 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
             'MtD_pct': changes['MtD_pct'],
             'YtD': changes['YtD'],
             'YtD_pct': changes['YtD_pct'],
+            # Komitmen placeholders
+            'komitmen': 0,
+            'komitmen_pct_ach': 0,
+            'komitmen_gab_real': 0,
+            'komitmen_vs_c': 0,
+            'komitmen_vs_c_pct': 0,
+            'komitmen_vs_b': 0,
+            'komitmen_vs_b_pct': 0,
+            'rkap': 0,
+            'rkap_gab_real': 0,
+            'rkap_vs_komitmen': 0,
+            'rkap_pct_ach': 0,
         }
         rows.append(row)
         
@@ -763,6 +829,21 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
         totals['A'], totals['B'], totals['C'], totals['D'], totals['E']
     )
     totals.update(totals_changes)
+    
+    # Add komitmen placeholders to totals
+    totals.update({
+        'komitmen': 0,
+        'komitmen_pct_ach': 0,
+        'komitmen_gab_real': 0,
+        'komitmen_vs_c': 0,
+        'komitmen_vs_c_pct': 0,
+        'komitmen_vs_b': 0,
+        'komitmen_vs_b_pct': 0,
+        'rkap': 0,
+        'rkap_gab_real': 0,
+        'rkap_vs_komitmen': 0,
+        'rkap_pct_ach': 0,
+    })
     
     return {
         'title': f'TOTAL {metric_field.upper()} {segment_filter} KCP ONLY',
