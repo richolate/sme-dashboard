@@ -1384,6 +1384,402 @@ def metric_page_view(request, slug):
     # =================================================================================
     
     # =================================================================================
+    # SECTION: OS SMALL NCC Tables
+    #       - Filtered by segment='SMALL NCC'
+    #       - Uses OS field (outstanding)
+    #       - 3 tables: KONSOL, KANCA ONLY, KCP ONLY
+    #       - Date filter: A, B, C, D, E columns
+    #       - MtD, MoM, YtD, YoY: Perhitungan selisih
+    # =================================================================================
+    elif slug == 'small-ncc-os':
+        from datetime import date
+        from .formulas import (
+            get_date_columns, calculate_table_data,
+            KANCA_MASTER, UKER_MASTER, KANCA_CODES, KCP_CODES
+        )
+        from .formulas.calculations import annotate_metrics
+        from .formulas.segmentation import get_segment_annotation
+        
+        # 1. Handle date filter
+        selected_date_str = request.GET.get('selected_date', '')
+        if selected_date_str:
+            try:
+                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = date.today()
+        else:
+            selected_date = date.today()
+        
+        # 2. Get available dates from database
+        from django.db.models.functions import ExtractYear, ExtractMonth, ExtractDay
+        
+        qs_base = LW321.objects.annotate(
+            periode_iso=Concat(
+                Substr('periode', 7, 4),  # YYYY
+                Value('-'),
+                Substr('periode', 4, 2),  # MM
+                Value('-'),
+                Substr('periode', 1, 2),  # DD
+            ),
+        ).annotate(
+            periode_date=Cast('periode_iso', output_field=DateField())
+        )
+        
+        available_dates = list(
+            qs_base.values_list('periode_date', flat=True)
+            .distinct()
+            .order_by('-periode_date')[:100]  # Last 100 dates
+        )
+        
+        # 3. Build base queryset with annotations
+        qs = LW321.objects.all()
+        qs = qs.annotate(segment=get_segment_annotation())
+        qs = annotate_metrics(qs)
+        
+        # 4. Get date columns info
+        date_cols = get_date_columns(selected_date)
+        
+        # 5. Helper functions (same as OS SMALL but with segment='SMALL NCC')
+        def get_kode_kanca_from_uker(kode_uker_str):
+            try:
+                kode_uker = int(kode_uker_str)
+            except (ValueError, TypeError):
+                return None
+            
+            if kode_uker in KANCA_CODES:
+                return kode_uker
+            
+            if kode_uker in UKER_MASTER:
+                _, kode_kanca_induk = UKER_MASTER[kode_uker]
+                return kode_kanca_induk
+            
+            for k, (n, induk) in UKER_MASTER.items():
+                if k == kode_uker:
+                    return induk
+            
+            return None
+        
+        def get_os_by_uker(target_date, segment_filter='SMALL NCC', uker_filter=None):
+            periode_str = target_date.strftime("%d/%m/%Y")
+            
+            qs_filtered = qs.filter(periode=periode_str, segment=segment_filter)
+            
+            if uker_filter == 'KANCA':
+                kanca_codes_str = [str(c) for c in KANCA_CODES]
+                qs_filtered = qs_filtered.filter(kode_uker__in=kanca_codes_str)
+            elif uker_filter == 'KCP':
+                kcp_codes_str = [str(c) for c in KCP_CODES]
+                qs_filtered = qs_filtered.filter(kode_uker__in=kcp_codes_str)
+            
+            result = {}
+            for row in qs_filtered.values('kode_uker').annotate(total_os=Sum('os')):
+                result[row['kode_uker']] = float(row['total_os'] or 0)
+            return result
+        
+        def get_os_by_kanca(target_date, segment_filter='SMALL NCC'):
+            periode_str = target_date.strftime("%d/%m/%Y")
+            
+            qs_filtered = qs.filter(periode=periode_str, segment=segment_filter)
+            
+            os_by_uker = {}
+            for row in qs_filtered.values('kode_uker').annotate(total_os=Sum('os')):
+                os_by_uker[row['kode_uker']] = float(row['total_os'] or 0)
+            
+            os_by_kanca = {}
+            for kode_uker_str, os_value in os_by_uker.items():
+                kode_kanca = get_kode_kanca_from_uker(kode_uker_str)
+                if kode_kanca:
+                    if kode_kanca not in os_by_kanca:
+                        os_by_kanca[kode_kanca] = 0
+                    os_by_kanca[kode_kanca] += os_value
+            
+            return os_by_kanca
+        
+        # 6. Build KONSOL table
+        def build_konsol_table():
+            rows = []
+            totals = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
+            
+            os_a = get_os_by_kanca(date_cols['A']['date'])
+            os_b = get_os_by_kanca(date_cols['B']['date'])
+            os_c = get_os_by_kanca(date_cols['C']['date'])
+            os_d = get_os_by_kanca(date_cols['D']['date'])
+            os_e = get_os_by_kanca(date_cols['E']['date'])
+            
+            row_num = 1
+            for kode_kanca in sorted(KANCA_CODES):
+                nama_kanca = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+                
+                val_a = os_a.get(kode_kanca, 0)
+                val_b = os_b.get(kode_kanca, 0)
+                val_c = os_c.get(kode_kanca, 0)
+                val_d = os_d.get(kode_kanca, 0)
+                val_e = os_e.get(kode_kanca, 0)
+                
+                row = {
+                    'no': row_num,
+                    'kode_kanca': kode_kanca,
+                    'kanca': nama_kanca,
+                    'A': val_a,
+                    'B': val_b,
+                    'C': val_c,
+                    'D': val_d,
+                    'E': val_e,
+                    'DtD': val_e - val_d,
+                    'DtD_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'MoM': val_e - val_b,
+                    'MoM_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
+                    'MtD': val_e - val_c,
+                    'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
+                    'YtD': val_e - val_a,
+                    'YtD_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                }
+                
+                rows.append(row)
+                totals['A'] += val_a
+                totals['B'] += val_b
+                totals['C'] += val_c
+                totals['D'] += val_d
+                totals['E'] += val_e
+                row_num += 1
+            
+            totals['DtD'] = totals['E'] - totals['D']
+            totals['DtD_pct'] = (totals['DtD'] / totals['D'] * 100) if totals['D'] else 0
+            totals['MoM'] = totals['E'] - totals['B']
+            totals['MoM_pct'] = (totals['MoM'] / totals['B'] * 100) if totals['B'] else 0
+            totals['MtD'] = totals['E'] - totals['C']
+            totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
+            totals['YtD'] = totals['E'] - totals['A']
+            totals['YtD_pct'] = (totals['YtD'] / totals['A'] * 100) if totals['A'] else 0
+            
+            return rows, totals
+        
+        # 7. Build KANCA ONLY table
+        def build_kanca_only_table():
+            rows = []
+            totals = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
+            
+            os_a = get_os_by_uker(date_cols['A']['date'], uker_filter='KANCA')
+            os_b = get_os_by_uker(date_cols['B']['date'], uker_filter='KANCA')
+            os_c = get_os_by_uker(date_cols['C']['date'], uker_filter='KANCA')
+            os_d = get_os_by_uker(date_cols['D']['date'], uker_filter='KANCA')
+            os_e = get_os_by_uker(date_cols['E']['date'], uker_filter='KANCA')
+            
+            row_num = 1
+            for kode_kanca in sorted(KANCA_CODES):
+                nama_kanca = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
+                kode_str = str(kode_kanca)
+                
+                val_a = os_a.get(kode_str, 0)
+                val_b = os_b.get(kode_str, 0)
+                val_c = os_c.get(kode_str, 0)
+                val_d = os_d.get(kode_str, 0)
+                val_e = os_e.get(kode_str, 0)
+                
+                row = {
+                    'no': row_num,
+                    'kode_uker': kode_kanca,
+                    'uker': nama_kanca,
+                    'kode_kanca': kode_kanca,
+                    'kanca': nama_kanca,
+                    'A': val_a,
+                    'B': val_b,
+                    'C': val_c,
+                    'D': val_d,
+                    'E': val_e,
+                    'DtD': val_e - val_d,
+                    'DtD_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'MoM': val_e - val_b,
+                    'MoM_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
+                    'MtD': val_e - val_c,
+                    'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
+                    'YtD': val_e - val_a,
+                    'YtD_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    'komitmen': 0, 'komitmen_pct_ach': 0, 'komitmen_gab_real': 0,
+                    'komitmen_vs_c': 0, 'komitmen_vs_c_pct': 0,
+                    'komitmen_vs_b': 0, 'komitmen_vs_b_pct': 0,
+                    'rkap': 0, 'rkap_gab_real': 0, 'rkap_vs_komitmen': 0, 'rkap_pct_ach': 0,
+                }
+                
+                rows.append(row)
+                totals['A'] += val_a
+                totals['B'] += val_b
+                totals['C'] += val_c
+                totals['D'] += val_d
+                totals['E'] += val_e
+                row_num += 1
+            
+            totals['DtD'] = totals['E'] - totals['D']
+            totals['DtD_pct'] = (totals['DtD'] / totals['D'] * 100) if totals['D'] else 0
+            totals['MoM'] = totals['E'] - totals['B']
+            totals['MoM_pct'] = (totals['MoM'] / totals['B'] * 100) if totals['B'] else 0
+            totals['MtD'] = totals['E'] - totals['C']
+            totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
+            totals['YtD'] = totals['E'] - totals['A']
+            totals['YtD_pct'] = (totals['YtD'] / totals['A'] * 100) if totals['A'] else 0
+            
+            totals['komitmen'] = 0
+            totals['komitmen_pct_ach'] = 0
+            totals['komitmen_gab_real'] = 0
+            totals['komitmen_vs_c'] = 0
+            totals['komitmen_vs_c_pct'] = 0
+            totals['komitmen_vs_b'] = 0
+            totals['komitmen_vs_b_pct'] = 0
+            totals['rkap'] = 0
+            totals['rkap_gab_real'] = 0
+            totals['rkap_vs_komitmen'] = 0
+            totals['rkap_pct_ach'] = 0
+            
+            return rows, totals
+        
+        # 8. Build KCP ONLY table
+        def build_kcp_only_table():
+            rows = []
+            totals = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
+            
+            os_a = get_os_by_uker(date_cols['A']['date'], uker_filter='KCP')
+            os_b = get_os_by_uker(date_cols['B']['date'], uker_filter='KCP')
+            os_c = get_os_by_uker(date_cols['C']['date'], uker_filter='KCP')
+            os_d = get_os_by_uker(date_cols['D']['date'], uker_filter='KCP')
+            os_e = get_os_by_uker(date_cols['E']['date'], uker_filter='KCP')
+            
+            all_kcp_codes = sorted(KCP_CODES)
+            
+            row_num = 1
+            for kode_kcp in all_kcp_codes:
+                kode_str = str(kode_kcp)
+                
+                if kode_kcp not in UKER_MASTER:
+                    continue
+                
+                nama_kcp, kode_kanca_induk = UKER_MASTER[kode_kcp]
+                nama_kanca = KANCA_MASTER.get(kode_kanca_induk, f"KANCA {kode_kanca_induk}")
+                
+                val_a = os_a.get(kode_str, 0)
+                val_b = os_b.get(kode_str, 0)
+                val_c = os_c.get(kode_str, 0)
+                val_d = os_d.get(kode_str, 0)
+                val_e = os_e.get(kode_str, 0)
+                
+                row = {
+                    'no': row_num,
+                    'kode_uker': kode_kcp,
+                    'uker': nama_kcp,
+                    'kode_kanca': kode_kanca_induk,
+                    'kanca': nama_kanca,
+                    'A': val_a,
+                    'B': val_b,
+                    'C': val_c,
+                    'D': val_d,
+                    'E': val_e,
+                    'DtD': val_e - val_d,
+                    'DtD_pct': ((val_e - val_d) / val_d * 100) if val_d else 0,
+                    'MoM': val_e - val_b,
+                    'MoM_pct': ((val_e - val_b) / val_b * 100) if val_b else 0,
+                    'MtD': val_e - val_c,
+                    'MtD_pct': ((val_e - val_c) / val_c * 100) if val_c else 0,
+                    'YtD': val_e - val_a,
+                    'YtD_pct': ((val_e - val_a) / val_a * 100) if val_a else 0,
+                    'komitmen': 0, 'komitmen_pct_ach': 0, 'komitmen_gab_real': 0,
+                    'komitmen_vs_c': 0, 'komitmen_vs_c_pct': 0,
+                    'komitmen_vs_b': 0, 'komitmen_vs_b_pct': 0,
+                    'rkap': 0, 'rkap_gab_real': 0, 'rkap_vs_komitmen': 0, 'rkap_pct_ach': 0,
+                }
+                
+                rows.append(row)
+                totals['A'] += val_a
+                totals['B'] += val_b
+                totals['C'] += val_c
+                totals['D'] += val_d
+                totals['E'] += val_e
+                row_num += 1
+            
+            totals['DtD'] = totals['E'] - totals['D']
+            totals['DtD_pct'] = (totals['DtD'] / totals['D'] * 100) if totals['D'] else 0
+            totals['MoM'] = totals['E'] - totals['B']
+            totals['MoM_pct'] = (totals['MoM'] / totals['B'] * 100) if totals['B'] else 0
+            totals['MtD'] = totals['E'] - totals['C']
+            totals['MtD_pct'] = (totals['MtD'] / totals['C'] * 100) if totals['C'] else 0
+            totals['YtD'] = totals['E'] - totals['A']
+            totals['YtD_pct'] = (totals['YtD'] / totals['A'] * 100) if totals['A'] else 0
+            
+            totals['komitmen'] = 0
+            totals['komitmen_pct_ach'] = 0
+            totals['komitmen_gab_real'] = 0
+            totals['komitmen_vs_c'] = 0
+            totals['komitmen_vs_c_pct'] = 0
+            totals['komitmen_vs_b'] = 0
+            totals['komitmen_vs_b_pct'] = 0
+            totals['rkap'] = 0
+            totals['rkap_gab_real'] = 0
+            totals['rkap_vs_komitmen'] = 0
+            totals['rkap_pct_ach'] = 0
+            
+            return rows, totals
+        
+        # 9. Build all tables
+        konsol_rows, konsol_totals = build_konsol_table()
+        kanca_rows, kanca_totals = build_kanca_only_table()
+        kcp_rows, kcp_totals = build_kcp_only_table()
+        
+        # 10. Format date headers
+        dtd_header = f"{date_cols['E']['label']} - {date_cols['D']['label']}"
+        mom_header = f"{date_cols['E']['label']} - {date_cols['B']['label']}"
+        mtd_header = f"{date_cols['E']['label']} - {date_cols['C']['label']}"
+        ytd_header = f"{date_cols['E']['label']} - {date_cols['A']['label']}"
+        
+        # Context
+        context.update({
+            'show_os_tables': True,
+            'selected_date': selected_date,
+            'selected_date_str': selected_date.strftime('%Y-%m-%d'),
+            'available_dates': available_dates,
+            'date_columns': date_cols,
+            'dtd_header': dtd_header,
+            'mom_header': mom_header,
+            'mtd_header': mtd_header,
+            'ytd_header': ytd_header,
+            'tables': {
+                'konsol': {
+                    'title': 'OS SMALL SD 5M KANCA KONSOL',
+                    'rows': konsol_rows,
+                    'totals': konsol_totals,
+                },
+                'kanca': {
+                    'title': 'OS SMALL SD 5M KANCA ONLY',
+                    'rows': kanca_rows,
+                    'totals': kanca_totals,
+                },
+                'kcp': {
+                    'title': 'OS SMALL SD 5M KCP ONLY',
+                    'rows': kcp_rows,
+                    'totals': kcp_totals,
+                },
+            },
+        })
+    # =================================================================================
+    # END SECTION: OS SMALL NCC Tables
+    # =================================================================================
+    
+    # =================================================================================
+    # SECTION: DPK SMALL NCC Tables
+    #       - Segment: SMALL NCC (non-CC/KUR small business)
+    #       - Metric: DPK (Dana Pihak Ketiga) using SML field
+    #       - Filter: kol_adk='2' (Kolektibilitas DPK)
+    #       - 3 tables: KONSOL, KANCA ONLY, KCP ONLY
+    #       - Date filter: A, B, C, D, E columns
+    #       - Calculations: DtD, MoM, MtD, YtD with percentages
+    # =================================================================================
+    elif slug == 'small-ncc-dpk':
+        from .formulas.metric_handlers import handle_dpk_view
+        
+        # Use modular handler with SMALL NCC segment
+        context.update(handle_dpk_view(request, segment_filter='SMALL NCC'))
+    # =================================================================================
+    # END SECTION: DPK SMALL NCC Tables
+    # =================================================================================
+    
+    # =================================================================================
     # SECTION: DPK Small Tables - NEW with kol_adk filter
     #       - Filtered by kol_adk='2' (Kolektibilitas DPK)
     #       - Uses refactored modular metric handler
@@ -1409,6 +1805,24 @@ def metric_page_view(request, slug):
         context.update(handle_dpk_pct_view(request, segment_filter='SMALL'))
     # =================================================================================
     # END SECTION: %DPK Small Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: NPL SMALL NCC Tables
+    #       - Segment: SMALL NCC (non-CC/KUR small business)
+    #       - Metric: NPL (Non-Performing Loan) 
+    #       - Formula: NPL = KL + D + M (kol_adk IN ('3','4','5'))
+    #       - 3 tables: KONSOL, KANCA ONLY, KCP ONLY
+    #       - Date filter: A, B, C, D, E columns
+    #       - Calculations: DtD, MoM, MtD, YtD with percentages
+    # =================================================================================
+    elif slug == 'small-ncc-npl':
+        from .formulas.metric_handlers import handle_npl_view
+        
+        # Use modular handler with SMALL NCC segment
+        context.update(handle_npl_view(request, segment_filter='SMALL NCC'))
+    # =================================================================================
+    # END SECTION: NPL SMALL NCC Tables
     # =================================================================================
 
     # =================================================================================
@@ -1440,6 +1854,21 @@ def metric_page_view(request, slug):
     # =================================================================================
 
     # =================================================================================
+    # SECTION: LR SMALL NCC Tables
+    #       - LR = Lancar if (kol_adk == '1' AND flag_restruk == 'Y')
+    #       - Restructured loans for SMALL NCC segment
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-ncc-lr':
+        from .formulas.metric_handlers import handle_lr_view
+        
+        # Use modular handler - LR calculated from calculations.py
+        context.update(handle_lr_view(request, segment_filter='SMALL NCC'))
+    # =================================================================================
+    # END SECTION: LR SMALL NCC Tables
+    # =================================================================================
+
+    # =================================================================================
     # SECTION: LR Small Tables
     #       - LR = Lancar if (kol_adk == '1' AND flag_restruk == 'Y')
     #       - Uses refactored modular metric handler
@@ -1465,6 +1894,21 @@ def metric_page_view(request, slug):
         context.update(handle_lar_view(request, segment_filter='SMALL'))
     # =================================================================================
     # END SECTION: LAR Small Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: NSB SMALL NCC Tables
+    #       - NSB = SUM(NASABAH) WHERE segment='SMALL NCC' AND dub_nasabah='TRUE'
+    #       - Counts unique customers (nasabah) for SMALL NCC segment
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'small-ncc-nsb':
+        from .formulas.metric_handlers import handle_nsb_view
+        
+        # Use modular handler - NSB counts customers with dub_nasabah='TRUE'
+        context.update(handle_nsb_view(request, segment_filter='SMALL NCC'))
+    # =================================================================================
+    # END SECTION: NSB SMALL NCC Tables
     # =================================================================================
 
     # =================================================================================
