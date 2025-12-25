@@ -82,6 +82,9 @@ def get_base_queryset(target_date, segment_filter, metric_field='os', kol_adk_fi
     Args:
         target_date: Date to filter data
         segment_filter: Segment to filter (e.g., 'SMALL', 'MEDIUM', 'CC', 'KUR')
+                       - 'SMALL' = Aggregate of SMALL NCC + CC + KUR (all non-MEDIUM)
+                       - 'MEDIUM' = Only MEDIUM segment
+                       - 'CC', 'KUR', 'SMALL NCC' = Specific segments
         metric_field: Field to aggregate (e.g., 'os', 'dpk', 'npl', 'lar')
         kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
     
@@ -93,7 +96,11 @@ def get_base_queryset(target_date, segment_filter, metric_field='os', kol_adk_fi
     qs = annotate_metrics(qs)
     
     if segment_filter:
-        qs = qs.filter(segment=segment_filter)
+        # SMALL is an aggregate segment = SMALL NCC + CC + KUR (all non-MEDIUM)
+        if segment_filter == 'SMALL':
+            qs = qs.exclude(segment='MEDIUM')
+        else:
+            qs = qs.filter(segment=segment_filter)
     
     # Apply kol_adk filter if specified (for DPK: kol_adk='2')
     if kol_adk_filter is not None:

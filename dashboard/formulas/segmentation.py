@@ -1,15 +1,15 @@
 from django.db.models import Case, When, Value, CharField
 
 # NOTE: Order matters! More specific segments should come BEFORE generic ones.
-# SMALL NCC codes must be checked BEFORE SMALL to avoid being claimed by SMALL first.
+# SMALL is the DEFAULT category - any code that is NOT MEDIUM will be classified as SMALL.
+# This means SMALL includes SMALL NCC, CC, and KUR as subcategories.
 SEGMENT_MAPPING_BY_CODE = {
     "MEDIUM": ["42210", "42211", "43210", "43211"],
     "SMALL NCC": ["43206", "43207", "43208", "43209", "82201", "82202", "82203", "42203", "82204", "42204", 
                   "82205", "42205", "42206", "42207", "42208", "42209", "80064"],
     "CC": ["42110", "42120", "42140"],
     "KUR": ["80065"],
-    "SMALL": ["43206", "43207", "43208", "43209", "82201", "82202", "82203", "42203", "82204", "42204", 
-              "82205", "42205", "42206", "42207", "42208", "42209", "80064", "42110", "42120", "42140", "80065"],
+    # SMALL is handled as default in get_segment_annotation() - not listed here to avoid duplication
 }
 
 
@@ -57,7 +57,12 @@ SEGMENT_MAPPING = {
 def get_segment_annotation():
     """
     Returns a Case expression to annotate the segment based on the CODE field (kode_jenis_kredit).
-    This is more reliable than using description text.
+    
+    Segmentation logic:
+    - MEDIUM: Specific medium business codes (42210, 42211, 43210, 43211)
+    - SMALL: Everything else (default) - includes SMALL NCC, CC, KUR as subcategories
+    
+    This ensures SMALL acts as the umbrella category for all non-MEDIUM loans.
     """
     whens = []
     for segment, codes in SEGMENT_MAPPING_BY_CODE.items():
@@ -66,7 +71,7 @@ def get_segment_annotation():
     
     return Case(
         *whens,
-        default=Value('OTHER'),
+        default=Value('SMALL'),  # Changed from 'OTHER' to 'SMALL' - SMALL is the default category
         output_field=CharField()
     )
 
