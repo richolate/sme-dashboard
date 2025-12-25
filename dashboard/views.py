@@ -1992,5 +1992,79 @@ def metric_page_view(request, slug):
     # END SECTION: NSB CC Tables
     # =================================================================================
 
+    # =================================================================================
+    # SECTION: OS KUR Tables
+    #       - OS/Outstanding = Total loan amount for KUR segment
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'kur-os':
+        from .formulas.metric_handlers import handle_os_view
+        
+        # Use modular handler - OS calculated from 'outstanding' field in calculations.py
+        context.update(handle_os_view(request, segment_filter='KUR'))
+    # =================================================================================
+    # END SECTION: OS KUR Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: DPK KUR Tables
+    #       - DPK/SML = SUM(OS) WHERE KOL_ADK = '2'
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'kur-dpk':
+        from .formulas.metric_handlers import handle_dpk_view
+        
+        # Use modular handler - DPK calculated from 'sml' field in calculations.py
+        context.update(handle_dpk_view(request, segment_filter='KUR'))
+    # =================================================================================
+    # END SECTION: DPK KUR Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: NPL KUR Tables
+    #       - NPL = SUM(OS) WHERE KOL_ADK IN ('3', '4', '5')
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'kur-npl':
+        from .formulas.metric_handlers import handle_npl_view
+        
+        # Use modular handler - NPL calculated from 'npl' field in calculations.py
+        context.update(handle_npl_view(request, segment_filter='KUR'))
+    # =================================================================================
+    # END SECTION: NPL KUR Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: NSB KUR Tables
+    #       - NSB = SUM(NASABAH) WHERE segment='KUR' AND DUB_NASABAH='TRUE'
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'kur-nsb':
+        from .formulas.metric_handlers import handle_nsb_view
+        
+        # Use modular handler - NSB calculated from count_unique_customers() in calculations.py
+        context.update(handle_nsb_view(request, segment_filter='KUR'))
+    # =================================================================================
+    # END SECTION: NSB KUR Tables
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: LR KUR Tables
+    #       - LR = SUM(OS) WHERE KOL_ADK = '1' AND FLAG_RESTRUK = 'Y'
+    #       - 3 tables: KANCA KONSOL, KANCA ONLY, KCP ONLY
+    #       - Uses refactored modular metric handler
+    # =================================================================================
+    elif slug == 'kur-lr':
+        from .formulas.metric_handlers import handle_lr_view
+        
+        # Use modular handler - LR calculated from 'lr' field in calculations.py
+        context.update(handle_lr_view(request, segment_filter='KUR'))
+    # =================================================================================
+    # END SECTION: LR KUR Tables
+    # =================================================================================
 
     return render(request, 'dashboard/metric_page.html', context)
