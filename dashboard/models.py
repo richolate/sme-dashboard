@@ -134,38 +134,39 @@ class KomitmenData(models.Model):
     periode = models.DateField(db_index=True, help_text="Periode bulan komitmen")
     
     # Identifiers
-    kode_kanca = models.CharField(max_length=10, db_index=True)
+    kode_kanca = models.IntegerField(db_index=True, help_text="Kode KANCA sebagai integer")
     kode_uker = models.CharField(max_length=20, db_index=True)
     nama_kanca = models.CharField(max_length=100)
     nama_uker = models.CharField(max_length=100)
     
     # KUR RITEL - bisa angka, 0, atau NULL (untuk - atau kosong)
-    kur_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kur_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kur_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kur_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kur_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    # Decimal(20, 10) untuk presisi tinggi (contoh: 191954.5908991)
+    kur_deb = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kur_os = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kur_pl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kur_npl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kur_dpk = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     
     # SMALL SD 5M
-    small_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    small_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    small_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    small_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    small_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    small_deb = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    small_os = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    small_pl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    small_npl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    small_dpk = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     
     # KECIL NCC
-    kecil_ncc_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_ncc_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_ncc_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_ncc_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_ncc_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_ncc_deb = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_ncc_os = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_ncc_pl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_ncc_npl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_ncc_dpk = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     
     # KECIL CC
-    kecil_cc_deb = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_cc_os = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_cc_pl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_cc_npl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
-    kecil_cc_dpk = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    kecil_cc_deb = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_cc_os = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_cc_pl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_cc_npl = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    kecil_cc_dpk = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     

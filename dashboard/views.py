@@ -1028,9 +1028,10 @@ def metric_page_view(request, slug):
     elif slug == 'small-ncc-os':
         from datetime import date
         from .formulas import (
-            get_date_columns, calculate_table_data,
+            get_date_columns,
             KANCA_MASTER, UKER_MASTER, KANCA_CODES, KCP_CODES
         )
+        from .formulas.table_builder import build_konsol_table, build_kanca_only_table, build_kcp_only_table
         # Note: annotate_metrics and get_segment_annotation already imported at top
         
         # 1. Handle date filter
@@ -1064,15 +1065,82 @@ def metric_page_view(request, slug):
             .order_by('-periode_date')[:100]  # Last 100 dates
         )
         
-        # 3. Build base queryset with annotations
-        qs = LW321.objects.all()
-        qs = qs.annotate(segment=get_segment_annotation())
-        qs = annotate_metrics(qs)
-        
-        # 4. Get date columns info
+        # 3. Get date columns info
         date_cols = get_date_columns(selected_date)
         
-        # 5. Helper functions (same as OS SMALL but with segment='SMALL NCC')
+        # 4. Build all tables using table_builder functions
+        konsol_table = build_konsol_table(
+            date_columns=date_cols,
+            segment_filter='SMALL NCC',
+            metric_field='os',
+            kol_adk_filter=None
+        )
+        
+        kanca_table = build_kanca_only_table(
+            date_columns=date_cols,
+            segment_filter='SMALL NCC',
+            metric_field='os',
+            kol_adk_filter=None
+        )
+        
+        kcp_table = build_kcp_only_table(
+            date_columns=date_cols,
+            segment_filter='SMALL NCC',
+            metric_field='os',
+            kol_adk_filter=None
+        )
+        
+        # 5. Format date headers
+        dtd_header = f"{date_cols['E']['label']} - {date_cols['D']['label']}"
+        mom_header = f"{date_cols['E']['label']} - {date_cols['B']['label']}"
+        mtd_header = f"{date_cols['E']['label']} - {date_cols['C']['label']}"
+        ytd_header = f"{date_cols['E']['label']} - {date_cols['A']['label']}"
+        
+        # 6. Format komitmen header (dynamic month label)
+        month_names = {
+            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+            7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+        }
+        komitmen_label = f"{month_names[selected_date.month]}'{str(selected_date.year)[2:]}"
+        
+        # Context
+        context.update({
+            'show_os_tables': True,
+            'selected_date': selected_date,
+            'selected_date_str': selected_date.strftime('%Y-%m-%d'),
+            'available_dates': available_dates,
+            'date_columns': date_cols,
+            'komitmen_label': komitmen_label,
+            'dtd_header': dtd_header,
+            'mom_header': mom_header,
+            'mtd_header': mtd_header,
+            'ytd_header': ytd_header,
+            'tables': {
+                'konsol': {
+                    'title': 'OS SMALL NCC KANCA KONSOL',
+                    'rows': konsol_table['rows'],
+                    'totals': konsol_table['totals'],
+                },
+                'kanca': {
+                    'title': 'OS SMALL NCC KANCA ONLY',
+                    'rows': kanca_table['rows'],
+                    'totals': kanca_table['totals'],
+                },
+                'kcp': {
+                    'title': 'OS SMALL NCC KCP ONLY',
+                    'rows': kcp_table['rows'],
+                    'totals': kcp_table['totals'],
+                },
+            },
+        })
+    # =================================================================================
+    # END SECTION: OS SMALL NCC Tables
+    # =================================================================================
+    
+    # =================================================================================
+    # SECTION: DPK SMALL NCC Tables (OLD - DISABLED)
+    # =================================================================================
+    elif False and slug == 'small-ncc-dpk':
         def get_kode_kanca_from_uker(kode_uker_str):
             try:
                 kode_uker = int(kode_uker_str)
@@ -1127,6 +1195,9 @@ def metric_page_view(request, slug):
                     os_by_kanca[kode_kanca] += os_value
             
             return os_by_kanca
+        
+        # Get date columns info
+        date_cols = get_date_columns(selected_date)
         
         # 6. Build KONSOL table
         def build_konsol_table():
@@ -1361,6 +1432,14 @@ def metric_page_view(request, slug):
         mtd_header = f"{date_cols['E']['label']} - {date_cols['C']['label']}"
         ytd_header = f"{date_cols['E']['label']} - {date_cols['A']['label']}"
         
+        # 11. Format komitmen header (dynamic month label)
+        # Example: "Dec'25" for December 2025
+        month_names = {
+            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+            7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+        }
+        komitmen_label = f"{month_names[selected_date.month]}'{str(selected_date.year)[2:]}"
+        
         # Context
         context.update({
             'show_os_tables': True,
@@ -1368,6 +1447,7 @@ def metric_page_view(request, slug):
             'selected_date_str': selected_date.strftime('%Y-%m-%d'),
             'available_dates': available_dates,
             'date_columns': date_cols,
+            'komitmen_label': komitmen_label,
             'dtd_header': dtd_header,
             'mom_header': mom_header,
             'mtd_header': mtd_header,

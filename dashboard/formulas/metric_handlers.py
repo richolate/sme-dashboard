@@ -8,6 +8,19 @@ from .table_builder import build_metric_tables
 
 
 # ============================================================================
+# Helper Functions
+# ============================================================================
+
+def get_komitmen_label(selected_date):
+    """Generate dynamic komitmen label based on selected date."""
+    month_names = {
+        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+    }
+    return f"{month_names[selected_date.month]}'{str(selected_date.year)[2:]}"
+
+
+# ============================================================================
 # OS (Outstanding) Handler
 # ============================================================================
 
@@ -42,6 +55,7 @@ def handle_os_view(request, segment_filter='SMALL'):
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': get_komitmen_label(selected_date),
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -84,12 +98,20 @@ def handle_dpk_view(request, segment_filter='SMALL'):
         metric_field='dpk'  # Will be mapped to 'sml' field in table_builder
     )
     
+    # Format komitmen header (dynamic month label)
+    month_names = {
+        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+    }
+    komitmen_label = f"{month_names[selected_date.month]}'{str(selected_date.year)[2:]}"
+    
     context = {
         'show_os_tables': True,
         'metric_type': 'dpk',  # For conditional color logic in template (inverse colors)
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': komitmen_label,
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -130,12 +152,20 @@ def handle_dpk_pct_view(request, segment_filter='SMALL'):
         metric_field='dpk_pct'  # Special field for percentage
     )
     
+    # Format komitmen header (dynamic month label)
+    month_names = {
+        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+    }
+    komitmen_label = f"{month_names[selected_date.month]}'{str(selected_date.year)[2:]}"
+    
     context = {
         'show_os_tables': True,
         'metric_type': 'dpk_pct',  # For percentage formatting and inverse color logic
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': komitmen_label,
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -183,6 +213,7 @@ def handle_npl_view(request, segment_filter='SMALL'):
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': get_komitmen_label(selected_date),
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -226,6 +257,7 @@ def handle_npl_pct_view(request, segment_filter='SMALL'):
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': get_komitmen_label(selected_date),
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -273,6 +305,7 @@ def handle_lar_view(request, segment_filter='SMALL'):
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': get_komitmen_label(selected_date),
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -315,6 +348,7 @@ def handle_nsb_view(request, segment_filter='SMALL'):
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': get_komitmen_label(selected_date),
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -362,6 +396,7 @@ def handle_lr_view(request, segment_filter='SMALL'):
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': get_komitmen_label(selected_date),
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",
@@ -409,6 +444,7 @@ def handle_nsb_view(request, segment_filter='SMALL'):
         'tables': table_data,
         'selected_date_str': selected_date.strftime('%Y-%m-%d'),
         'date_columns': table_data['date_columns'],
+        'komitmen_label': get_komitmen_label(selected_date),
         'dtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['D']['date'].strftime('%d %b')}",
         'mom_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['B']['date'].strftime('%d %b')}",
         'mtd_header': f"{table_data['date_columns']['E']['date'].strftime('%d %b')} - {table_data['date_columns']['C']['date'].strftime('%d %b')}",

@@ -186,3 +186,38 @@ def get_attribute(obj, attr):
         return getattr(obj, attr, '-')
     except (AttributeError, TypeError):
         return '-'
+
+
+@register.filter
+def format_komitmen(value, decimals=0):
+    """
+    Format komitmen value dengan thousand separator
+    Nilai dalam ribuan (tidak dibagi lagi), format sebagai integer dengan koma pemisah
+    Example: 257636 -> 257,636
+             191954.5908991 -> 191,955 (rounded to integer)
+    """
+    try:
+        if value is None or value == '' or value == '-':
+            return '-'
+        num = float(value)
+        # Round to integer (no decimals for komitmen display)
+        rounded = round(num)
+        # Format dengan thousand separator
+        return '{:,}'.format(rounded)
+    except (ValueError, TypeError):
+        return '-'
+
+
+@register.filter
+def abs_value(value):
+    """
+    Returns the absolute value of a number
+    Example: -1531 -> 1531
+             1162 -> 1162
+    """
+    try:
+        if value is None or value == '' or value == '-':
+            return '-'
+        return abs(float(value))
+    except (ValueError, TypeError):
+        return value

@@ -109,10 +109,10 @@
                                 {% for total in validation.total_rows %}
                                 <tr class="table-warning">
                                     <td><span class="badge bg-dark fs-6">{{ total.uker }}</span></td>
-                                    <td class="text-end fw-bold">{{ total.kur_os|floatformat:0|default:"-" }}</td>
-                                    <td class="text-end fw-bold">{{ total.small_os|floatformat:0|default:"-" }}</td>
-                                    <td class="text-end fw-bold">{{ total.kecil_ncc_os|floatformat:0|default:"-" }}</td>
-                                    <td class="text-end fw-bold">{{ total.kecil_cc_os|floatformat:0|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ total.kur_os|floatformat:7|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ total.small_os|floatformat:7|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ total.kecil_ncc_os|floatformat:7|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ total.kecil_cc_os|floatformat:7|default:"-" }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -299,30 +299,30 @@
                                 <td class="sticky-col sticky-col-3" style="background-color: #f8f9fa;"><strong>{{ row.kode_uker }}</strong></td>
                                 <td class="sticky-col sticky-col-4" style="background-color: #f8f9fa;">{{ row.nama_kanca }}</td>
                                 <td class="sticky-col sticky-col-5" style="background-color: #f8f9fa;">{{ row.nama_uker }}</td>
-                                <!-- KUR RITEL -->
-                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_deb|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_os|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_pl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_npl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_dpk|floatformat:0|default:"-" }}</td>
-                                <!-- SMALL SD 5M -->
-                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_deb|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_os|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_pl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_npl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_dpk|floatformat:0|default:"-" }}</td>
-                                <!-- KECIL NCC -->
-                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_deb|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_os|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_pl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_npl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_dpk|floatformat:0|default:"-" }}</td>
-                                <!-- KECIL CC -->
-                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_deb|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_os|floatformat:0|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_pl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_npl|floatformat:2|default:"-" }}</td>
-                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_dpk|floatformat:0|default:"-" }}</td>
+                                <!-- KUR RITEL (nilai asli dengan presisi tinggi) -->
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_deb|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_os|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_pl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_npl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_dpk|floatformat:7|default:"-" }}</td>
+                                <!-- SMALL SD 5M (nilai asli dengan presisi tinggi) -->
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_deb|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_os|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_pl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_npl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #eafaf1;">{{ row.small_dpk|floatformat:7|default:"-" }}</td>
+                                <!-- KECIL NCC (nilai asli dengan presisi tinggi) -->
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_deb|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_os|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_pl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_npl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fef5e7;">{{ row.kecil_ncc_dpk|floatformat:7|default:"-" }}</td>
+                                <!-- KECIL CC (nilai asli dengan presisi tinggi) -->
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_deb|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_os|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_pl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_npl|floatformat:7|default:"-" }}</td>
+                                <td class="text-end" style="background-color: #fadbd8;">{{ row.kecil_cc_dpk|floatformat:7|default:"-" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

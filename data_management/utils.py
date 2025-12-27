@@ -626,12 +626,18 @@ def save_komitmen_data(df, periode, upload_obj):
             skipped_closed += 1
             continue
         
-        # Clean kode_kanca (remove .0 from float, convert to int string)
+        # Clean kode_kanca (convert to integer for IntegerField)
         kode_kanca_raw = str(row[COLUMN_INDICES['kode_kanca']]).strip()
         try:
-            kode_kanca = str(int(float(kode_kanca_raw)))
+            kode_kanca = int(float(kode_kanca_raw))  # Convert to integer directly
         except (ValueError, TypeError):
-            kode_kanca = kode_kanca_raw
+            # Fallback: try to extract digits only
+            try:
+                kode_kanca = int(''.join(filter(str.isdigit, kode_kanca_raw)))
+            except (ValueError, TypeError):
+                # Skip row if kode_kanca is invalid
+                skipped_invalid += 1
+                continue
         
         komitmen_obj = KomitmenData(
             upload=upload_obj,
