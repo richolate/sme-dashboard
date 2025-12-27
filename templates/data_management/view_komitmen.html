@@ -43,22 +43,22 @@
         z-index: 15;
     }
     
-    /* Alternating row colors (zebra striping) */
-    .data-table tbody tr:nth-child(odd) {
-        background-color: #f2f2f2;
+    /* Alternating row colors (zebra striping) - Apply to all cells */
+    .data-table tbody tr:nth-child(odd) td {
+        background-color: #f2f2f2 !important;
     }
     
-    .data-table tbody tr:nth-child(even) {
-        background-color: white;
+    .data-table tbody tr:nth-child(even) td {
+        background-color: white !important;
     }
     
-    /* Ensure sticky columns inherit row background */
-    .data-table tbody tr:nth-child(odd) .sticky-col {
-        background-color: #f2f2f2;
+    /* Row number column - slight different shade */
+    .data-table tbody tr:nth-child(odd) td.row-number {
+        background-color: #e0e0e0 !important;
     }
     
-    .data-table tbody tr:nth-child(even) .sticky-col {
-        background-color: white;
+    .data-table tbody tr:nth-child(even) td.row-number {
+        background-color: #f8f9fa !important;
     }
     
     /* Color-coded headers - Updated colors */
@@ -76,8 +76,9 @@
     }
     
     .editable-cell:hover {
-        background-color: #fff3cd !important;
-        outline: 2px solid #ffc107;
+        background-color: #ffeb3b !important;
+        outline: 3px solid #ff9800;
+        box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
     }
     
     .editable-cell.editing {

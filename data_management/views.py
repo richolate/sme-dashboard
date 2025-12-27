@@ -260,40 +260,103 @@ def delete_data_view(request):
 
 @admin_required
 def view_all_data_view(request):
-    """Display an overview of LW321 for administrators."""
-
-    loans = LW321.objects.all().order_by('-periode', 'kanca', 'nomor_rekening')[:100]
+    """Display an overview of LW321 for administrators with filtering and pagination."""
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+    
+    # Get all available periods
+    available_periods = LW321.objects.values_list('periode', flat=True).distinct().order_by('-periode')
+    
+    # Get selected period from request
+    selected_periode = request.GET.get('periode', '')
+    search_query = request.GET.get('search', '').strip()
+    page_number = request.GET.get('page', 1)
+    
+    # Base queryset
+    loans_query = LW321.objects.all()
+    
+    # Filter by periode if selected
+    if selected_periode:
+        loans_query = loans_query.filter(periode=selected_periode)
+    
+    # Search functionality
+    if search_query:
+        loans_query = loans_query.filter(
+            Q(nomor_rekening__icontains=search_query) |
+            Q(nama_debitur__icontains=search_query) |
+            Q(kanca__icontains=search_query) |
+            Q(uker__icontains=search_query) |
+            Q(kode_uker__icontains=search_query) |
+            Q(cif_no__icontains=search_query) |
+            Q(pn_rm__icontains=search_query) |
+            Q(nama_rm__icontains=search_query)
+        )
+    
+    # Order by
+    loans_query = loans_query.order_by('-periode', 'kanca', 'nomor_rekening')
+    
+    # Pagination (100 rows per page)
+    paginator = Paginator(loans_query, 100)
+    loans_page = paginator.get_page(page_number)
+    
+    # All columns from LW321 model
     columns = [
-        'periode',
-        'kanca',
-        'nomor_rekening',
-        'nama_debitur',
-        'plafon',
-        'kolektibilitas_macet',
-        'flag_restruk',
+        'periode', 'kanca', 'kode_uker', 'uker', 'ln_type', 'nomor_rekening',
+        'nama_debitur', 'plafon', 'next_pmt_date', 'next_int_pmt_date', 'rate',
+        'tgl_menunggak', 'tgl_realisasi', 'tgl_jatuh_tempo', 'jangka_waktu',
+        'flag_restruk', 'cif_no', 'kolektibilitas_lancar', 'kolektibilitas_dpk',
+        'kolektibilitas_kurang_lancar', 'kolektibilitas_diragukan', 'kolektibilitas_macet',
+        'tunggakan_pokok', 'tunggakan_bunga', 'tunggakan_pinalti', 'code',
+        'description', 'kol_adk', 'pn_rm', 'nama_rm', 'os', 'nasabah', 'dub_nasabah'
     ]
-
+    
     column_labels = {
         'periode': 'Periode',
         'kanca': 'Kanca',
+        'kode_uker': 'Kode Uker',
+        'uker': 'Uker',
+        'ln_type': 'LN Type',
         'nomor_rekening': 'Nomor Rekening',
         'nama_debitur': 'Nama Debitur',
         'plafon': 'Plafon',
-        'kolektibilitas_macet': 'Kolektibilitas Macet',
+        'next_pmt_date': 'Next PMT Date',
+        'next_int_pmt_date': 'Next Int PMT Date',
+        'rate': 'Rate',
+        'tgl_menunggak': 'Tgl Menunggak',
+        'tgl_realisasi': 'Tgl Realisasi',
+        'tgl_jatuh_tempo': 'Tgl Jatuh Tempo',
+        'jangka_waktu': 'Jangka Waktu',
         'flag_restruk': 'Flag Restruk',
+        'cif_no': 'CIF No',
+        'kolektibilitas_lancar': 'Kol Lancar',
+        'kolektibilitas_dpk': 'Kol DPK',
+        'kolektibilitas_kurang_lancar': 'Kol Kurang Lancar',
+        'kolektibilitas_diragukan': 'Kol Diragukan',
+        'kolektibilitas_macet': 'Kol Macet',
+        'tunggakan_pokok': 'Tunggakan Pokok',
+        'tunggakan_bunga': 'Tunggakan Bunga',
+        'tunggakan_pinalti': 'Tunggakan Pinalti',
+        'code': 'Code',
+        'description': 'Description',
+        'kol_adk': 'Kol ADK',
+        'pn_rm': 'PN RM',
+        'nama_rm': 'Nama RM',
+        'os': 'OS',
+        'nasabah': 'Nasabah',
+        'dub_nasabah': 'Dub Nasabah',
     }
+    
     headers = [(column, column_labels.get(column, column.replace('_', ' ').title())) for column in columns]
-
-    rows = []
-    for loan in loans:
-        rows.append([getattr(loan, column) for column in columns])
-
+    
     context = {
         'page_title': 'View All Data',
-        'loans': loans,
+        'loans_page': loans_page,
         'columns': columns,
         'headers': headers,
-        'rows': rows,
+        'available_periods': available_periods,
+        'selected_periode': selected_periode,
+        'search_query': search_query,
+        'total_count': paginator.count,
     }
     return render(request, 'data_management/view_all_data.html', context)
 

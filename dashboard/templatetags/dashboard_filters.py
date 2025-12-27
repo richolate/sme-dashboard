@@ -174,3 +174,15 @@ def abs_value(value):
         return abs(float(value))
     except (ValueError, TypeError):
         return 0
+
+
+@register.filter
+def get_attribute(obj, attr):
+    """
+    Get attribute of an object dynamically
+    Usage: {{ object|get_attribute:attribute_name }}
+    """
+    try:
+        return getattr(obj, attr, '-')
+    except (AttributeError, TypeError):
+        return '-'

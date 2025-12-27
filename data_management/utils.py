@@ -177,22 +177,31 @@ def validate_file_structure(file_path):
             'sample_data': list of dicts (10 rows),
             'missing_columns': list,
             'extra_columns': list,
-            'column_mapping': dict
+            'column_mapping': dict,
+            'total_rows': int (total baris dalam file)
         }
     """
     try:
         file_ext = file_path.lower()[file_path.rfind('.'):]
         
-        # Baca file
+        # Baca file untuk menghitung total baris (tanpa batasan nrows)
         if file_ext == '.csv':
-            df = pd.read_csv(file_path, dtype={'NOMOR REKENING': str}, nrows=10)
+            df_full = pd.read_csv(file_path, dtype={'NOMOR REKENING': str})
+            df_sample = pd.read_csv(file_path, dtype={'NOMOR REKENING': str}, nrows=10)
         elif file_ext in ['.xlsx', '.xls']:
-            df = pd.read_excel(file_path, dtype={'NOMOR REKENING': str}, nrows=10)
+            df_full = pd.read_excel(file_path, dtype={'NOMOR REKENING': str})
+            df_sample = pd.read_excel(file_path, dtype={'NOMOR REKENING': str}, nrows=10)
         else:
             return {
                 'valid': False,
                 'error': 'Format file tidak didukung. Gunakan .csv, .xlsx, atau .xls'
             }
+        
+        # Hitung total baris
+        total_rows = len(df_full)
+        
+        # Gunakan sample untuk preview
+        df = df_sample
         
         # Normalisasi nama kolom
         df.columns = [str(col).strip().upper() for col in df.columns]
@@ -277,7 +286,7 @@ def validate_file_structure(file_path):
             'extra_columns': list(extra_columns),
             'expected_columns': expected_columns_ordered,  # Gunakan list yang sudah terurut
             'actual_columns': list(actual_columns),
-            'total_rows': len(df)  # From sample only, actual may be more
+            'total_rows': total_rows  # Total baris dalam file (bukan sample)
         }
         
     except Exception as e:
