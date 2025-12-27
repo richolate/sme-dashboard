@@ -397,6 +397,12 @@ DATA_MANAGEMENT_CHILDREN = [
 
 KOMITMEN_MANAGEMENT_CHILDREN = [
     {
+        "key": "view-komitmen",
+        "label": "View Komitmen",
+        "url_name": "data_management:view_komitmen",
+        "requires_admin": True,
+    },
+    {
         "key": "upload-komitmen",
         "label": "Upload Komitmen",
         "url_name": "data_management:upload_komitmen",

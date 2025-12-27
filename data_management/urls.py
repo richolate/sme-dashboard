@@ -17,4 +17,6 @@ urlpatterns = [
     path('komitmen/confirm/', views.confirm_komitmen_upload, name='confirm_komitmen'),
     path('komitmen/history/', views.komitmen_history, name='komitmen_history'),
     path('komitmen/delete/<int:upload_id>/', views.delete_komitmen, name='delete_komitmen'),
+    path('komitmen/view/', views.view_komitmen, name='view_komitmen'),  # New: View komitmen data
+    path('komitmen/update-cell/', views.update_komitmen_cell, name='update_komitmen_cell'),  # New: AJAX update
 ]

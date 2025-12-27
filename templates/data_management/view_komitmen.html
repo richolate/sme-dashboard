@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-container {
+        max-height: calc(100vh - 300px);
+        overflow: auto;
+        position: relative;
+    }
+    
+    .data-table {
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+    
+    .data-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: white;
+        border: 1px solid #dee2e6;
+    }
+    
+    /* Sticky columns (row number + A B C D) */
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background: white;
+    }
+    
+    .sticky-col-1 { left: 0px; }      /* # */
+    .sticky-col-2 { left: 50px; }     /* Kode Kanca */
+    .sticky-col-3 { left: 130px; }    /* Kode Uker */
+    .sticky-col-4 { left: 210px; }    /* Nama Kanca */
+    .sticky-col-5 { left: 360px; }    /* Nama Uker */
+    
+    /* Sticky header + sticky column */
+    .data-table thead th.sticky-col {
+        z-index: 15;
+    }
+    
+    /* Alternating row colors (zebra striping) */
+    .data-table tbody tr:nth-child(odd) {
+        background-color: #f2f2f2;
+    }
+    
+    .data-table tbody tr:nth-child(even) {
+        background-color: white;
+    }
+    
+    /* Ensure sticky columns inherit row background */
+    .data-table tbody tr:nth-child(odd) .sticky-col {
+        background-color: #f2f2f2;
+    }
+    
+    .data-table tbody tr:nth-child(even) .sticky-col {
+        background-color: white;
+    }
+    
+    /* Color-coded headers - Updated colors */
+    .header-info { background-color: #ecf0f1; color: #2c3e50; }
+    .header-kur { background-color: #be544f; color: white; }
+    .header-small { background-color: #37859a; color: white; }
+    .header-ncc { background-color: #fb2514; color: white; }
+    .header-cc { background-color: #fefe24; color: #2c3e50; }
+    
+    /* Editable cells */
+    .editable-cell {
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s;
+    }
+    
+    .editable-cell:hover {
+        background-color: #fff3cd !important;
+        outline: 2px solid #ffc107;
+    }
+    
+    .editable-cell.editing {
+        padding: 0 !important;
+        background-color: #e3f2fd !important;
+    }
+    
+    .edit-input {
+        width: 100%;
+        border: 2px solid #2196f3;
+        padding: 4px 8px;
+        font-size: 0.85rem;
+        text-align: right;
+        outline: none;
+    }
+    
+    .cell-saving {
+        background-color: #fff9c4 !important;
+    }
+    
+    .cell-success {
+        background-color: #c8e6c9 !important;
+        animation: flash-success 0.5s ease;
+    }
+    
+    .cell-error {
+        background-color: #ffcdd2 !important;
+        animation: flash-error 0.5s ease;
+    }
+    
+    @keyframes flash-success {
+        0%, 100% { background-color: #c8e6c9; }
+        50% { background-color: #81c784; }
+    }
+    
+    @keyframes flash-error {
+        0%, 100% { background-color: #ffcdd2; }
+        50% { background-color: #ef5350; }
+    }
+    
+    .edit-hint {
+        position: absolute;
+        bottom: -20px;
+        left: 0;
+        font-size: 0.7rem;
+        color: #666;
+        white-space: nowrap;
+    }
+    
+    .row-number {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-table"></i> {{ page_title }}</h2>
+                    <p class="text-muted mb-0">Cross-check dan edit data komitmen yang sudah di-upload</p>
+                </div>
+                <div>
+                    <a href="{% url 'data_management:komitmen_history' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Kembali
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Periode Selection -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-calendar-alt"></i> Pilih Periode:
+                    </label>
+                    <form method="get" id="periodeForm">
+                        <select name="periode" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Pilih Periode --</option>
+                            {% for upload in uploads %}
+                            <option value="{{ upload.periode|date:'Y-m-d' }}" 
+                                    {% if selected_periode == upload.periode|date:'Y-m-d' %}selected{% endif %}>
+                                {{ upload.periode_display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        {% if selected_upload %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-2"><i class="fas fa-info-circle"></i> Informasi Upload</h6>
+                    <div class="small">
+                        <div><strong>Diupload oleh:</strong> {{ selected_upload.uploaded_by.get_full_name }}</div>
+                        <div><strong>Tanggal:</strong> {{ selected_upload.uploaded_at|date:"d M Y H:i" }}</div>
+                        <div><strong>Total Baris:</strong> {{ total_rows }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if komitmen_data %}
+    <!-- Instructions -->
+    <div class="alert alert-info mb-3">
+        <h6 class="alert-heading"><i class="fas fa-lightbulb"></i> Cara Edit Data:</h6>
+        <ul class="mb-0 small">
+            <li><strong>Double-click</strong> pada cell yang ingin diedit (kolom angka)</li>
+            <li>Ketik nilai baru, lalu tekan <kbd>Enter</kbd> untuk simpan atau <kbd>Esc</kbd> untuk batal</li>
+            <li>Cell yang bisa diedit akan muncul highlight kuning saat di-hover</li>
+            <li>Perubahan akan langsung tersimpan ke database</li>
+        </ul>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-database"></i> 
+                Data Komitmen - {{ selected_upload.periode_display }}
+                <span class="badge bg-light text-dark ms-2">{{ total_rows }} Baris</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-container">
+                <table class="table table-sm table-bordered table-hover data-table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="header-info sticky-col sticky-col-1" style="min-width: 50px; background-color: #ecf0f1; color: #2c3e50;">#</th>
+                            <th class="header-info sticky-col sticky-col-2" style="min-width: 80px; background-color: #ecf0f1; color: #2c3e50;">Kode Kanca</th>
+                            <th class="header-info sticky-col sticky-col-3" style="min-width: 80px; background-color: #ecf0f1; color: #2c3e50;">Kode Uker</th>
+                            <th class="header-info sticky-col sticky-col-4" style="min-width: 150px; background-color: #ecf0f1; color: #2c3e50;">Nama Kanca</th>
+                            <th class="header-info sticky-col sticky-col-5" style="min-width: 150px; background-color: #ecf0f1; color: #2c3e50;">Nama Uker</th>
+                            
+                            <!-- KUR RITEL -->
+                            <th class="text-end" style="min-width: 100px; background-color: #be544f; color: white;" title="KUR Debitur">KUR DEB</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #be544f; color: white;" title="KUR Outstanding">KUR OS</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #be544f; color: white;" title="KUR Performing Loan">KUR PL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #be544f; color: white;" title="KUR Non Performing Loan">KUR NPL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #be544f; color: white;" title="KUR DPK">KUR DPK</th>
+                            
+                            <!-- SMALL SD 5M -->
+                            <th class="text-end" style="min-width: 100px; background-color: #37859a; color: white;">SMALL DEB</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #37859a; color: white;">SMALL OS</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #37859a; color: white;">SMALL PL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #37859a; color: white;">SMALL NPL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #37859a; color: white;">SMALL DPK</th>
+                            
+                            <!-- KECIL NCC -->
+                            <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: white;">NCC DEB</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: white;">NCC OS</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: white;">NCC PL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: white;">NCC NPL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: white;">NCC DPK</th>
+                            
+                            <!-- KECIL CC -->
+                            <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50;">CC DEB</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50;">CC OS</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50;">CC PL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50;">CC NPL</th>
+                            <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50;">CC DPK</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in komitmen_data %}
+                        <tr>
+                            <td class="row-number sticky-col sticky-col-1">{{ forloop.counter }}</td>
+                            <td class="sticky-col sticky-col-2">{{ row.kode_kanca|floatformat:0 }}</td>
+                            <td class="sticky-col sticky-col-3"><strong>{{ row.kode_uker }}</strong></td>
+                            <td class="sticky-col sticky-col-4">{{ row.nama_kanca }}</td>
+                            <td class="sticky-col sticky-col-5">{{ row.nama_uker }}</td>
+                            
+                            <!-- KUR RITEL - Editable -->
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kur_deb" data-format="number">
+                                {{ row.kur_deb|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kur_os" data-format="number">
+                                {{ row.kur_os|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kur_pl" data-format="decimal">
+                                {{ row.kur_pl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kur_npl" data-format="decimal">
+                                {{ row.kur_npl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kur_dpk" data-format="number">
+                                {{ row.kur_dpk|floatformat:0|default:"-" }}
+                            </td>
+                            
+                            <!-- SMALL SD 5M - Editable -->
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="small_deb" data-format="number">
+                                {{ row.small_deb|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="small_os" data-format="number">
+                                {{ row.small_os|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="small_pl" data-format="decimal">
+                                {{ row.small_pl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="small_npl" data-format="decimal">
+                                {{ row.small_npl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="small_dpk" data-format="number">
+                                {{ row.small_dpk|floatformat:0|default:"-" }}
+                            </td>
+                            
+                            <!-- KECIL NCC - Editable -->
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_ncc_deb" data-format="number">
+                                {{ row.kecil_ncc_deb|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_ncc_os" data-format="number">
+                                {{ row.kecil_ncc_os|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_ncc_pl" data-format="decimal">
+                                {{ row.kecil_ncc_pl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_ncc_npl" data-format="decimal">
+                                {{ row.kecil_ncc_npl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_ncc_dpk" data-format="number">
+                                {{ row.kecil_ncc_dpk|floatformat:0|default:"-" }}
+                            </td>
+                            
+                            <!-- KECIL CC - Editable -->
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_cc_deb" data-format="number">
+                                {{ row.kecil_cc_deb|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_cc_os" data-format="number">
+                                {{ row.kecil_cc_os|floatformat:0|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_cc_pl" data-format="decimal">
+                                {{ row.kecil_cc_pl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_cc_npl" data-format="decimal">
+                                {{ row.kecil_cc_npl|floatformat:2|default:"-" }}
+                            </td>
+                            <td class="text-end editable-cell" data-row-id="{{ row.id }}" data-field="kecil_cc_dpk" data-format="number">
+                                {{ row.kecil_cc_dpk|floatformat:0|default:"-" }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Total: <strong>{{ total_rows }}</strong> baris data
+                    </small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <span class="badge" style="background-color: #be544f; color: white;">KUR</span>
+                        <span class="badge" style="background-color: #37859a; color: white;">SMALL</span>
+                        <span class="badge" style="background-color: #fb2514; color: white;">NCC</span>
+                        <span class="badge" style="background-color: #fefe24; color: #2c3e50;">CC</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Data -->
+    <div class="alert alert-warning">
+        <h5><i class="fas fa-exclamation-triangle"></i> Tidak Ada Data</h5>
+        <p class="mb-0">Silakan pilih periode atau upload data komitmen terlebih dahulu.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentEditCell = null;
+    
+    // Handle double-click on editable cells
+    document.querySelectorAll('.editable-cell').forEach(cell => {
+        cell.addEventListener('dblclick', function() {
+            if (currentEditCell) return; // Prevent multiple edits
+            
+            currentEditCell = this;
+            const rowId = this.dataset.rowId;
+            const field = this.dataset.field;
+            const format = this.dataset.format;
+            const currentValue = this.textContent.trim().replace(',', '');
+            
+            // Create input element
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'edit-input';
+            input.value = currentValue === '-' ? '' : currentValue;
+            
+            // Replace cell content with input
+            this.classList.add('editing');
+            this.innerHTML = '';
+            this.appendChild(input);
+            input.focus();
+            input.select();
+            
+            // Handle Enter key (save)
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveCell(currentEditCell, rowId, field, input.value, format);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit(currentEditCell, currentValue);
+                }
+            });
+            
+            // Handle blur (save)
+            input.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (currentEditCell && currentEditCell.classList.contains('editing')) {
+                        saveCell(currentEditCell, rowId, field, input.value, format);
+                    }
+                }, 200);
+            });
+        });
+    });
+    
+    function saveCell(cell, rowId, field, value, format) {
+        cell.classList.remove('editing');
+        cell.classList.add('cell-saving');
+        cell.textContent = 'Saving...';
+        
+        // Send AJAX request
+        fetch('{% url "data_management:update_komitmen_cell" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                row_id: rowId,
+                field_name: field,
+                value: value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                cell.classList.remove('cell-saving');
+                cell.classList.add('cell-success');
+                cell.textContent = data.display_value;
+                
+                // Show success toast
+                showToast('✅ Data berhasil disimpan!', 'success');
+                
+                // Remove success class after animation
+                setTimeout(() => {
+                    cell.classList.remove('cell-success');
+                }, 1000);
+            } else {
+                cell.classList.remove('cell-saving');
+                cell.classList.add('cell-error');
+                cell.textContent = 'ERROR';
+                
+                showToast('❌ Error: ' + data.error, 'error');
+                
+                setTimeout(() => {
+                    cell.classList.remove('cell-error');
+                    cell.textContent = value || '-';
+                }, 2000);
+            }
+            currentEditCell = null;
+        })
+        .catch(error => {
+            cell.classList.remove('cell-saving');
+            cell.classList.add('cell-error');
+            cell.textContent = 'ERROR';
+            
+            showToast('❌ Network error: ' + error, 'error');
+            
+            setTimeout(() => {
+                cell.classList.remove('cell-error');
+                cell.textContent = value || '-';
+            }, 2000);
+            currentEditCell = null;
+        });
+    }
+    
+    function cancelEdit(cell, originalValue) {
+        cell.classList.remove('editing');
+        cell.textContent = originalValue;
+        currentEditCell = null;
+    }
+    
+    function showToast(message, type) {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <strong>${message}</strong>
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+});
+</script>
+{% endblock %}

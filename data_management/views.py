@@ -454,10 +454,11 @@ def upload_komitmen(request):
 @admin_required
 def preview_komitmen(request):
     """Preview komitmen upload - Step 2: Show validation results and changes"""
-    from .validators import validate_komitmen_excel
+    from .validators import validate_komitmen_excel, COLUMN_INDICES, clean_numeric_value
     from .utils import compare_komitmen_data
     from datetime import datetime
     import os
+    import pandas as pd
     
     temp_file = request.session.get('komitmen_temp_file')
     filename = request.session.get('komitmen_filename')
@@ -488,35 +489,42 @@ def preview_komitmen(request):
         from .validators import COLUMN_INDICES
         all_preview_data = []
         for _, row in validation_result['data_df'].iterrows():
+            # Clean kode_kanca (remove .0 from float)
+            kode_kanca_raw = str(row[COLUMN_INDICES['kode_kanca']]).strip()
+            try:
+                kode_kanca = str(int(float(kode_kanca_raw)))
+            except (ValueError, TypeError):
+                kode_kanca = kode_kanca_raw
+            
             all_preview_data.append({
-                'kode_kanca': str(row[COLUMN_INDICES['kode_kanca']]).strip(),
+                'kode_kanca': kode_kanca,
                 'kode_uker': str(row[COLUMN_INDICES['kode_uker']]).strip(),
                 'nama_kanca': str(row[COLUMN_INDICES['nama_kanca']]).strip(),
                 'nama_uker': str(row[COLUMN_INDICES['nama_uker']]).strip(),
-                # KUR RITEL
-                'kur_deb': row[COLUMN_INDICES['kur_deb']],
-                'kur_os': row[COLUMN_INDICES['kur_os']],
-                'kur_pl': row[COLUMN_INDICES['kur_pl']],
-                'kur_npl': row[COLUMN_INDICES['kur_npl']],
-                'kur_dpk': row[COLUMN_INDICES['kur_dpk']],
+                # KUR RITEL - Use clean_numeric_value to handle NaN
+                'kur_deb': clean_numeric_value(row[COLUMN_INDICES['kur_deb']]),
+                'kur_os': clean_numeric_value(row[COLUMN_INDICES['kur_os']]),
+                'kur_pl': clean_numeric_value(row[COLUMN_INDICES['kur_pl']]),
+                'kur_npl': clean_numeric_value(row[COLUMN_INDICES['kur_npl']]),
+                'kur_dpk': clean_numeric_value(row[COLUMN_INDICES['kur_dpk']]),
                 # SMALL SD 5M
-                'small_deb': row[COLUMN_INDICES['small_deb']],
-                'small_os': row[COLUMN_INDICES['small_os']],
-                'small_pl': row[COLUMN_INDICES['small_pl']],
-                'small_npl': row[COLUMN_INDICES['small_npl']],
-                'small_dpk': row[COLUMN_INDICES['small_dpk']],
+                'small_deb': clean_numeric_value(row[COLUMN_INDICES['small_deb']]),
+                'small_os': clean_numeric_value(row[COLUMN_INDICES['small_os']]),
+                'small_pl': clean_numeric_value(row[COLUMN_INDICES['small_pl']]),
+                'small_npl': clean_numeric_value(row[COLUMN_INDICES['small_npl']]),
+                'small_dpk': clean_numeric_value(row[COLUMN_INDICES['small_dpk']]),
                 # KECIL NCC
-                'kecil_ncc_deb': row[COLUMN_INDICES['kecil_ncc_deb']],
-                'kecil_ncc_os': row[COLUMN_INDICES['kecil_ncc_os']],
-                'kecil_ncc_pl': row[COLUMN_INDICES['kecil_ncc_pl']],
-                'kecil_ncc_npl': row[COLUMN_INDICES['kecil_ncc_npl']],
-                'kecil_ncc_dpk': row[COLUMN_INDICES['kecil_ncc_dpk']],
+                'kecil_ncc_deb': clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_deb']]),
+                'kecil_ncc_os': clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_os']]),
+                'kecil_ncc_pl': clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_pl']]),
+                'kecil_ncc_npl': clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_npl']]),
+                'kecil_ncc_dpk': clean_numeric_value(row[COLUMN_INDICES['kecil_ncc_dpk']]),
                 # KECIL CC
-                'kecil_cc_deb': row[COLUMN_INDICES['kecil_cc_deb']],
-                'kecil_cc_os': row[COLUMN_INDICES['kecil_cc_os']],
-                'kecil_cc_pl': row[COLUMN_INDICES['kecil_cc_pl']],
-                'kecil_cc_npl': row[COLUMN_INDICES['kecil_cc_npl']],
-                'kecil_cc_dpk': row[COLUMN_INDICES['kecil_cc_dpk']],
+                'kecil_cc_deb': clean_numeric_value(row[COLUMN_INDICES['kecil_cc_deb']]),
+                'kecil_cc_os': clean_numeric_value(row[COLUMN_INDICES['kecil_cc_os']]),
+                'kecil_cc_pl': clean_numeric_value(row[COLUMN_INDICES['kecil_cc_pl']]),
+                'kecil_cc_npl': clean_numeric_value(row[COLUMN_INDICES['kecil_cc_npl']]),
+                'kecil_cc_dpk': clean_numeric_value(row[COLUMN_INDICES['kecil_cc_dpk']]),
             })
         
         context = {
@@ -669,3 +677,160 @@ def delete_komitmen(request, upload_id):
         'data_count': data_count,
     }
     return render(request, 'data_management/delete_komitmen.html', context)
+
+
+@admin_required
+def view_komitmen(request):
+    """View all komitmen data with inline editing capability"""
+    from dashboard.models import KomitmenUpload, KomitmenData
+    
+    # Get selected periode from query params
+    selected_periode = request.GET.get('periode')
+    
+    # Get all available periodes
+    uploads = KomitmenUpload.objects.all().order_by('-periode')
+    
+    # Default to latest periode if none selected
+    if not selected_periode and uploads.exists():
+        selected_periode = uploads.first().periode.strftime('%Y-%m-%d')
+    
+    # Get data for selected periode
+    komitmen_data = []
+    selected_upload = None
+    
+    if selected_periode:
+        try:
+            from datetime import datetime
+            periode_date = datetime.strptime(selected_periode, '%Y-%m-%d').date()
+            selected_upload = KomitmenUpload.objects.filter(periode=periode_date).first()
+            
+            if selected_upload:
+                # Get all komitmen data for this periode, ordered by kode_uker
+                data_queryset = KomitmenData.objects.filter(upload=selected_upload).order_by('kode_uker')
+                
+                for data in data_queryset:
+                    komitmen_data.append({
+                        'id': data.id,
+                        'kode_kanca': data.kode_kanca,
+                        'kode_uker': data.kode_uker,
+                        'nama_kanca': data.nama_kanca,
+                        'nama_uker': data.nama_uker,
+                        # KUR RITEL
+                        'kur_deb': data.kur_deb,
+                        'kur_os': data.kur_os,
+                        'kur_pl': data.kur_pl,
+                        'kur_npl': data.kur_npl,
+                        'kur_dpk': data.kur_dpk,
+                        # SMALL SD 5M
+                        'small_deb': data.small_deb,
+                        'small_os': data.small_os,
+                        'small_pl': data.small_pl,
+                        'small_npl': data.small_npl,
+                        'small_dpk': data.small_dpk,
+                        # KECIL NCC
+                        'kecil_ncc_deb': data.kecil_ncc_deb,
+                        'kecil_ncc_os': data.kecil_ncc_os,
+                        'kecil_ncc_pl': data.kecil_ncc_pl,
+                        'kecil_ncc_npl': data.kecil_ncc_npl,
+                        'kecil_ncc_dpk': data.kecil_ncc_dpk,
+                        # KECIL CC
+                        'kecil_cc_deb': data.kecil_cc_deb,
+                        'kecil_cc_os': data.kecil_cc_os,
+                        'kecil_cc_pl': data.kecil_cc_pl,
+                        'kecil_cc_npl': data.kecil_cc_npl,
+                        'kecil_cc_dpk': data.kecil_cc_dpk,
+                    })
+        except Exception as e:
+            messages.error(request, f'Error loading data: {str(e)}')
+    
+    context = {
+        'page_title': 'View Komitmen Data',
+        'uploads': uploads,
+        'selected_periode': selected_periode,
+        'selected_upload': selected_upload,
+        'komitmen_data': komitmen_data,
+        'total_rows': len(komitmen_data),
+    }
+    return render(request, 'data_management/view_komitmen.html', context)
+
+
+@admin_required
+def update_komitmen_cell(request):
+    """AJAX endpoint for updating single cell value"""
+    from dashboard.models import KomitmenData
+    from decimal import Decimal, InvalidOperation
+    
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            row_id = data.get('row_id')
+            field_name = data.get('field_name')
+            new_value = data.get('value')
+            
+            # Get the komitmen data row
+            komitmen_row = KomitmenData.objects.get(id=row_id)
+            
+            # Validate field name (prevent SQL injection)
+            allowed_fields = [
+                'kur_deb', 'kur_os', 'kur_pl', 'kur_npl', 'kur_dpk',
+                'small_deb', 'small_os', 'small_pl', 'small_npl', 'small_dpk',
+                'kecil_ncc_deb', 'kecil_ncc_os', 'kecil_ncc_pl', 'kecil_ncc_npl', 'kecil_ncc_dpk',
+                'kecil_cc_deb', 'kecil_cc_os', 'kecil_cc_pl', 'kecil_cc_npl', 'kecil_cc_dpk',
+            ]
+            
+            if field_name not in allowed_fields:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Field tidak valid'
+                }, status=400)
+            
+            # Convert value to Decimal
+            try:
+                if new_value == '' or new_value is None or new_value == '-':
+                    decimal_value = None
+                else:
+                    # Remove formatting (commas, spaces)
+                    clean_value = str(new_value).replace(',', '').replace(' ', '').strip()
+                    decimal_value = Decimal(clean_value) if clean_value else None
+            except (InvalidOperation, ValueError):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Format angka tidak valid'
+                }, status=400)
+            
+            # Update the field
+            old_value = getattr(komitmen_row, field_name)
+            setattr(komitmen_row, field_name, decimal_value)
+            komitmen_row.save()
+            
+            # Format for display
+            if decimal_value is None:
+                display_value = '-'
+            elif field_name.endswith('_pl') or field_name.endswith('_npl'):
+                display_value = f"{decimal_value:.2f}"
+            else:
+                display_value = f"{decimal_value:,.0f}"
+            
+            return JsonResponse({
+                'success': True,
+                'display_value': display_value,
+                'old_value': str(old_value) if old_value else '-',
+                'new_value': str(decimal_value) if decimal_value else '-'
+            })
+            
+        except KomitmenData.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Data tidak ditemukan'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Method not allowed'
+    }, status=405)

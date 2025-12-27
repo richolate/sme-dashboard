@@ -2,6 +2,29 @@
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Sticky columns for preview table */
+    .preview-table .sticky-col {
+        position: sticky;
+        z-index: 5;
+        background: white;
+    }
+    
+    .preview-table .sticky-col-1 { left: 0px; }      /* # */
+    .preview-table .sticky-col-2 { left: 50px; }     /* Kode Kanca */
+    .preview-table .sticky-col-3 { left: 130px; }    /* Kode Uker */
+    .preview-table .sticky-col-4 { left: 210px; }    /* Nama Kanca */
+    .preview-table .sticky-col-5 { left: 360px; }    /* Nama Uker */
+    
+    /* Sticky header + sticky column */
+    .preview-table thead th.sticky-col {
+        z-index: 15;
+        background-color: #34495e !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- File Information -->
 <div class="card mb-3">
@@ -76,10 +99,10 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th style="background-color: #2c3e50; color: #fff;">Uker</th>
-                                    <th class="text-end" style="background-color: #2980b9; color: #fff;">KUR OS</th>
-                                    <th class="text-end" style="background-color: #27ae60; color: #fff;">SMALL OS</th>
-                                    <th class="text-end" style="background-color: #f39c12; color: #fff;">KECIL NCC OS</th>
-                                    <th class="text-end" style="background-color: #e74c3c; color: #fff;">KECIL CC OS</th>
+                                    <th class="text-end" style="background-color: #be544f; color: #fff;">KUR OS</th>
+                                    <th class="text-end" style="background-color: #37859a; color: #fff;">SMALL OS</th>
+                                    <th class="text-end" style="background-color: #fb2514; color: #fff;">KECIL NCC OS</th>
+                                    <th class="text-end" style="background-color: #fefe24; color: #2c3e50;">KECIL CC OS</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -234,48 +257,48 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="max-height: 600px; overflow: auto;">
-                    <table class="table table-sm table-bordered table-hover mb-0" style="font-size: 0.85rem;">
+                    <table class="table table-sm table-bordered table-hover mb-0 preview-table" style="font-size: 0.85rem;">
                         <thead class="sticky-top">
                             <tr>
-                                <th class="text-center" style="min-width: 50px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">#</th>
-                                <th style="min-width: 80px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Kode Kanca</th>
-                                <th style="min-width: 80px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Kode Uker</th>
-                                <th style="min-width: 150px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Nama Kanca</th>
-                                <th style="min-width: 150px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Nama Uker</th>
+                                <th class="text-center sticky-col sticky-col-1" style="min-width: 50px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">#</th>
+                                <th class="sticky-col sticky-col-2" style="min-width: 80px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Kode Kanca</th>
+                                <th class="sticky-col sticky-col-3" style="min-width: 80px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Kode Uker</th>
+                                <th class="sticky-col sticky-col-4" style="min-width: 150px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Nama Kanca</th>
+                                <th class="sticky-col sticky-col-5" style="min-width: 150px; background-color: #34495e; color: #fff; border: 1px solid #2c3e50;">Nama Uker</th>
                                 <!-- KUR RITEL -->
-                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR DEB</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR OS</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR PL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR NPL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #2980b9; color: #fff; border: 1px solid #1f6fa1;">KUR DPK</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #be544f; color: #fff; border: 1px solid #a04843;">KUR DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #be544f; color: #fff; border: 1px solid #a04843;">KUR OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #be544f; color: #fff; border: 1px solid #a04843;">KUR PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #be544f; color: #fff; border: 1px solid #a04843;">KUR NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #be544f; color: #fff; border: 1px solid #a04843;">KUR DPK</th>
                                 <!-- SMALL SD 5M -->
-                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL DEB</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL OS</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL PL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL NPL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #27ae60; color: #fff; border: 1px solid #1e8449;">SMALL DPK</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #37859a; color: #fff; border: 1px solid #2d6c7d;">SMALL DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #37859a; color: #fff; border: 1px solid #2d6c7d;">SMALL OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #37859a; color: #fff; border: 1px solid #2d6c7d;">SMALL PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #37859a; color: #fff; border: 1px solid #2d6c7d;">SMALL NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #37859a; color: #fff; border: 1px solid #2d6c7d;">SMALL DPK</th>
                                 <!-- KECIL NCC -->
-                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC DEB</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC OS</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC PL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC NPL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #f39c12; color: #fff; border: 1px solid #c87f0a;">NCC DPK</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: #fff; border: 1px solid #d91f11;">NCC DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: #fff; border: 1px solid #d91f11;">NCC OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: #fff; border: 1px solid #d91f11;">NCC PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: #fff; border: 1px solid #d91f11;">NCC NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fb2514; color: #fff; border: 1px solid #d91f11;">NCC DPK</th>
                                 <!-- KECIL CC -->
-                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC DEB</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC OS</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC PL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC NPL</th>
-                                <th class="text-end" style="min-width: 100px; background-color: #e74c3c; color: #fff; border: 1px solid #c0392b;">CC DPK</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50; border: 1px solid #e5e520;">CC DEB</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50; border: 1px solid #e5e520;">CC OS</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50; border: 1px solid #e5e520;">CC PL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50; border: 1px solid #e5e520;">CC NPL</th>
+                                <th class="text-end" style="min-width: 100px; background-color: #fefe24; color: #2c3e50; border: 1px solid #e5e520;">CC DPK</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for row in all_data %}
                             <tr>
-                                <td class="text-center" style="background-color: #f8f9fa;">{{ forloop.counter }}</td>
-                                <td style="background-color: #f8f9fa;">{{ row.kode_kanca }}</td>
-                                <td style="background-color: #f8f9fa;"><strong>{{ row.kode_uker }}</strong></td>
-                                <td style="background-color: #f8f9fa;">{{ row.nama_kanca }}</td>
-                                <td style="background-color: #f8f9fa;">{{ row.nama_uker }}</td>
+                                <td class="text-center sticky-col sticky-col-1" style="background-color: #f8f9fa;">{{ forloop.counter }}</td>
+                                <td class="sticky-col sticky-col-2" style="background-color: #f8f9fa;">{{ row.kode_kanca|floatformat:0 }}</td>
+                                <td class="sticky-col sticky-col-3" style="background-color: #f8f9fa;"><strong>{{ row.kode_uker }}</strong></td>
+                                <td class="sticky-col sticky-col-4" style="background-color: #f8f9fa;">{{ row.nama_kanca }}</td>
+                                <td class="sticky-col sticky-col-5" style="background-color: #f8f9fa;">{{ row.nama_uker }}</td>
                                 <!-- KUR RITEL -->
                                 <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_deb|floatformat:0|default:"-" }}</td>
                                 <td class="text-end" style="background-color: #ebf5fb;">{{ row.kur_os|floatformat:0|default:"-" }}</td>
@@ -316,10 +339,10 @@
                     </div>
                     <div class="col-md-6 text-end">
                         <small class="text-muted">
-                            <span class="badge bg-info">KUR</span>
-                            <span class="badge bg-success">SMALL</span>
-                            <span class="badge bg-warning text-dark">NCC</span>
-                            <span class="badge bg-danger">CC</span>
+                            <span class="badge" style="background-color: #be544f; color: white;">KUR</span>
+                            <span class="badge" style="background-color: #37859a; color: white;">SMALL</span>
+                            <span class="badge" style="background-color: #fb2514; color: white;">NCC</span>
+                            <span class="badge" style="background-color: #fefe24; color: #2c3e50;">CC</span>
                         </small>
                     </div>
                 </div>

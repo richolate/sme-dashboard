@@ -617,10 +617,17 @@ def save_komitmen_data(df, periode, upload_obj):
             skipped_closed += 1
             continue
         
+        # Clean kode_kanca (remove .0 from float, convert to int string)
+        kode_kanca_raw = str(row[COLUMN_INDICES['kode_kanca']]).strip()
+        try:
+            kode_kanca = str(int(float(kode_kanca_raw)))
+        except (ValueError, TypeError):
+            kode_kanca = kode_kanca_raw
+        
         komitmen_obj = KomitmenData(
             upload=upload_obj,
             periode=periode,
-            kode_kanca=str(row[COLUMN_INDICES['kode_kanca']]).strip(),
+            kode_kanca=kode_kanca,
             kode_uker=kode_uker,
             nama_kanca=str(row[COLUMN_INDICES['nama_kanca']]).strip(),
             nama_uker=str(row[COLUMN_INDICES['nama_uker']]).strip(),
