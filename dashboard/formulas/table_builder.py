@@ -486,17 +486,31 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
             # kode_kanca di komitmen_data sekarang integer (IntegerField), tidak perlu str()
             komitmen_value = None
             if komitmen_data and komitmen_segment and komitmen_metric:
-                komitmen_value = get_komitmen_value(komitmen_data, kode_kanca, komitmen_segment, komitmen_metric)
+                # SPECIAL CASE for %DPK/%NPL: Calculate komitmen as percentage
+                if metric_field in ['dpk_pct', 'npl_pct']:
+                    # Get raw komitmen for numerator (DPK or NPL)
+                    komitmen_raw = get_komitmen_value(komitmen_data, kode_kanca, komitmen_segment, komitmen_metric)
+                    # Get komitmen OS for denominator
+                    komitmen_os = get_komitmen_value(komitmen_data, kode_kanca, komitmen_segment, 'os')
+                    
+                    # Calculate percentage: (DPK/NPL / OS) × 100
+                    if komitmen_raw is not None and komitmen_os is not None and komitmen_os != 0:
+                        komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
+                    else:
+                        komitmen_value = None
+                else:
+                    # For other metrics: Use raw komitmen value
+                    komitmen_value = get_komitmen_value(komitmen_data, kode_kanca, komitmen_segment, komitmen_metric)
             
-            # Calculate komitmen % Achievement and Gap (untuk percentage metrics juga)
+            # Calculate komitmen % Achievement and Gap
             # % Ach Formula: =IFERROR(IF((E/Komitmen)>1.1,110%,IF((E/Komitmen)<0,0%,(E/Komitmen))),110%)
             # Gap Formula: E - Komitmen
-            # SPECIAL CASE for DPK/NPL: Reversed formula (Komitmen / E) instead of (E / Komitmen)
+            # SPECIAL CASE for DPK/NPL/DPK_PCT/NPL_PCT: Reversed formula (Komitmen / E) instead of (E / Komitmen)
             komitmen_pct_ach = None
             komitmen_gab_real = None
             if komitmen_value is not None and komitmen_value != 0:
-                # For DPK/NPL pages: Use reversed formula (Komitmen / E) × 100
-                if metric_field in ['dpk', 'npl']:
+                # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+                if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
                     if E != 0:
                         ratio = komitmen_value / E  # REVERSED: Komitmen / E
                     else:
@@ -663,40 +677,71 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
     komitmen_gab_real_total = None
     
     if komitmen_data:
-        # Sum all komitmen values from rows
-        komitmen_values = [row['komitmen'] for row in rows if row['komitmen'] is not None]
-        if komitmen_values:
-            komitmen_total = sum(komitmen_values)
+        # SPECIAL CASE for %DPK/%NPL: Calculate komitmen total as percentage
+        if metric_field in ['dpk_pct', 'npl_pct']:
+            # Get all kanca codes from rows
+            kanca_codes = [row['kode_kanca'] for row in rows]
             
-            # Calculate total % Achievement and Gap
-            # NOTE: totals['E'] dalam RUPIAH PENUH, komitmen dalam RIBUAN (juta rupiah)
-            # SPECIAL CASE for DPK/NPL: Reversed formula (Komitmen / E) instead of (E / Komitmen)
-            if komitmen_total != 0:
-                E_total_in_millions = totals['E'] / Decimal('1000000')  # Convert to millions
-                
-                # For DPK/NPL pages: Use reversed formula (Komitmen / E) × 100
-                if metric_field in ['dpk', 'npl']:
-                    if E_total_in_millions != 0:
-                        komitmen_pct_ach_total = (komitmen_total / E_total_in_millions) * Decimal('100')
-                    else:
-                        komitmen_pct_ach_total = Decimal('110')  # IFERROR result
-                else:
-                    # For OS and other metrics: Normal formula (E / Komitmen)
-                    komitmen_pct_ach_total = (E_total_in_millions / komitmen_total) * Decimal('100')
-                
-                # Cap at 110%
-                if komitmen_pct_ach_total > Decimal('110'):
-                    komitmen_pct_ach_total = Decimal('110')
-                # Floor at 0%
-                elif komitmen_pct_ach_total < Decimal('0'):
-                    komitmen_pct_ach_total = Decimal('0')
-                # Gap thd Realisasi = Total Realisasi - Total Komitmen (both in millions/thousands)
-                komitmen_gab_real_total = E_total_in_millions - komitmen_total
+            # Sum raw komitmen for numerator (DPK or NPL)
+            komitmen_raw_sum = Decimal('0')
+            for kode_kanca in kanca_codes:
+                komitmen_raw = get_komitmen_value(komitmen_data, kode_kanca, komitmen_segment, komitmen_metric)
+                if komitmen_raw:
+                    komitmen_raw_sum += komitmen_raw
+            
+            # Sum komitmen OS for denominator
+            komitmen_os_sum = Decimal('0')
+            for kode_kanca in kanca_codes:
+                komitmen_os = get_komitmen_value(komitmen_data, kode_kanca, komitmen_segment, 'os')
+                if komitmen_os:
+                    komitmen_os_sum += komitmen_os
+            
+            # Calculate total percentage: (Total DPK/NPL / Total OS) × 100
+            if komitmen_os_sum != 0:
+                komitmen_total = calculate_percentage_metric(komitmen_raw_sum, komitmen_os_sum)
             else:
-                # IFERROR: if komitmen is 0, return 110%
+                komitmen_total = None
+        else:
+            # For other metrics: Sum all komitmen values from rows
+            komitmen_values = [row['komitmen'] for row in rows if row['komitmen'] is not None]
+            if komitmen_values:
+                komitmen_total = sum(komitmen_values)
+            
+        # Calculate total % Achievement and Gap
+        if komitmen_total is not None and komitmen_total != 0:
+            # For percentage metrics (dpk_pct, npl_pct), totals['E'] is already a percentage
+            # For other metrics, totals['E'] is in RUPIAH PENUH, need conversion to millions
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = totals['E']  # Already a percentage
+            else:
+                E_value = totals['E'] / Decimal('1000000')  # Convert to millions
+            
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
+                if E_value != 0:
+                    komitmen_pct_ach_total = (komitmen_total / E_value) * Decimal('100')
+                else:
+                    komitmen_pct_ach_total = Decimal('110')  # IFERROR result
+            else:
+                # For OS and other metrics: Normal formula (E / Komitmen)
+                komitmen_pct_ach_total = (E_value / komitmen_total) * Decimal('100')
+                
+            # Cap at 110%
+            if komitmen_pct_ach_total > Decimal('110'):
                 komitmen_pct_ach_total = Decimal('110')
-                E_total_in_millions = totals['E'] / Decimal('1000000')
-                komitmen_gab_real_total = E_total_in_millions
+            # Floor at 0%
+            elif komitmen_pct_ach_total < Decimal('0'):
+                komitmen_pct_ach_total = Decimal('0')
+            # Gap thd Realisasi = E - Komitmen (both in same unit)
+            komitmen_gab_real_total = E_value - komitmen_total
+        else:
+            # IFERROR: if komitmen is 0, return 110%
+            komitmen_pct_ach_total = Decimal('110')
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = totals['E']
+            else:
+                E_value = totals['E'] / Decimal('1000000')
+            komitmen_gab_real_total = E_value
     
     totals['komitmen'] = komitmen_total
     totals['komitmen_pct_ach'] = komitmen_pct_ach_total
@@ -768,31 +813,58 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
         # Get komitmen value untuk kanca ini (using kode_uker = kode_kanca untuk KANCA ONLY)
         komitmen_value = None
         if komitmen_data and komitmen_segment and komitmen_metric:
-            komitmen_value = get_komitmen_value(komitmen_data, kode_kanca_str, komitmen_segment, komitmen_metric)
+            # SPECIAL CASE for %DPK/%NPL: Calculate komitmen as percentage
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                # Get raw komitmen for numerator (DPK or NPL)
+                komitmen_raw = get_komitmen_value(komitmen_data, kode_kanca_str, komitmen_segment, komitmen_metric)
+                # Get komitmen OS for denominator
+                komitmen_os = get_komitmen_value(komitmen_data, kode_kanca_str, komitmen_segment, 'os')
+                
+                # Calculate percentage: (DPK/NPL / OS) × 100
+                if komitmen_raw is not None and komitmen_os is not None and komitmen_os != 0:
+                    komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
+                else:
+                    komitmen_value = None
+            else:
+                # For other metrics: Use raw komitmen value
+                komitmen_value = get_komitmen_value(komitmen_data, kode_kanca_str, komitmen_segment, komitmen_metric)
         
         # Calculate komitmen % Achievement and Gap
         # % Ach Formula: =IFERROR(IF((E/Komitmen)>1.1,110%,IF((E/Komitmen)<0,0%,(E/Komitmen))),110%)
         # Gap Formula: E - Komitmen (positive = surplus, negative = shortfall)
         # NOTE: E_val dari database dalam RUPIAH PENUH, komitmen dalam RIBUAN (juta rupiah)
+        # SPECIAL CASE for DPK/NPL/DPK_PCT/NPL_PCT: Reversed formula (Komitmen / E) instead of (E / Komitmen)
         komitmen_pct_ach = None
         komitmen_gab_real = None
         if komitmen_value is not None and komitmen_value != 0:
-            E_in_millions = E_val / Decimal('1000000')  # Convert E from rupiah to millions
-            ratio = E_in_millions / komitmen_value
+            # For percentage metrics (dpk_pct, npl_pct), E_val is already a percentage
+            # For other metrics, E_val is in RUPIAH PENUH, need conversion to millions
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = E_val  # Already a percentage
+            else:
+                E_value = E_val / Decimal('1000000')  # Convert to millions
+            
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
+                if E_value != 0:
+                    ratio = komitmen_value / E_value  # REVERSED: Komitmen / E
+                else:
+                    ratio = Decimal('11')  # Will result in 110% cap
+            else:
+                # For OS and other metrics: Normal formula (E / Komitmen)
+                ratio = E_value / komitmen_value
+            
             if ratio > Decimal('1.1'):
-                # Cap at 110%
                 komitmen_pct_ach = Decimal('110')
             elif ratio < 0:
-                # Floor at 0%
                 komitmen_pct_ach = Decimal('0')
             else:
-                # Normal calculation
                 komitmen_pct_ach = ratio * Decimal('100')
             
-            # Gap = E - Komitmen (both in millions/thousands)
-            # Positive = surplus (realisasi > komitmen) → hitam
-            # Negative = shortfall (realisasi < komitmen) → merah
-            komitmen_gab_real = E_in_millions - komitmen_value
+            # Gap = E - Komitmen (both in same unit)
+            # Positive = surplus (realisasi > komitmen) → hitam (for DPK/NPL reversed to red)
+            # Negative = shortfall (realisasi < komitmen) → merah (for DPK/NPL reversed to black)
+            komitmen_gab_real = E_value - komitmen_value
         
         # Build row
         kanca_name = KANCA_MASTER.get(kode_kanca, f"KANCA {kode_kanca}")
@@ -876,40 +948,72 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
     komitmen_gab_real_total = None
     
     if komitmen_data:
-        # Sum all komitmen values from rows
-        komitmen_values = [row['komitmen'] for row in rows if row['komitmen'] is not None]
-        if komitmen_values:
-            komitmen_total = sum(komitmen_values)
+        # SPECIAL CASE for %DPK/%NPL: Calculate komitmen total as percentage
+        if metric_field in ['dpk_pct', 'npl_pct']:
+            # Get all uker codes from rows (KANCA codes only)
+            # Convert to string because komitmen_dict keys are strings (kode_uker is CharField)
+            uker_codes = [str(row['kode_uker']) for row in rows]
             
-            # Calculate total % Achievement and Gap
-            # NOTE: totals['E'] dalam RUPIAH PENUH, komitmen dalam RIBUAN (juta rupiah)
-            # SPECIAL CASE for DPK/NPL: Reversed formula (Komitmen / E) instead of (E / Komitmen)
-            if komitmen_total != 0:
-                E_total_in_millions = totals['E'] / Decimal('1000000')  # Convert to millions
-                
-                # For DPK/NPL pages: Use reversed formula (Komitmen / E) × 100
-                if metric_field in ['dpk', 'npl']:
-                    if E_total_in_millions != 0:
-                        komitmen_pct_ach_total = (komitmen_total / E_total_in_millions) * Decimal('100')
-                    else:
-                        komitmen_pct_ach_total = Decimal('110')  # IFERROR result
-                else:
-                    # For OS and other metrics: Normal formula (E / Komitmen)
-                    komitmen_pct_ach_total = (E_total_in_millions / komitmen_total) * Decimal('100')
-                
-                # Cap at 110%
-                if komitmen_pct_ach_total > Decimal('110'):
-                    komitmen_pct_ach_total = Decimal('110')
-                # Floor at 0%
-                elif komitmen_pct_ach_total < Decimal('0'):
-                    komitmen_pct_ach_total = Decimal('0')
-                # Gap thd Realisasi = Total Realisasi - Total Komitmen (both in millions/thousands)
-                komitmen_gab_real_total = E_total_in_millions - komitmen_total
+            # Sum raw komitmen for numerator (DPK or NPL)
+            komitmen_raw_sum = Decimal('0')
+            for kode_uker in uker_codes:
+                komitmen_raw = get_komitmen_value(komitmen_data, kode_uker, komitmen_segment, komitmen_metric)
+                if komitmen_raw:
+                    komitmen_raw_sum += komitmen_raw
+            
+            # Sum komitmen OS for denominator
+            komitmen_os_sum = Decimal('0')
+            for kode_uker in uker_codes:
+                komitmen_os = get_komitmen_value(komitmen_data, kode_uker, komitmen_segment, 'os')
+                if komitmen_os:
+                    komitmen_os_sum += komitmen_os
+            
+            # Calculate total percentage: (Total DPK/NPL / Total OS) × 100
+            if komitmen_os_sum != 0:
+                komitmen_total = calculate_percentage_metric(komitmen_raw_sum, komitmen_os_sum)
             else:
-                # IFERROR: if komitmen is 0, return 110%
+                komitmen_total = None
+        else:
+            # For other metrics: Sum all komitmen values from rows
+            komitmen_values = [row['komitmen'] for row in rows if row['komitmen'] is not None]
+            if komitmen_values:
+                komitmen_total = sum(komitmen_values)
+            
+        # Calculate total % Achievement and Gap
+        if komitmen_total is not None and komitmen_total != 0:
+            # For percentage metrics (dpk_pct, npl_pct), totals['E'] is already a percentage
+            # For other metrics, totals['E'] is in RUPIAH PENUH, need conversion to millions
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = totals['E']  # Already a percentage
+            else:
+                E_value = totals['E'] / Decimal('1000000')  # Convert to millions
+            
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
+                if E_value != 0:
+                    komitmen_pct_ach_total = (komitmen_total / E_value) * Decimal('100')
+                else:
+                    komitmen_pct_ach_total = Decimal('110')  # IFERROR result
+            else:
+                # For OS and other metrics: Normal formula (E / Komitmen)
+                komitmen_pct_ach_total = (E_value / komitmen_total) * Decimal('100')
+                
+            # Cap at 110%
+            if komitmen_pct_ach_total > Decimal('110'):
                 komitmen_pct_ach_total = Decimal('110')
-                E_total_in_millions = totals['E'] / Decimal('1000000')
-                komitmen_gab_real_total = E_total_in_millions
+            # Floor at 0%
+            elif komitmen_pct_ach_total < Decimal('0'):
+                komitmen_pct_ach_total = Decimal('0')
+            # Gap thd Realisasi = E - Komitmen (both in same unit)
+            komitmen_gab_real_total = E_value - komitmen_total
+        else:
+            # IFERROR: if komitmen is 0, return 110%
+            komitmen_pct_ach_total = Decimal('110')
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = totals['E']
+            else:
+                E_value = totals['E'] / Decimal('1000000')
+            komitmen_gab_real_total = E_value
     
     totals['komitmen'] = komitmen_total
     totals['komitmen_pct_ach'] = komitmen_pct_ach_total
@@ -999,35 +1103,65 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
         # Get komitmen value untuk KCP ini
         komitmen_value = None
         if komitmen_data and komitmen_segment and komitmen_metric:
-            komitmen_value = get_komitmen_value(komitmen_data, kcp_code_str, komitmen_segment, komitmen_metric)
+            # SPECIAL CASE for %DPK/%NPL: Calculate komitmen as percentage
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                # Get raw komitmen for numerator (DPK or NPL)
+                komitmen_raw = get_komitmen_value(komitmen_data, kcp_code_str, komitmen_segment, komitmen_metric)
+                # Get komitmen OS for denominator
+                komitmen_os = get_komitmen_value(komitmen_data, kcp_code_str, komitmen_segment, 'os')
+                
+                # Calculate percentage: (DPK/NPL / OS) × 100
+                if komitmen_raw is not None and komitmen_os is not None and komitmen_os != 0:
+                    komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
+                else:
+                    komitmen_value = None
+            else:
+                # For other metrics: Use raw komitmen value
+                komitmen_value = get_komitmen_value(komitmen_data, kcp_code_str, komitmen_segment, komitmen_metric)
         
         # Calculate komitmen % Achievement and Gap
         # Formula: =IFERROR(IF((E/Komitmen)>1.1,110%,IF((E/Komitmen)<0,0%,(E/Komitmen))),110%)
         # NOTE: E_val dari database dalam RUPIAH PENUH, komitmen dalam RIBUAN (juta rupiah)
+        # SPECIAL CASE for DPK/NPL/DPK_PCT/NPL_PCT: Reversed formula (Komitmen / E) instead of (E / Komitmen)
         komitmen_pct_ach = None
         komitmen_gab_real = None
         if komitmen_value is not None and komitmen_value != 0:
-            E_in_millions = E_val / Decimal('1000000')  # Convert E from rupiah to millions
-            ratio = E_in_millions / komitmen_value
+            # For percentage metrics (dpk_pct, npl_pct), E_val is already a percentage
+            # For other metrics, E_val is in RUPIAH PENUH, need conversion to millions
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = E_val  # Already a percentage
+            else:
+                E_value = E_val / Decimal('1000000')  # Convert to millions
+            
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
+                if E_value != 0:
+                    ratio = komitmen_value / E_value  # REVERSED: Komitmen / E
+                else:
+                    ratio = Decimal('11')  # Will result in 110% cap
+            else:
+                # For OS and other metrics: Normal formula (E / Komitmen)
+                ratio = E_value / komitmen_value
+            
             if ratio > Decimal('1.1'):
-                # Cap at 110%
                 komitmen_pct_ach = Decimal('110')
             elif ratio < 0:
-                # Floor at 0%
                 komitmen_pct_ach = Decimal('0')
             else:
-                # Normal calculation
                 komitmen_pct_ach = ratio * Decimal('100')
             
-            # Gap = E - Komitmen (both in millions/thousands)
-            # Positive gap = surplus (realisasi > komitmen) → hitam
-            # Negative gap = shortfall (realisasi < komitmen) → merah
-            komitmen_gab_real = E_in_millions - komitmen_value
+            # Gap = E - Komitmen (both in same unit)
+            # Positive gap = surplus (realisasi > komitmen) → hitam (for DPK/NPL reversed to red)
+            # Negative gap = shortfall (realisasi < komitmen) → merah (for DPK/NPL reversed to black)
+            komitmen_gab_real = E_value - komitmen_value
         elif komitmen_value == 0 or komitmen_value is None:
             # IFERROR: jika error (pembagi nol), anggap 110%
             komitmen_pct_ach = Decimal('110')
-            E_in_millions = E_val / Decimal('1000000')
-            komitmen_gab_real = E_in_millions  # Gap = realisasi (karena tidak ada target)
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = E_val
+            else:
+                E_value = E_val / Decimal('1000000')
+            komitmen_gab_real = E_value  # Gap = realisasi (karena tidak ada target)
         
         # Build row
         row = {
@@ -1110,40 +1244,72 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
     komitmen_gab_real_total = None
     
     if komitmen_data:
-        # Sum all komitmen values from rows
-        komitmen_values = [row['komitmen'] for row in rows if row['komitmen'] is not None]
-        if komitmen_values:
-            komitmen_total = sum(komitmen_values)
+        # SPECIAL CASE for %DPK/%NPL: Calculate komitmen total as percentage
+        if metric_field in ['dpk_pct', 'npl_pct']:
+            # Get all uker codes from rows (KCP codes only)
+            # Convert to string because komitmen_dict keys are strings (kode_uker is CharField)
+            uker_codes = [str(row['kode_uker']) for row in rows]
             
-            # Calculate total % Achievement and Gap
-            # NOTE: totals['E'] dalam RUPIAH PENUH, komitmen dalam RIBUAN (juta rupiah)
-            # SPECIAL CASE for DPK/NPL: Reversed formula (Komitmen / E) instead of (E / Komitmen)
-            if komitmen_total != 0:
-                E_total_in_millions = totals['E'] / Decimal('1000000')  # Convert to millions
-                
-                # For DPK/NPL pages: Use reversed formula (Komitmen / E) × 100
-                if metric_field in ['dpk', 'npl']:
-                    if E_total_in_millions != 0:
-                        komitmen_pct_ach_total = (komitmen_total / E_total_in_millions) * Decimal('100')
-                    else:
-                        komitmen_pct_ach_total = Decimal('110')  # IFERROR result
-                else:
-                    # For OS and other metrics: Normal formula (E / Komitmen)
-                    komitmen_pct_ach_total = (E_total_in_millions / komitmen_total) * Decimal('100')
-                
-                # Cap at 110%
-                if komitmen_pct_ach_total > Decimal('110'):
-                    komitmen_pct_ach_total = Decimal('110')
-                # Floor at 0%
-                elif komitmen_pct_ach_total < Decimal('0'):
-                    komitmen_pct_ach_total = Decimal('0')
-                # Gap thd Realisasi = Total Realisasi - Total Komitmen (both in millions/thousands)
-                komitmen_gab_real_total = E_total_in_millions - komitmen_total
+            # Sum raw komitmen for numerator (DPK or NPL)
+            komitmen_raw_sum = Decimal('0')
+            for kode_uker in uker_codes:
+                komitmen_raw = get_komitmen_value(komitmen_data, kode_uker, komitmen_segment, komitmen_metric)
+                if komitmen_raw:
+                    komitmen_raw_sum += komitmen_raw
+            
+            # Sum komitmen OS for denominator
+            komitmen_os_sum = Decimal('0')
+            for kode_uker in uker_codes:
+                komitmen_os = get_komitmen_value(komitmen_data, kode_uker, komitmen_segment, 'os')
+                if komitmen_os:
+                    komitmen_os_sum += komitmen_os
+            
+            # Calculate total percentage: (Total DPK/NPL / Total OS) × 100
+            if komitmen_os_sum != 0:
+                komitmen_total = calculate_percentage_metric(komitmen_raw_sum, komitmen_os_sum)
             else:
-                # IFERROR: if komitmen is 0, return 110%
+                komitmen_total = None
+        else:
+            # For other metrics: Sum all komitmen values from rows
+            komitmen_values = [row['komitmen'] for row in rows if row['komitmen'] is not None]
+            if komitmen_values:
+                komitmen_total = sum(komitmen_values)
+            
+        # Calculate total % Achievement and Gap
+        if komitmen_total is not None and komitmen_total != 0:
+            # For percentage metrics (dpk_pct, npl_pct), totals['E'] is already a percentage
+            # For other metrics, totals['E'] is in RUPIAH PENUH, need conversion to millions
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = totals['E']  # Already a percentage
+            else:
+                E_value = totals['E'] / Decimal('1000000')  # Convert to millions
+            
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
+                if E_value != 0:
+                    komitmen_pct_ach_total = (komitmen_total / E_value) * Decimal('100')
+                else:
+                    komitmen_pct_ach_total = Decimal('110')  # IFERROR result
+            else:
+                # For OS and other metrics: Normal formula (E / Komitmen)
+                komitmen_pct_ach_total = (E_value / komitmen_total) * Decimal('100')
+                
+            # Cap at 110%
+            if komitmen_pct_ach_total > Decimal('110'):
                 komitmen_pct_ach_total = Decimal('110')
-                E_total_in_millions = totals['E'] / Decimal('1000000')
-                komitmen_gab_real_total = E_total_in_millions
+            # Floor at 0%
+            elif komitmen_pct_ach_total < Decimal('0'):
+                komitmen_pct_ach_total = Decimal('0')
+            # Gap thd Realisasi = E - Komitmen (both in same unit)
+            komitmen_gab_real_total = E_value - komitmen_total
+        else:
+            # IFERROR: if komitmen is 0, return 110%
+            komitmen_pct_ach_total = Decimal('110')
+            if metric_field in ['dpk_pct', 'npl_pct']:
+                E_value = totals['E']
+            else:
+                E_value = totals['E'] / Decimal('1000000')
+            komitmen_gab_real_total = E_value
     
     totals['komitmen'] = komitmen_total
     totals['komitmen_pct_ach'] = komitmen_pct_ach_total

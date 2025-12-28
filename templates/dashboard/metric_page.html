@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load dashboard_filters %}
 
 {% block title %}{{ page_title }} - Dashboard Performance Highlights SME{% endblock %}
@@ -1667,12 +1667,16 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                             {{ row.komitmen_pct_ach|floatformat:1 }}%
                         </td>
                         <!-- Gap: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
-                            {% if metric_type == 'dpk' or metric_type == 'npl' %}
-                                {% if row.komitmen_gab_real > 0 %}
-                                    ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
+                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {{ row.komitmen_gab_real|floatformat:2 }}%
                                 {% else %}
-                                    {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                    {% if row.komitmen_gab_real < 0 %}
+                                        ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                    {% else %}
+                                        {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
                                 {% if row.komitmen_gab_real < 0 %}
@@ -1719,13 +1723,17 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                             </strong>
                         </td>
                         <!-- Gap Total: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="text-center {% if metric_type == 'dpk' or metric_type == 'npl' %}{% if tables.konsol.totals.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if tables.konsol.totals.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}" style="background-color: #1e3a5f; color: white;">
+                        <td class="text-center {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if tables.konsol.totals.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if tables.konsol.totals.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}" style="background-color: #1e3a5f; color: white;">
                             <strong>
-                            {% if metric_type == 'dpk' or metric_type == 'npl' %}
-                                {% if tables.konsol.totals.komitmen_gab_real > 0 %}
-                                    ({{ tables.konsol.totals.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {{ tables.konsol.totals.komitmen_gab_real|floatformat:2 }}%
                                 {% else %}
-                                    {{ tables.konsol.totals.komitmen_gab_real|format_komitmen:1 }}
+                                    {% if tables.konsol.totals.komitmen_gab_real < 0 %}
+                                        ({{ tables.konsol.totals.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                    {% else %}
+                                        {{ tables.konsol.totals.komitmen_gab_real|format_komitmen:1 }}
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
                                 {% if tables.konsol.totals.komitmen_gab_real < 0 %}
@@ -1831,12 +1839,16 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                             {{ row.komitmen_pct_ach|floatformat:1 }}%
                         </td>
                         <!-- Gap: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
-                            {% if metric_type == 'dpk' or metric_type == 'npl' %}
-                                {% if row.komitmen_gab_real > 0 %}
-                                    ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
+                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {{ row.komitmen_gab_real|floatformat:2 }}%
                                 {% else %}
-                                    {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                    {% if row.komitmen_gab_real < 0 %}
+                                        ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                    {% else %}
+                                        {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
                                 {% if row.komitmen_gab_real < 0 %}
@@ -1883,13 +1895,17 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                             </strong>
                         </td>
                         <!-- Gap Total: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="text-center {% if metric_type == 'dpk' or metric_type == 'npl' %}{% if tables.kanca.totals.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if tables.kanca.totals.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}" style="background-color: #1e3a5f; color: white;">
+                        <td class="text-center {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if tables.kanca.totals.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if tables.kanca.totals.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}" style="background-color: #1e3a5f; color: white;">
                             <strong>
-                            {% if metric_type == 'dpk' or metric_type == 'npl' %}
-                                {% if tables.kanca.totals.komitmen_gab_real > 0 %}
-                                    ({{ tables.kanca.totals.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {{ tables.kanca.totals.komitmen_gab_real|floatformat:2 }}%
                                 {% else %}
-                                    {{ tables.kanca.totals.komitmen_gab_real|format_komitmen:1 }}
+                                    {% if tables.kanca.totals.komitmen_gab_real < 0 %}
+                                        ({{ tables.kanca.totals.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                    {% else %}
+                                        {{ tables.kanca.totals.komitmen_gab_real|format_komitmen:1 }}
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
                                 {% if tables.kanca.totals.komitmen_gab_real < 0 %}
@@ -1995,12 +2011,16 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                             {{ row.komitmen_pct_ach|floatformat:1 }}%
                         </td>
                         <!-- Gap: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
-                            {% if metric_type == 'dpk' or metric_type == 'npl' %}
-                                {% if row.komitmen_gab_real > 0 %}
-                                    ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
+                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {{ row.komitmen_gab_real|floatformat:2 }}%
                                 {% else %}
-                                    {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                    {% if row.komitmen_gab_real < 0 %}
+                                        ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                    {% else %}
+                                        {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
                                 {% if row.komitmen_gab_real < 0 %}
@@ -2047,13 +2067,17 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                             </strong>
                         </td>
                         <!-- Gap Total: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="text-center {% if metric_type == 'dpk' or metric_type == 'npl' %}{% if tables.kcp.totals.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if tables.kcp.totals.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}" style="background-color: #1e3a5f; color: white;">
+                        <td class="text-center {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if tables.kcp.totals.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if tables.kcp.totals.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}" style="background-color: #1e3a5f; color: white;">
                             <strong>
-                            {% if metric_type == 'dpk' or metric_type == 'npl' %}
-                                {% if tables.kcp.totals.komitmen_gab_real > 0 %}
-                                    ({{ tables.kcp.totals.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {{ tables.kcp.totals.komitmen_gab_real|floatformat:2 }}%
                                 {% else %}
-                                    {{ tables.kcp.totals.komitmen_gab_real|format_komitmen:1 }}
+                                    {% if tables.kcp.totals.komitmen_gab_real < 0 %}
+                                        ({{ tables.kcp.totals.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                    {% else %}
+                                        {{ tables.kcp.totals.komitmen_gab_real|format_komitmen:1 }}
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
                                 {% if tables.kcp.totals.komitmen_gab_real < 0 %}
@@ -2268,3 +2292,7 @@ END SECTION: OS Tables
 {% endif %} {# End of no_data check #}
 
 {% endblock %}
+
+
+
+
