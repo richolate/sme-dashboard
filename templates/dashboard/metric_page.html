@@ -2453,14 +2453,14 @@ SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
         <thead>
             <tr>
                 <th rowspan="2" class="header-segment">Segment</th>
-                <th colspan="5" class="header-posisi">Posisi {{ date_columns.E.date|date:"d-M-Y" }}</th>
+                <th colspan="5" class="header-posisi">Posisi</th>
                 <th colspan="8" class="header-monthly">Monthly Growth</th>
                 <th colspan="3" class="header-komitmen">Komitmen {{ komitmen_label }}</th>
             </tr>
             <tr>
-                <th class="header-posisi">Des'24</th>
+                <th class="header-posisi">{{ date_columns.A.date|date:"M'y" }}</th>
                 <th class="header-posisi">{{ date_columns.B.date|date:"M'y" }}</th>
-                <th class="header-posisi">Okt'25</th>
+                <th class="header-posisi">{{ date_columns.C.date|date:"M'y" }}</th>
                 <th class="header-posisi">{{ date_columns.D.date|date:"d-M-y" }}</th>
                 <th class="header-posisi">{{ date_columns.E.date|date:"d-M-y" }}</th>
                 <th colspan="2" class="header-monthly">DtD<br>{{ dtd_header }}</th>

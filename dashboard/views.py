@@ -1557,8 +1557,8 @@ def metric_page_view(request, slug):
         
         available_dates = list(available_dates_qs)
         
-        # Get selected date from request
-        selected_date_str = request.GET.get('date')
+        # Get selected date from request (Summary Konsol uses 'selected_date' parameter)
+        selected_date_str = request.GET.get('selected_date') or request.GET.get('date')
         if selected_date_str:
             try:
                 selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
@@ -1612,7 +1612,7 @@ def metric_page_view(request, slug):
             'kanca_options': kanca_options,
             'selected_kanca': kanca_filter,
             'selected_date': selected_date,
-            'selected_date_str': selected_date.strftime('%Y-%m-%d'),
+            'selected_date_str': selected_date.strftime('%Y-%m-%d') if selected_date else '',
             'available_dates': available_dates,
             'date_columns': date_cols,
             'komitmen_label': komitmen_label,
