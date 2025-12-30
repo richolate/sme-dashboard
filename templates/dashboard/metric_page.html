@@ -2282,6 +2282,594 @@ END SECTION: OS Tables
 ================================================================================
 {% endcomment %}
 
+{% comment %}
+================================================================================
+SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
+================================================================================
+{% endcomment %}
+{% if show_summary_table %}
+<style>
+    /* Specific styling for Summary Konsol header toolbar */
+    #summary-konsol-card .table-header-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background-color: #0d47a1 !important;
+        color: white !important;
+        border-radius: 0;
+        margin: 0;
+    }
+    #summary-konsol-card .table-header-toolbar i {
+        margin-right: 0.5rem;
+    }
+    #summary-konsol-card .table-header-toolbar .btn {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
+    }
+    .summary-table {
+        font-size: 0.7rem;
+    }
+    .summary-table th, .summary-table td {
+        padding: 0.3rem 0.4rem;
+        vertical-align: middle;
+        text-align: right;
+        white-space: nowrap;
+    }
+    .summary-table th {
+        text-align: center;
+    }
+    /* Kolom Segment tetap rata kiri */
+    .summary-table td:nth-child(1) {
+        text-align: left;
+    }
+    /* Total row styling */
+    .summary-table tr.total-row {
+        font-weight: bold !important;
+        font-size: 0.85rem !important;
+    }
+    .summary-table tr.total-row td {
+        padding: 0.5rem 0.4rem !important;
+        font-weight: bold !important;
+    }
+    /* Background #dce6f1 only for non-growth columns */
+    .summary-table tr.total-row td:nth-child(1),  /* Segment */
+    .summary-table tr.total-row td:nth-child(2),  /* A */
+    .summary-table tr.total-row td:nth-child(3),  /* B */
+    .summary-table tr.total-row td:nth-child(4),  /* C */
+    .summary-table tr.total-row td:nth-child(5),  /* D */
+    .summary-table tr.total-row td:nth-child(6),  /* E */
+    .summary-table tr.total-row td:nth-child(15), /* Komitmen Nominal */
+    .summary-table tr.total-row td:nth-child(16), /* Komitmen % Ach */
+    .summary-table tr.total-row td:nth-child(17)  /* Komitmen Gap */
+    {
+        background-color: #dce6f1 !important;
+    }
+    /* Sub-segment indentation */
+    .summary-table td.indent-1 {
+        padding-left: 1rem;
+    }
+    .summary-table td.indent-2 {
+        padding-left: 2rem;
+    }
+    /* Header untuk Segment */
+    .summary-table th.header-segment {
+        background-color: #1e3a5f !important;
+        color: white;
+    }
+    /* Header untuk kolom POSISI (A, B, C, D, E) */
+    .summary-table .header-posisi {
+        background-color: #538dd5 !important;
+        color: white;
+    }
+    .summary-table .header-monthly {
+        background-color: #808080 !important;
+        color: white;
+    }
+    .summary-table .header-komitmen {
+        background-color: #ffc000 !important;
+        color: black;
+    }
+    /* Color coding for gaps in Monthly Growth only */
+    .gap-positive {
+        background-color: #c6efce !important;
+        color: #006100;
+    }
+    .gap-negative {
+        background-color: #ffc7ce !important;
+        color: #9c0006;
+    }
+    /* No background color for komitmen gap */
+    .komitmen-gap-positive {
+        color: #006100;
+    }
+    .komitmen-gap-negative {
+        color: #9c0006;
+    }
+    /* Percentage metrics special colors */
+    .pct-metric {
+        background-color: #e7e6e6;
+    }
+</style>
+
+<!-- Summary Konsol: Date and KC Filter -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Filter Tanggal & KC</h6>
+            <form method="get" class="d-flex gap-2 align-items-center flex-wrap" id="summaryFilterForm">
+                <select name="kanca" class="form-select form-select-sm" style="width: 250px;">
+                    {% for option in kanca_options %}
+                    <option value="{{ option.code }}" {% if option.code == selected_kanca %}selected{% endif %}>
+                        {{ option.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="date" class="form-control form-control-sm" name="selected_date" 
+                       value="{{ selected_date_str }}"
+                       style="width: 180px;">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sync-alt me-1"></i>Terapkan
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body py-2">
+        <div class="row">
+            <div class="col-md-12">
+                <small class="text-muted">
+                    <strong>Kolom A:</strong> {{ date_columns.A.label }} (Akhir {{ date_columns.A.date|date:"F Y" }}) |
+                    <strong>Kolom B:</strong> {{ date_columns.B.label }} (31 Des {{ date_columns.B.date|date:"Y" }}) |
+                    <strong>Kolom C:</strong> {{ date_columns.C.label }} (Akhir {{ date_columns.C.date|date:"F Y" }}) |
+                    <strong>Kolom D:</strong> {{ date_columns.D.label }} |
+                    <strong>Kolom E:</strong> {{ date_columns.E.label }}
+                </small>
+                <br>
+                <span class="unit-note"><i class="fas fa-info-circle me-1"></i>Satuan angka: dalam jutaan Rupiah (Rp. Juta) kecuali untuk NASABAH</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Konsol Table Card -->
+<div class="card mb-4" id="summary-konsol-card">
+    <div class="card-body p-0">
+        <div class="table-header-toolbar">
+            <span><i class="fas fa-table me-2"></i>PERFORMANCE HIGHLIGHTS SME KONSOL</span>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light btn-sm" onclick="openSummaryModal()">
+                    <i class="fas fa-expand-alt"></i> Perbesar
+                </button>
+                <button type="button" class="btn btn-success btn-sm" onclick="exportSummaryToExcel()">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+            </div>
+        </div>
+
+<!-- Summary Table -->
+<div class="table-responsive" id="summaryTableContainer">
+    <table class="table table-bordered table-hover summary-table mb-0">
+        <thead>
+            <tr>
+                <th rowspan="2" class="header-segment">Segment</th>
+                <th colspan="5" class="header-posisi">Posisi {{ date_columns.E.date|date:"d-M-Y" }}</th>
+                <th colspan="8" class="header-monthly">Monthly Growth</th>
+                <th colspan="3" class="header-komitmen">Komitmen {{ komitmen_label }}</th>
+            </tr>
+            <tr>
+                <th class="header-posisi">Des'24</th>
+                <th class="header-posisi">{{ date_columns.B.date|date:"M'y" }}</th>
+                <th class="header-posisi">Okt'25</th>
+                <th class="header-posisi">{{ date_columns.D.date|date:"d-M-y" }}</th>
+                <th class="header-posisi">{{ date_columns.E.date|date:"d-M-y" }}</th>
+                <th colspan="2" class="header-monthly">DtD<br>{{ dtd_header }}</th>
+                <th colspan="2" class="header-monthly">MoM<br>{{ mom_header }}</th>
+                <th colspan="2" class="header-monthly">MtD<br>{{ mtd_header }}</th>
+                <th colspan="2" class="header-monthly">YtD<br>{{ ytd_header }}</th>
+                <th class="header-komitmen">Nominal</th>
+                <th class="header-komitmen">% Ach</th>
+                <th class="header-komitmen">Gap thd Realisasi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in summary_rows %}
+            {% if row.is_total %}
+            <tr class="total-row">
+                <!-- Segment name -->
+                <td>{{ row.segment }}</td>
+                
+                <!-- Posisi columns (A, B, C, D, E) -->
+                {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- Percentage metrics -->
+                    <td>{{ row.A|floatformat:2 }}%</td>
+                    <td>{{ row.B|floatformat:2 }}%</td>
+                    <td>{{ row.C|floatformat:2 }}%</td>
+                    <td>{{ row.D|floatformat:2 }}%</td>
+                    <td>{{ row.E|floatformat:2 }}%</td>
+                {% elif row.metric_type == 'nasabah' %}
+                    <!-- Nasabah count -->
+                    <td>{{ row.A|floatformat:0 }}</td>
+                    <td>{{ row.B|floatformat:0 }}</td>
+                    <td>{{ row.C|floatformat:0 }}</td>
+                    <td>{{ row.D|floatformat:0 }}</td>
+                    <td>{{ row.E|floatformat:0 }}</td>
+                {% else %}
+                    <!-- OS metrics in millions -->
+                    <td>{{ row.A|format_komitmen:0 }}</td>
+                    <td>{{ row.B|format_komitmen:0 }}</td>
+                    <td>{{ row.C|format_komitmen:0 }}</td>
+                    <td>{{ row.D|format_komitmen:0 }}</td>
+                    <td>{{ row.E|format_komitmen:0 }}</td>
+                {% endif %}
+                
+                <!-- DtD with color logic based on metric type -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                        <td {% if row.DtD > 0 %}class="gap-negative"{% elif row.DtD < 0 %}class="gap-positive"{% endif %}>{{ row.DtD|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.DtD > 0 %}class="gap-negative"{% elif row.DtD < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.DtD < 0 %}({{ row.DtD|abs_value|format_komitmen:0 }}){% else %}{{ row.DtD|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <!-- Nasabah - normal color (positive=green, negative=red) -->
+                    <td {% if row.DtD < 0 %}class="gap-negative"{% elif row.DtD > 0 %}class="gap-positive"{% endif %}>{{ row.DtD|floatformat:0 }}</td>
+                {% else %}
+                    <!-- OS - normal color (positive=green, negative=red) -->
+                    <td {% if row.DtD < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.DtD < 0 %}({{ row.DtD|abs_value|format_komitmen:0 }}){% else %}{{ row.DtD|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- DtD_pct with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <td {% if row.DtD_pct > 0 %}class="gap-negative"{% elif row.DtD_pct < 0 %}class="gap-positive"{% endif %}>{{ row.DtD_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.DtD_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.DtD_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- MoM with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                        <td {% if row.MoM > 0 %}class="gap-negative"{% elif row.MoM < 0 %}class="gap-positive"{% endif %}>{{ row.MoM|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.MoM > 0 %}class="gap-negative"{% elif row.MoM < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.MoM < 0 %}({{ row.MoM|abs_value|format_komitmen:0 }}){% else %}{{ row.MoM|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <td {% if row.MoM < 0 %}class="gap-negative"{% elif row.MoM > 0 %}class="gap-positive"{% endif %}>{{ row.MoM|floatformat:0 }}</td>
+                {% else %}
+                    <td {% if row.MoM < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.MoM < 0 %}({{ row.MoM|abs_value|format_komitmen:0 }}){% else %}{{ row.MoM|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- MoM_pct with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <td {% if row.MoM_pct > 0 %}class="gap-negative"{% elif row.MoM_pct < 0 %}class="gap-positive"{% endif %}>{{ row.MoM_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.MoM_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.MoM_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- MtD with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                        <td {% if row.MtD > 0 %}class="gap-negative"{% elif row.MtD < 0 %}class="gap-positive"{% endif %}>{{ row.MtD|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.MtD > 0 %}class="gap-negative"{% elif row.MtD < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.MtD < 0 %}({{ row.MtD|abs_value|format_komitmen:0 }}){% else %}{{ row.MtD|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <td {% if row.MtD < 0 %}class="gap-negative"{% elif row.MtD > 0 %}class="gap-positive"{% endif %}>{{ row.MtD|floatformat:0 }}</td>
+                {% else %}
+                    <td {% if row.MtD < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.MtD < 0 %}({{ row.MtD|abs_value|format_komitmen:0 }}){% else %}{{ row.MtD|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- MtD_pct with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <td {% if row.MtD_pct > 0 %}class="gap-negative"{% elif row.MtD_pct < 0 %}class="gap-positive"{% endif %}>{{ row.MtD_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.MtD_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.MtD_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- YtD with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                        <td {% if row.YtD > 0 %}class="gap-negative"{% elif row.YtD < 0 %}class="gap-positive"{% endif %}>{{ row.YtD|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.YtD > 0 %}class="gap-negative"{% elif row.YtD < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.YtD < 0 %}({{ row.YtD|abs_value|format_komitmen:0 }}){% else %}{{ row.YtD|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <td {% if row.YtD < 0 %}class="gap-negative"{% elif row.YtD > 0 %}class="gap-positive"{% endif %}>{{ row.YtD|floatformat:0 }}</td>
+                {% else %}
+                    <td {% if row.YtD < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.YtD < 0 %}({{ row.YtD|abs_value|format_komitmen:0 }}){% else %}{{ row.YtD|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- YtD_pct with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <td {% if row.YtD_pct > 0 %}class="gap-negative"{% elif row.YtD_pct < 0 %}class="gap-positive"{% endif %}>{{ row.YtD_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.YtD_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.YtD_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- Komitmen -->
+                {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- Percentage komitmen -->
+                    <td>{{ row.komitmen|floatformat:2 }}%</td>
+                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
+                        {{ row.komitmen_gab_real|floatformat:2 }}%
+                    </td>
+                {% elif row.metric_type == 'nasabah' %}
+                    <!-- Nasabah komitmen -->
+                    <td>{{ row.komitmen|floatformat:0 }}</td>
+                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
+                        {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|floatformat:0 }}){% else %}{{ row.komitmen_gab_real|floatformat:0 }}{% endif %}
+                    </td>
+                {% else %}
+                    <!-- OS komitmen in millions -->
+                    <td>{{ row.komitmen|format_komitmen:0 }}</td>
+                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
+                        {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|format_komitmen:0 }}){% else %}{{ row.komitmen_gab_real|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+            </tr>
+            {% else %}
+            <tr {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}class="pct-metric"{% endif %}>
+                <!-- Segment name with indentation -->
+                <td {% if row.segment|slice:":2" == "- " %}class="indent-2"{% elif row.segment in "Medium,Small,KUR" %}class="indent-1"{% endif %}>
+                    {% if row.segment == "Small + KUR" %}<strong>{{ row.segment }}</strong>{% else %}{{ row.segment }}{% endif %}
+                </td>
+                
+                <!-- Posisi columns (A, B, C, D, E) -->
+                {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- Percentage metrics -->
+                    <td>{{ row.A|floatformat:2 }}%</td>
+                    <td>{{ row.B|floatformat:2 }}%</td>
+                    <td>{{ row.C|floatformat:2 }}%</td>
+                    <td>{{ row.D|floatformat:2 }}%</td>
+                    <td>{{ row.E|floatformat:2 }}%</td>
+                {% elif row.metric_type == 'nasabah' %}
+                    <!-- Nasabah count -->
+                    <td>{{ row.A|floatformat:0 }}</td>
+                    <td>{{ row.B|floatformat:0 }}</td>
+                    <td>{{ row.C|floatformat:0 }}</td>
+                    <td>{{ row.D|floatformat:0 }}</td>
+                    <td>{{ row.E|floatformat:0 }}</td>
+                {% else %}
+                    <!-- OS metrics in millions -->
+                    <td>{{ row.A|format_komitmen:0 }}</td>
+                    <td>{{ row.B|format_komitmen:0 }}</td>
+                    <td>{{ row.C|format_komitmen:0 }}</td>
+                    <td>{{ row.D|format_komitmen:0 }}</td>
+                    <td>{{ row.E|format_komitmen:0 }}</td>
+                {% endif %}
+                
+                <!-- DtD with color logic based on metric type -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                        <td {% if row.DtD > 0 %}class="gap-negative"{% elif row.DtD < 0 %}class="gap-positive"{% endif %}>{{ row.DtD|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.DtD > 0 %}class="gap-negative"{% elif row.DtD < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.DtD < 0 %}({{ row.DtD|abs_value|format_komitmen:0 }}){% else %}{{ row.DtD|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <!-- Nasabah - normal color (positive=green, negative=red) -->
+                    <td {% if row.DtD < 0 %}class="gap-negative"{% elif row.DtD > 0 %}class="gap-positive"{% endif %}>{{ row.DtD|floatformat:0 }}</td>
+                {% else %}
+                    <!-- OS - normal color (positive=green, negative=red) -->
+                    <td {% if row.DtD < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.DtD < 0 %}({{ row.DtD|abs_value|format_komitmen:0 }}){% else %}{{ row.DtD|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- DtD_pct with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <td {% if row.DtD_pct > 0 %}class="gap-negative"{% elif row.DtD_pct < 0 %}class="gap-positive"{% endif %}>{{ row.DtD_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.DtD_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.DtD_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- MoM with color logic -->
+                {% if row.metric_type in 'kol2,npl,lr,lar,kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type in 'kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                        <td {% if row.MoM > 0 %}class="gap-negative"{% elif row.MoM < 0 %}class="gap-positive"{% endif %}>{{ row.MoM|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.MoM > 0 %}class="gap-negative"{% elif row.MoM < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.MoM < 0 %}({{ row.MoM|abs_value|format_komitmen:0 }}){% else %}{{ row.MoM|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <td {% if row.MoM < 0 %}class="gap-negative"{% elif row.MoM > 0 %}class="gap-positive"{% endif %}>{{ row.MoM|floatformat:0 }}</td>
+                {% else %}
+                    <td {% if row.MoM < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.MoM < 0 %}({{ row.MoM|abs_value|format_komitmen:0 }}){% else %}{{ row.MoM|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- MoM_pct with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <td {% if row.MoM_pct > 0 %}class="gap-negative"{% elif row.MoM_pct < 0 %}class="gap-positive"{% endif %}>{{ row.MoM_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.MoM_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.MoM_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- MtD with color logic -->
+                {% if row.metric_type in 'kol2,npl,lr,lar,kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type in 'kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                        <td {% if row.MtD > 0 %}class="gap-negative"{% elif row.MtD < 0 %}class="gap-positive"{% endif %}>{{ row.MtD|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.MtD > 0 %}class="gap-negative"{% elif row.MtD < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.MtD < 0 %}({{ row.MtD|abs_value|format_komitmen:0 }}){% else %}{{ row.MtD|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <td {% if row.MtD < 0 %}class="gap-negative"{% elif row.MtD > 0 %}class="gap-positive"{% endif %}>{{ row.MtD|floatformat:0 }}</td>
+                {% else %}
+                    <td {% if row.MtD < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.MtD < 0 %}({{ row.MtD|abs_value|format_komitmen:0 }}){% else %}{{ row.MtD|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- MtD_pct with color logic -->
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
+                    <td {% if row.MtD_pct > 0 %}class="gap-negative"{% elif row.MtD_pct < 0 %}class="gap-positive"{% endif %}>{{ row.MtD_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.MtD_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.MtD_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- YtD with color logic -->
+                {% if row.metric_type in 'kol2,npl,lr,lar,kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                    <!-- KOL2/NPL/LR/LAR metrics - reversed color (positive=red, negative=green) -->
+                    {% if row.metric_type in 'kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                        <td {% if row.YtD > 0 %}class="gap-negative"{% elif row.YtD < 0 %}class="gap-positive"{% endif %}>{{ row.YtD|floatformat:2 }}%</td>
+                    {% else %}
+                        <td {% if row.YtD > 0 %}class="gap-negative"{% elif row.YtD < 0 %}class="gap-positive"{% endif %}>
+                            {% if row.YtD < 0 %}({{ row.YtD|abs_value|format_komitmen:0 }}){% else %}{{ row.YtD|format_komitmen:0 }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% elif row.metric_type == 'nasabah' %}
+                    <td {% if row.YtD < 0 %}class="gap-negative"{% elif row.YtD > 0 %}class="gap-positive"{% endif %}>{{ row.YtD|floatformat:0 }}</td>
+                {% else %}
+                    <td {% if row.YtD < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>
+                        {% if row.YtD < 0 %}({{ row.YtD|abs_value|format_komitmen:0 }}){% else %}{{ row.YtD|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+                <!-- YtD_pct with color logic -->
+                {% if row.metric_type in 'kol2,npl,lr,lar' %}
+                    <!-- For BD KOL2/NPL/LR/LAR, show nominal value instead of percentage -->
+                    <td {% if row.YtD > 0 %}class="gap-negative"{% elif row.YtD < 0 %}class="gap-positive"{% endif %}>
+                        {% if row.YtD < 0 %}({{ row.YtD|abs_value|format_komitmen:0 }}){% else %}{{ row.YtD|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% elif row.metric_type in 'kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                    <td {% if row.YtD_pct > 0 %}class="gap-negative"{% elif row.YtD_pct < 0 %}class="gap-positive"{% endif %}>{{ row.YtD_pct|floatformat:1 }}%</td>
+                {% else %}
+                    <td {% if row.YtD_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.YtD_pct|floatformat:1 }}%</td>
+                {% endif %}
+                
+                <!-- Komitmen -->
+                {% if row.metric_type in 'kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                    <!-- Percentage komitmen -->
+                    <td>{{ row.komitmen|floatformat:2 }}%</td>
+                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
+                        {{ row.komitmen_gab_real|floatformat:2 }}%
+                    </td>
+                {% elif row.metric_type == 'nasabah' %}
+                    <!-- Nasabah komitmen -->
+                    <td>{{ row.komitmen|floatformat:0 }}</td>
+                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
+                        {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|floatformat:0 }}){% else %}{{ row.komitmen_gab_real|floatformat:0 }}{% endif %}
+                    </td>
+                {% else %}
+                    <!-- OS komitmen in millions -->
+                    <td>{{ row.komitmen|format_komitmen:0 }}</td>
+                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
+                        {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|format_komitmen:0 }}){% else %}{{ row.komitmen_gab_real|format_komitmen:0 }}{% endif %}
+                    </td>
+                {% endif %}
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+</div>
+
+<!-- Modal for Summary Konsol -->
+<div class="modal fade" id="summaryModal" tabindex="-1" aria-labelledby="summaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background-color: #1e3a5f;">
+                <h5 class="modal-title" id="summaryModalLabel">
+                    <i class="fas fa-table me-2"></i>PERFORMANCE HIGHLIGHTS SME KONSOL
+                </h5>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success btn-sm" onclick="exportSummaryToExcel()">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive" style="max-height: calc(100vh - 120px); overflow: auto;">
+                    <div id="modalSummaryContent"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="unit-note me-auto"><i class="fas fa-info-circle me-1"></i>Satuan angka: dalam jutaan Rupiah (Rp. Juta)</span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSummaryModal() {
+    // Get the table HTML
+    const table = document.querySelector('#summary-konsol-card .summary-table');
+    const tableClone = table.cloneNode(true);
+    tableClone.id = 'modal-summary-table';
+    tableClone.style.fontSize = '0.85rem';
+    
+    // Update modal
+    document.getElementById('modalSummaryContent').innerHTML = '';
+    document.getElementById('modalSummaryContent').appendChild(tableClone);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('summaryModal'));
+    modal.show();
+}
+
+function exportSummaryToExcel() {
+    const table = document.querySelector('#summary-konsol-card .summary-table') || document.getElementById('modal-summary-table');
+    
+    if (!table) {
+        console.error('Summary table not found');
+        return;
+    }
+    
+    // Create workbook from table
+    const wb = XLSX.utils.table_to_book(table, {
+        sheet: 'Summary Konsol',
+        raw: true
+    });
+    
+    // Generate filename with date
+    const date = new Date();
+    const filename = `Performance_Highlights_SME_Konsol_${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}.xlsx`;
+    
+    // Save file
+    XLSX.writeFile(wb, filename);
+}
+
+</script>
+
+<!-- Add XLSX library for Excel export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+{% endif %}
+{% comment %}
+================================================================================
+END SECTION: SUMMARY KONSOL
+================================================================================
+{% endcomment %}
+
 {% if tables and not show_os_tables %}
     <div class="alert alert-warning" role="alert">
         <h5 class="alert-heading"><i class="bi bi-tools"></i> Dalam Tahap Pengembangan</h5>

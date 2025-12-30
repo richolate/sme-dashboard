@@ -1,4 +1,4 @@
-"""Table Builder Module - Constructs KONSOL, KANCA ONLY, and KCP ONLY tables"""
+﻿"""Table Builder Module - Constructs KONSOL, KANCA ONLY, and KCP ONLY tables"""
 
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -85,8 +85,8 @@ def map_segment_and_metric_to_komitmen(segment_filter, metric_field):
         tuple: (komitmen_segment, komitmen_metric) atau (None, None) jika tidak applicable
         
     Mapping:
-    - Segment: 'SMALL' → 'small', 'CC' → 'cc', 'SMALL NCC' → 'ncc', 'KUR' → 'kur'
-    - Metric: 'os' → 'os', 'nsb' → 'deb', 'dpk' → 'dpk', dll
+    - Segment: 'SMALL' â†’ 'small', 'CC' â†’ 'cc', 'SMALL NCC' â†’ 'ncc', 'KUR' â†’ 'kur'
+    - Metric: 'os' â†’ 'os', 'nsb' â†’ 'deb', 'dpk' â†’ 'dpk', dll
     """
     # Map segment filter
     segment_map = {
@@ -404,8 +404,8 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
     Build KONSOL table (grouped by KANCA - includes both KANCA and their KCPs).
     
     For percentage metrics (dpk_pct, npl_pct):
-    - Each row shows: (SUM DPK for KANCA+KCP) / (SUM OS for KANCA+KCP) × 100
-    - Total row shows: (SUM DPK all) / (SUM OS all) × 100
+    - Each row shows: (SUM DPK for KANCA+KCP) / (SUM OS for KANCA+KCP) Ã— 100
+    - Total row shows: (SUM DPK all) / (SUM OS all) Ã— 100
     
     Args:
         kol_adk_filter: Optional filter for kol_adk field (e.g., '2' for DPK)
@@ -493,7 +493,7 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
                     # Get komitmen OS for denominator
                     komitmen_os = get_komitmen_value(komitmen_data, kode_kanca, komitmen_segment, 'os')
                     
-                    # Calculate percentage: (DPK/NPL / OS) × 100
+                    # Calculate percentage: (DPK/NPL / OS) Ã— 100
                     if komitmen_raw is not None and komitmen_os is not None and komitmen_os != 0:
                         komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
                     else:
@@ -509,7 +509,7 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
             komitmen_pct_ach = None
             komitmen_gab_real = None
             if komitmen_value is not None and komitmen_value != 0:
-                # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+                # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) Ã— 100
                 if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
                     if E != 0:
                         ratio = komitmen_value / E  # REVERSED: Komitmen / E
@@ -585,7 +585,7 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
             if komitmen_value is not None and komitmen_value != 0:
                 E_in_millions = E / Decimal('1000000')  # Convert E from rupiah to millions (thousands)
                 
-                # For DPK/NPL pages: Use reversed formula (Komitmen / E) × 100
+                # For DPK/NPL pages: Use reversed formula (Komitmen / E) Ã— 100
                 if metric_field in ['dpk', 'npl']:
                     if E_in_millions != 0:
                         ratio = komitmen_value / E_in_millions  # REVERSED: Komitmen / E
@@ -606,8 +606,8 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
                     komitmen_pct_ach = ratio * Decimal('100')
                 
                 # Gap = E - Komitmen (both in millions/thousands)
-                # Positive = surplus (realisasi > komitmen) → hitam
-                # Negative = shortfall (realisasi < komitmen) → merah
+                # Positive = surplus (realisasi > komitmen) â†’ hitam
+                # Negative = shortfall (realisasi < komitmen) â†’ merah
                 komitmen_gab_real = E_in_millions - komitmen_value
             
             rows.append({
@@ -628,7 +628,7 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
     
     # Calculate totals
     # For percentage metrics (dpk_pct, npl_pct), we need to recalculate from raw data
-    # Total %DPK = (Total DPK / Total OS) × 100, NOT sum of individual percentages
+    # Total %DPK = (Total DPK / Total OS) Ã— 100, NOT sum of individual percentages
     if metric_field in ['dpk_pct', 'npl_pct']:
         # Get raw metric and base (OS) data for each date
         if metric_field == 'dpk_pct':
@@ -696,7 +696,7 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
                 if komitmen_os:
                     komitmen_os_sum += komitmen_os
             
-            # Calculate total percentage: (Total DPK/NPL / Total OS) × 100
+            # Calculate total percentage: (Total DPK/NPL / Total OS) Ã— 100
             if komitmen_os_sum != 0:
                 komitmen_total = calculate_percentage_metric(komitmen_raw_sum, komitmen_os_sum)
             else:
@@ -716,7 +716,7 @@ def build_konsol_table(date_columns, segment_filter='SMALL', metric_field='os', 
             else:
                 E_value = totals['E'] / Decimal('1000000')  # Convert to millions
             
-            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) Ã— 100
             if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
                 if E_value != 0:
                     komitmen_pct_ach_total = (komitmen_total / E_value) * Decimal('100')
@@ -820,7 +820,7 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
                 # Get komitmen OS for denominator
                 komitmen_os = get_komitmen_value(komitmen_data, kode_kanca_str, komitmen_segment, 'os')
                 
-                # Calculate percentage: (DPK/NPL / OS) × 100
+                # Calculate percentage: (DPK/NPL / OS) Ã— 100
                 if komitmen_raw is not None and komitmen_os is not None and komitmen_os != 0:
                     komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
                 else:
@@ -844,7 +844,7 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
             else:
                 E_value = E_val / Decimal('1000000')  # Convert to millions
             
-            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) Ã— 100
             if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
                 if E_value != 0:
                     ratio = komitmen_value / E_value  # REVERSED: Komitmen / E
@@ -862,8 +862,8 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
                 komitmen_pct_ach = ratio * Decimal('100')
             
             # Gap = E - Komitmen (both in same unit)
-            # Positive = surplus (realisasi > komitmen) → hitam (for DPK/NPL reversed to red)
-            # Negative = shortfall (realisasi < komitmen) → merah (for DPK/NPL reversed to black)
+            # Positive = surplus (realisasi > komitmen) â†’ hitam (for DPK/NPL reversed to red)
+            # Negative = shortfall (realisasi < komitmen) â†’ merah (for DPK/NPL reversed to black)
             komitmen_gab_real = E_value - komitmen_value
         
         # Build row
@@ -968,7 +968,7 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
                 if komitmen_os:
                     komitmen_os_sum += komitmen_os
             
-            # Calculate total percentage: (Total DPK/NPL / Total OS) × 100
+            # Calculate total percentage: (Total DPK/NPL / Total OS) Ã— 100
             if komitmen_os_sum != 0:
                 komitmen_total = calculate_percentage_metric(komitmen_raw_sum, komitmen_os_sum)
             else:
@@ -988,7 +988,7 @@ def build_kanca_only_table(date_columns, segment_filter='SMALL', metric_field='o
             else:
                 E_value = totals['E'] / Decimal('1000000')  # Convert to millions
             
-            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) Ã— 100
             if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
                 if E_value != 0:
                     komitmen_pct_ach_total = (komitmen_total / E_value) * Decimal('100')
@@ -1110,7 +1110,7 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
                 # Get komitmen OS for denominator
                 komitmen_os = get_komitmen_value(komitmen_data, kcp_code_str, komitmen_segment, 'os')
                 
-                # Calculate percentage: (DPK/NPL / OS) × 100
+                # Calculate percentage: (DPK/NPL / OS) Ã— 100
                 if komitmen_raw is not None and komitmen_os is not None and komitmen_os != 0:
                     komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
                 else:
@@ -1133,7 +1133,7 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
             else:
                 E_value = E_val / Decimal('1000000')  # Convert to millions
             
-            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) Ã— 100
             if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
                 if E_value != 0:
                     ratio = komitmen_value / E_value  # REVERSED: Komitmen / E
@@ -1151,8 +1151,8 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
                 komitmen_pct_ach = ratio * Decimal('100')
             
             # Gap = E - Komitmen (both in same unit)
-            # Positive gap = surplus (realisasi > komitmen) → hitam (for DPK/NPL reversed to red)
-            # Negative gap = shortfall (realisasi < komitmen) → merah (for DPK/NPL reversed to black)
+            # Positive gap = surplus (realisasi > komitmen) â†’ hitam (for DPK/NPL reversed to red)
+            # Negative gap = shortfall (realisasi < komitmen) â†’ merah (for DPK/NPL reversed to black)
             komitmen_gab_real = E_value - komitmen_value
         elif komitmen_value == 0 or komitmen_value is None:
             # IFERROR: jika error (pembagi nol), anggap 110%
@@ -1264,7 +1264,7 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
                 if komitmen_os:
                     komitmen_os_sum += komitmen_os
             
-            # Calculate total percentage: (Total DPK/NPL / Total OS) × 100
+            # Calculate total percentage: (Total DPK/NPL / Total OS) Ã— 100
             if komitmen_os_sum != 0:
                 komitmen_total = calculate_percentage_metric(komitmen_raw_sum, komitmen_os_sum)
             else:
@@ -1284,7 +1284,7 @@ def build_kcp_only_table(date_columns, segment_filter='SMALL', metric_field='os'
             else:
                 E_value = totals['E'] / Decimal('1000000')  # Convert to millions
             
-            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) × 100
+            # For DPK/NPL and %DPK/%NPL pages: Use reversed formula (Komitmen / E) Ã— 100
             if metric_field in ['dpk', 'npl', 'dpk_pct', 'npl_pct']:
                 if E_value != 0:
                     komitmen_pct_ach_total = (komitmen_total / E_value) * Decimal('100')
@@ -1347,3 +1347,497 @@ def build_metric_tables(selected_date, segment_filter='SMALL', metric_field='os'
         'kcp': build_kcp_only_table(date_columns, segment_filter, metric_field, kol_adk_filter),
         'date_columns': date_columns,
     }
+
+
+def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
+    """
+    Build PERFORMANCE HIGHLIGHTS SME KONSOL summary table
+    
+    Contains all major segments and metrics in one comprehensive view:
+    - END BAL - SME (OS)
+    - BD KOL 2 - SME (Baki Debet Kolektibilitas 2)
+    - % KOL 2 - SME (Percentage)
+    - BD NPL - SME (Baki Debet NPL)
+    - % NPL - SME (Percentage)
+    - BD LR - SME (Baki Debet Lancar/Restructured)
+    - % LR - SME (Percentage)
+    - BD LAR - SME (Baki Debet LAR - Loans at Risk)
+    - % LAR - SME (Percentage)
+    - NASABAH - SME (Customer count)
+    
+    Args:
+        date_columns: Dictionary containing date column definitions
+        kode_kanca_filter: Optional KANCA code for filtering (None = RO BANDUNG/all)
+    
+    Returns:
+        list: Rows containing all segment data with calculations
+    """
+    from dashboard.models import LW321
+    from django.db.models import Sum, Count, Q
+    from dashboard.formulas.komitmen_helper import get_komitmen_for_month, get_komitmen_value
+    
+    rows = []
+    
+    # Get komitmen data for the selected month
+    komitmen_dict = get_komitmen_for_month(
+        date_columns['E']['date'].year,
+        date_columns['E']['date'].month
+    )
+    
+    # Define segment structure
+    segments_config = [
+        {
+            'title': 'END BAL - SME',
+            'metric': 'os',
+            'segments': [
+                ('Medium', 'MEDIUM', None),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('- Small Non CC', 'SMALL NCC', None),
+                ('- CC', 'CC', None),
+                ('KUR', 'KUR', None),
+            ]
+        },
+        {
+            'title': 'BD KOL 2 - SME',
+            'metric': 'kol2',  # Changed from 'os' to differentiate
+            'kol_filter': '2',
+            'segments': [
+                ('Medium', 'MEDIUM', '2'),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], '2'),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], '2'),
+                ('- Small Non CC', 'SMALL NCC', '2'),
+                ('- CC', 'CC', '2'),
+                ('KUR', 'KUR', '2'),
+            ]
+        },
+        {
+            'title': '% KOL 2 - SME',
+            'metric': 'kol2_pct',
+            'segments': [
+                ('Medium', 'MEDIUM', None),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('- Small Non CC', 'SMALL NCC', None),
+                ('- CC', 'CC', None),
+                ('KUR', 'KUR', None),
+            ]
+        },
+        {
+            'title': 'BD NPL - SME',
+            'metric': 'npl',  # Changed from 'os' to differentiate
+            'kol_filter': ['3', '4', '5'],
+            'segments': [
+                ('Medium', 'MEDIUM', ['3', '4', '5']),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], ['3', '4', '5']),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], ['3', '4', '5']),
+                ('- Small Non CC', 'SMALL NCC', ['3', '4', '5']),
+                ('- CC', 'CC', ['3', '4', '5']),
+                ('KUR', 'KUR', ['3', '4', '5']),
+            ]
+        },
+        {
+            'title': '% NPL - SME',
+            'metric': 'npl_pct',
+            'segments': [
+                ('Medium', 'MEDIUM', None),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('- Small Non CC', 'SMALL NCC', None),
+                ('- CC', 'CC', None),
+                ('KUR', 'KUR', None),
+            ]
+        },
+        {
+            'title': 'BD LR - SME',
+            'metric': 'lr',  # Changed from 'os' to differentiate
+            'kol_filter': '1',
+            'flag_restruk': 'Y',
+            'segments': [
+                ('Medium', 'MEDIUM', '1'),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], '1'),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], '1'),
+                ('- Small Non CC', 'SMALL NCC', '1'),
+                ('- CC', 'CC', '1'),
+                ('KUR', 'KUR', '1'),
+            ]
+        },
+        {
+            'title': '% LR - SME',
+            'metric': 'lr_pct',
+            'segments': [
+                ('Medium', 'MEDIUM', None),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('KUR', 'KUR', None),
+            ]
+        },
+        {
+            'title': 'BD LAR - SME',
+            'metric': 'lar',  # Special metric that calculates SML + NPL + LR
+            'segments': [
+                ('Medium', 'MEDIUM', None),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('- Small Non CC', 'SMALL NCC', None),
+                ('- CC', 'CC', None),
+                ('KUR', 'KUR', None),
+            ]
+        },
+        {
+            'title': '% LAR - SME',
+            'metric': 'lar_pct',
+            'segments': [
+                ('Medium', 'MEDIUM', None),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('KUR', 'KUR', None),
+            ]
+        },
+        {
+            'title': 'NASABAH - SME',
+            'metric': 'nasabah',
+            'segments': [
+                ('Medium', 'MEDIUM', None),
+                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
+                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('- Small Non CC', 'SMALL NCC', None),
+                ('- CC', 'CC', None),
+                ('KUR', 'KUR', None),
+            ]
+        },
+    ]
+    
+    def get_data_for_segment(date, segment_filter, kol_filter=None, metric='os', flag_restruk_filter=None):
+        """Get data for a specific segment and date"""
+        from dashboard.formulas.segmentation import get_segment_annotation
+        from dashboard.formulas.uker_mapping import UKER_MASTER, KANCA_CODES
+        from django.db.models import Q
+        
+        periode_str = date.strftime("%d/%m/%Y")
+        qs = LW321.objects.filter(periode=periode_str)
+        
+        # Add segment annotation
+        qs = qs.annotate(segment=get_segment_annotation())
+        
+        # Apply kanca filter if specified
+        if kode_kanca_filter:
+            # Get all uker codes that belong to this kanca
+            uker_codes_for_kanca = []
+            
+            # Check if this kode_kanca is a KANCA itself
+            if kode_kanca_filter in KANCA_CODES:
+                uker_codes_for_kanca.append(str(kode_kanca_filter))
+            
+            # Get all KCP under this KANCA
+            for kode_uker, (nama_uker, kode_kanca_induk) in UKER_MASTER.items():
+                if kode_kanca_induk == kode_kanca_filter:
+                    uker_codes_for_kanca.append(str(kode_uker))
+            
+            # Filter by kode_uker
+            if uker_codes_for_kanca:
+                qs = qs.filter(kode_uker__in=uker_codes_for_kanca)
+        
+        # Apply segment filter
+        if isinstance(segment_filter, list):
+            qs = qs.filter(segment__in=segment_filter)
+        else:
+            qs = qs.filter(segment=segment_filter)
+        
+        # Apply kol filter if specified (using kol_adk field)
+        if kol_filter:
+            if isinstance(kol_filter, list):
+                qs = qs.filter(kol_adk__in=kol_filter)
+            else:
+                qs = qs.filter(kol_adk=kol_filter)
+        
+        # Apply flag_restruk filter for LR metric
+        if flag_restruk_filter:
+            qs = qs.filter(flag_restruk=flag_restruk_filter)
+        
+        # Get the appropriate metric
+        if metric == 'nasabah':
+            # Sum nasabah field WHERE dub_nasabah='TRUE'
+            qs = qs.filter(Q(dub_nasabah__iexact='TRUE'))
+            result = qs.aggregate(total=Sum('nasabah'))
+            return float(result['total'] or 0)
+        elif metric == 'lar':
+            # LAR = SML + NPL + LR
+            # SML = kol_adk='2'
+            # NPL = kol_adk IN ('3', '4', '5')
+            # LR = kol_adk='1' AND flag_restruk='Y'
+            sml = get_data_for_segment(date, segment_filter, kol_filter='2', metric='os')
+            npl = get_data_for_segment(date, segment_filter, kol_filter=['3', '4', '5'], metric='os')
+            lr = get_data_for_segment(date, segment_filter, kol_filter='1', metric='os', flag_restruk_filter='Y')
+            return sml + npl + lr
+        elif metric in ['kol2', 'npl', 'lr']:
+            # These are absolute metrics but use OS aggregation
+            # Just treat them as 'os' for data retrieval
+            result = qs.aggregate(total=Sum('os'))
+            value = float(result['total'] or 0)
+            # Convert from rupiah penuh to millions
+            return value / 1_000_000
+        else:
+            result = qs.aggregate(total=Sum('os'))
+            value = float(result['total'] or 0)
+            # Convert from rupiah penuh to millions
+            return value / 1_000_000
+    
+    def get_percentage_metric(date, segment_filter, numerator_kol, metric_type):
+        """Calculate percentage metrics (KOL2%, NPL%, LR%, LAR%)"""
+        # Get denominator (total OS without kol filter)
+        denominator = get_data_for_segment(date, segment_filter, kol_filter=None, metric='os')
+        
+        if denominator == 0:
+            return 0
+        
+        # Get numerator based on metric type
+        if metric_type == 'kol2_pct':
+            numerator = get_data_for_segment(date, segment_filter, kol_filter='2', metric='os')
+        elif metric_type == 'npl_pct':
+            numerator = get_data_for_segment(date, segment_filter, kol_filter=['3', '4', '5'], metric='os')
+        elif metric_type == 'lr_pct':
+            # LR = kol_adk='1' AND flag_restruk='Y'
+            numerator = get_data_for_segment(date, segment_filter, kol_filter='1', metric='os', flag_restruk_filter='Y')
+        elif metric_type == 'lar_pct':
+            # LAR = SML + NPL + LR = kol_adk IN ('2', '3', '4', '5') OR (kol_adk='1' AND flag_restruk='Y')
+            sml = get_data_for_segment(date, segment_filter, kol_filter='2', metric='os')
+            npl = get_data_for_segment(date, segment_filter, kol_filter=['3', '4', '5'], metric='os')
+            lr = get_data_for_segment(date, segment_filter, kol_filter='1', metric='os', flag_restruk_filter='Y')
+            numerator = sml + npl + lr
+        else:
+            numerator = 0
+        
+        return (numerator / denominator) * 100
+    
+    # Build rows for each segment group
+    for config in segments_config:
+        # Initialize totals for this group (Medium + Small + KUR only)
+        totals = {
+            'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0,
+            'komitmen': 0
+        }
+        
+        # First pass: collect data and calculate totals from Medium, Small, KUR
+        segment_data = []
+        
+        segment_data = []
+        
+        # Add data rows for each segment
+        for segment_name, segment_filter, kol_filter in config['segments']:
+            metric = config['metric']
+            flag_restruk = config.get('flag_restruk', None)  # Get flag_restruk from config if exists
+            
+            # Get data for all date columns
+            if metric in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
+                # Percentage metrics
+                val_a = get_percentage_metric(date_columns['A']['date'], segment_filter, kol_filter, metric)
+                val_b = get_percentage_metric(date_columns['B']['date'], segment_filter, kol_filter, metric)
+                val_c = get_percentage_metric(date_columns['C']['date'], segment_filter, kol_filter, metric)
+                val_d = get_percentage_metric(date_columns['D']['date'], segment_filter, kol_filter, metric)
+                val_e = get_percentage_metric(date_columns['E']['date'], segment_filter, kol_filter, metric)
+            elif metric == 'lar':
+                # LAR metric (no flag_restruk needed, handled inside get_data_for_segment)
+                val_a = get_data_for_segment(date_columns['A']['date'], segment_filter, None, metric)
+                val_b = get_data_for_segment(date_columns['B']['date'], segment_filter, None, metric)
+                val_c = get_data_for_segment(date_columns['C']['date'], segment_filter, None, metric)
+                val_d = get_data_for_segment(date_columns['D']['date'], segment_filter, None, metric)
+                val_e = get_data_for_segment(date_columns['E']['date'], segment_filter, None, metric)
+            else:
+                # Absolute metrics (OS, Nasabah, or LR)
+                val_a = get_data_for_segment(date_columns['A']['date'], segment_filter, kol_filter, metric, flag_restruk)
+                val_b = get_data_for_segment(date_columns['B']['date'], segment_filter, kol_filter, metric, flag_restruk)
+                val_c = get_data_for_segment(date_columns['C']['date'], segment_filter, kol_filter, metric, flag_restruk)
+                val_d = get_data_for_segment(date_columns['D']['date'], segment_filter, kol_filter, metric, flag_restruk)
+                val_e = get_data_for_segment(date_columns['E']['date'], segment_filter, kol_filter, metric, flag_restruk)
+            
+            # Calculate growth metrics
+            dtd = val_e - val_d
+            dtd_pct = (dtd / val_d * 100) if val_d else 0
+            
+            mom = val_e - val_b
+            mom_pct = (mom / val_b * 100) if val_b else 0
+            
+            mtd = val_e - val_c
+            mtd_pct = (mtd / val_c * 100) if val_c else 0
+            
+            ytd = val_e - val_a
+            ytd_pct = (ytd / val_a * 100) if val_a else 0
+            
+            # Get komitmen data
+            # Map segment to komitmen metric
+            komitmen_metric_map = {
+                'os': 'os',
+                'kol2_pct': 'kol2_pct',
+                'npl_pct': 'npl_pct',
+                'lr_pct': 'lr_pct',
+                'lar_pct': 'lar_pct',
+                'nasabah': 'nasabah',
+            }
+            
+            komitmen_metric = komitmen_metric_map.get(metric, 'os')
+            
+            # Get komitmen identifier
+            if kode_kanca_filter:
+                komitmen_identifier = str(kode_kanca_filter)
+            else:
+                komitmen_identifier = 'RO_BANDUNG'
+            
+            # Get komitmen value
+            if metric in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
+                # For percentage metrics, calculate from raw values
+                komitmen_raw = get_komitmen_value(
+                    komitmen_dict,
+                    komitmen_identifier,
+                    segment_filter if not isinstance(segment_filter, list) else segment_filter[0],
+                    komitmen_metric.replace('_pct', '')
+                )
+                komitmen_os = get_komitmen_value(
+                    komitmen_dict,
+                    komitmen_identifier,
+                    segment_filter if not isinstance(segment_filter, list) else segment_filter[0],
+                    'os'
+                )
+                komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
+            else:
+                komitmen_value = get_komitmen_value(
+                    komitmen_dict,
+                    komitmen_identifier,
+                    segment_filter if not isinstance(segment_filter, list) else segment_filter[0],
+                    komitmen_metric
+                )
+            
+            # Handle None komitmen value
+            if komitmen_value is None:
+                komitmen_value = 0
+            
+            # Calculate komitmen % achievement and gap
+            if metric in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
+                # For percentage metrics, use reversed formula
+                komitmen_pct_ach = (komitmen_value / val_e * 100) if val_e else 0
+            else:
+                # For absolute metrics, use normal formula
+                komitmen_pct_ach = (val_e / komitmen_value * 100) if komitmen_value else 0
+            
+            komitmen_gab_real = val_e - komitmen_value
+            
+            row = {
+                'is_header': False,
+                'is_total': False,
+                'segment': segment_name,
+                'metric_type': metric,
+                'A': val_a,
+                'B': val_b,
+                'C': val_c,
+                'D': val_d,
+                'E': val_e,
+                'DtD': dtd,
+                'DtD_pct': dtd_pct,
+                'MoM': mom,
+                'MoM_pct': mom_pct,
+                'MtD': mtd,
+                'MtD_pct': mtd_pct,
+                'YtD': ytd,
+                'YtD_pct': ytd_pct,
+                'komitmen': komitmen_value,
+                'komitmen_pct_ach': komitmen_pct_ach,
+                'komitmen_gab_real': komitmen_gab_real,
+            }
+            
+            segment_data.append(row)
+            
+            # Accumulate totals only for Medium, Small (aggregate), and KUR
+            # These are the 3 main rows that will be summed for total
+            if segment_name in ['Medium', 'Small', 'KUR']:
+                if metric not in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
+                    totals['A'] += val_a
+                    totals['B'] += val_b
+                    totals['C'] += val_c
+                    totals['D'] += val_d
+                    totals['E'] += val_e
+                    totals['komitmen'] += komitmen_value
+        
+        # Calculate totals growth from Medium + Small (aggregate) + KUR
+        total_dtd = totals['E'] - totals['D']
+        total_dtd_pct = (total_dtd / totals['D'] * 100) if totals['D'] else 0
+        
+        total_mom = totals['E'] - totals['B']
+        total_mom_pct = (total_mom / totals['B'] * 100) if totals['B'] else 0
+        
+        total_mtd = totals['E'] - totals['C']
+        total_mtd_pct = (total_mtd / totals['C'] * 100) if totals['C'] else 0
+        
+        total_ytd = totals['E'] - totals['A']
+        total_ytd_pct = (total_ytd / totals['A'] * 100) if totals['A'] else 0
+        
+        total_komitmen_pct_ach = (totals['E'] / totals['komitmen'] * 100) if totals['komitmen'] else 0
+        total_komitmen_gap = totals['E'] - totals['komitmen']
+        
+        # For percentage metrics, calculate totals differently
+        if config['metric'] in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
+            # Recalculate percentage from Medium + Small (all small segments) + KUR
+            all_segments = ['MEDIUM', 'SMALL', 'SMALL NCC', 'CC', 'KUR']
+            kol_f = config.get('kol_filter')
+            
+            total_a = get_percentage_metric(date_columns['A']['date'], all_segments, kol_f, config['metric'])
+            total_b = get_percentage_metric(date_columns['B']['date'], all_segments, kol_f, config['metric'])
+            total_c = get_percentage_metric(date_columns['C']['date'], all_segments, kol_f, config['metric'])
+            total_d = get_percentage_metric(date_columns['D']['date'], all_segments, kol_f, config['metric'])
+            total_e = get_percentage_metric(date_columns['E']['date'], all_segments, kol_f, config['metric'])
+            
+            # Create header row as total row for percentage metrics
+            header_row = {
+                'is_header': False,
+                'is_total': True,
+                'segment': config['title'],
+                'metric_type': config['metric'],
+                'A': total_a,
+                'B': total_b,
+                'C': total_c,
+                'D': total_d,
+                'E': total_e,
+                'DtD': total_e - total_d,
+                'DtD_pct': ((total_e - total_d) / total_d * 100) if total_d else 0,
+                'MoM': total_e - total_b,
+                'MoM_pct': ((total_e - total_b) / total_b * 100) if total_b else 0,
+                'MtD': total_e - total_c,
+                'MtD_pct': ((total_e - total_c) / total_c * 100) if total_c else 0,
+                'YtD': total_e - total_a,
+                'YtD_pct': ((total_e - total_a) / total_a * 100) if total_a else 0,
+                'komitmen': 0,
+                'komitmen_pct_ach': 0,
+                'komitmen_gab_real': 0,
+            }
+        else:
+            # Create header row as total row for absolute metrics
+            header_row = {
+                'is_header': False,
+                'is_total': True,
+                'segment': config['title'],
+                'metric_type': config['metric'],
+                'A': totals['A'],
+                'B': totals['B'],
+                'C': totals['C'],
+                'D': totals['D'],
+                'E': totals['E'],
+                'DtD': total_dtd,
+                'DtD_pct': total_dtd_pct,
+                'MoM': total_mom,
+                'MoM_pct': total_mom_pct,
+                'MtD': total_mtd,
+                'MtD_pct': total_mtd_pct,
+                'YtD': total_ytd,
+                'YtD_pct': total_ytd_pct,
+                'komitmen': totals['komitmen'],
+                'komitmen_pct_ach': total_komitmen_pct_ach,
+                'komitmen_gab_real': total_komitmen_gap,
+            }
+        
+        # Add header row first (which contains totals)
+        rows.append(header_row)
+        
+        # Then add all segment detail rows
+        rows.extend(segment_data)
+    
+    return rows
+

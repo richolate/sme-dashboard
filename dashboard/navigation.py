@@ -81,8 +81,8 @@ METRIC_GROUPS = [
             {
                 "slug": "summary-konsol",
                 "title": "SUMMARY KONSOL",
-                "tables": [],
-                "description": "Placeholder untuk ringkasan konsolidasi seluruh segmen.",
+                "tables": ["PERFORMANCE HIGHLIGHTS SME KONSOL"],
+                "description": "Performance Highlights SME Konsol - Comprehensive summary of all segments and metrics (END BAL, KOL 2, NPL, LR, LAR, NASABAH) with KANCA filter.",
             },
             {
                 "slug": "summary-only",
