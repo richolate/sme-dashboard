@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load dashboard_filters %}
 
 {% block title %}{{ page_title }} - Dashboard Performance Highlights SME{% endblock %}
@@ -2308,6 +2308,48 @@ SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
         font-size: 0.8rem;
         margin-left: 0.5rem;
     }
+    
+    /* Sticky header for Summary Konsol table */
+    #summaryTableContainer {
+        position: relative;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    #summaryTableContainer thead th {
+        position: sticky;
+        z-index: 10;
+        border-color: #dee2e6 !important;
+    }
+    
+    #summaryTableContainer thead tr:first-child th {
+        top: 0;
+    }
+    
+    #summaryTableContainer thead tr:nth-child(2) th {
+        top: 29px; /* Calculated: padding (0.3rem * 2 * 16) + line-height + border ≈ 29px */
+    }
+    
+    /* Sticky header for modal table */
+    #summaryModal .table-responsive {
+        max-height: calc(100vh - 120px);
+        overflow: auto;
+    }
+    
+    #summaryModal .summary-table thead th {
+        position: sticky;
+        z-index: 10;
+        border-color: #dee2e6 !important;
+    }
+    
+    #summaryModal .summary-table thead tr:first-child th {
+        top: 0;
+    }
+    
+    #summaryModal .summary-table thead tr:nth-child(2) th {
+        top: 29px; /* Calculated: padding (0.3rem * 2 * 16) + line-height + border ≈ 29px */
+    }
+
     .summary-table {
         font-size: 0.7rem;
     }
@@ -2353,6 +2395,26 @@ SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
     .summary-table td.indent-2 {
         padding-left: 2rem;
     }
+    
+    /* Achievement Indicator in Summary Table */
+    .summary-table .achievement-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
+        vertical-align: middle;
+    }
+    .summary-table .achievement-indicator.bg-success {
+        background-color: #28a745 !important;
+    }
+    .summary-table .achievement-indicator.bg-warning {
+        background-color: #ffc107 !important;
+    }
+    .summary-table .achievement-indicator.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    
     /* Header untuk Segment */
     .summary-table th.header-segment {
         background-color: #1e3a5f !important;
@@ -2440,6 +2502,9 @@ SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-light btn-sm" onclick="openSummaryModal()">
                     <i class="fas fa-expand-alt"></i> Perbesar
+                </button>
+                <button type="button" class="btn btn-info btn-sm" onclick="exportSummaryToPNG()">
+                    <i class="fas fa-image"></i> Export PNG
                 </button>
                 <button type="button" class="btn btn-success btn-sm" onclick="exportSummaryToExcel()">
                     <i class="fas fa-file-excel"></i> Export Excel
@@ -2605,21 +2670,60 @@ SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
                 {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
                     <!-- Percentage komitmen -->
                     <td>{{ row.komitmen|floatformat:2 }}%</td>
-                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td>
+                        {% if row.komitmen_pct_ach is not None %}
+                            {% if row.komitmen_pct_ach > 100 %}
+                            <span class="achievement-indicator bg-success"></span>
+                            {% elif row.komitmen_pct_ach >= 95 %}
+                            <span class="achievement-indicator bg-warning"></span>
+                            {% else %}
+                            <span class="achievement-indicator bg-danger"></span>
+                            {% endif %}
+                            {{ row.komitmen_pct_ach|floatformat:1 }}%
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
                         {{ row.komitmen_gab_real|floatformat:2 }}%
                     </td>
                 {% elif row.metric_type == 'nasabah' %}
                     <!-- Nasabah komitmen -->
                     <td>{{ row.komitmen|floatformat:0 }}</td>
-                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td>
+                        {% if row.komitmen_pct_ach is not None %}
+                            {% if row.komitmen_pct_ach > 100 %}
+                            <span class="achievement-indicator bg-success"></span>
+                            {% elif row.komitmen_pct_ach >= 95 %}
+                            <span class="achievement-indicator bg-warning"></span>
+                            {% else %}
+                            <span class="achievement-indicator bg-danger"></span>
+                            {% endif %}
+                            {{ row.komitmen_pct_ach|floatformat:1 }}%
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
                         {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|floatformat:0 }}){% else %}{{ row.komitmen_gab_real|floatformat:0 }}{% endif %}
                     </td>
                 {% else %}
                     <!-- OS komitmen in millions -->
                     <td>{{ row.komitmen|format_komitmen:0 }}</td>
-                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td>
+                        {% if row.komitmen_pct_ach is not None %}
+                            {% if row.komitmen_pct_ach > 100 %}
+                            <span class="achievement-indicator bg-success"></span>
+                            {% elif row.komitmen_pct_ach >= 95 %}
+                            <span class="achievement-indicator bg-warning"></span>
+                            {% else %}
+                            <span class="achievement-indicator bg-danger"></span>
+                            {% endif %}
+                            {{ row.komitmen_pct_ach|floatformat:1 }}%
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
                         {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|format_komitmen:0 }}){% else %}{{ row.komitmen_gab_real|format_komitmen:0 }}{% endif %}
                     </td>
@@ -2748,36 +2852,70 @@ SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
                     </td>
                 {% endif %}
                 <!-- YtD_pct with color logic -->
-                {% if row.metric_type in 'kol2,npl,lr,lar' %}
-                    <!-- For BD KOL2/NPL/LR/LAR, show nominal value instead of percentage -->
-                    <td {% if row.YtD > 0 %}class="gap-negative"{% elif row.YtD < 0 %}class="gap-positive"{% endif %}>
-                        {% if row.YtD < 0 %}({{ row.YtD|abs_value|format_komitmen:0 }}){% else %}{{ row.YtD|format_komitmen:0 }}{% endif %}
-                    </td>
-                {% elif row.metric_type in 'kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                {% if row.metric_type == 'kol2' or row.metric_type == 'npl' or row.metric_type == 'lr' or row.metric_type == 'lar' or row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
                     <td {% if row.YtD_pct > 0 %}class="gap-negative"{% elif row.YtD_pct < 0 %}class="gap-positive"{% endif %}>{{ row.YtD_pct|floatformat:1 }}%</td>
                 {% else %}
                     <td {% if row.YtD_pct < 0 %}class="gap-negative"{% else %}class="gap-positive"{% endif %}>{{ row.YtD_pct|floatformat:1 }}%</td>
                 {% endif %}
                 
                 <!-- Komitmen -->
-                {% if row.metric_type in 'kol2_pct,npl_pct,lr_pct,lar_pct' %}
+                {% if row.metric_type == 'kol2_pct' or row.metric_type == 'npl_pct' or row.metric_type == 'lr_pct' or row.metric_type == 'lar_pct' %}
                     <!-- Percentage komitmen -->
                     <td>{{ row.komitmen|floatformat:2 }}%</td>
-                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td>
+                        {% if row.komitmen_pct_ach is not None %}
+                            {% if row.komitmen_pct_ach > 100 %}
+                            <span class="achievement-indicator bg-success"></span>
+                            {% elif row.komitmen_pct_ach >= 95 %}
+                            <span class="achievement-indicator bg-warning"></span>
+                            {% else %}
+                            <span class="achievement-indicator bg-danger"></span>
+                            {% endif %}
+                            {{ row.komitmen_pct_ach|floatformat:1 }}%
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
                         {{ row.komitmen_gab_real|floatformat:2 }}%
                     </td>
                 {% elif row.metric_type == 'nasabah' %}
                     <!-- Nasabah komitmen -->
                     <td>{{ row.komitmen|floatformat:0 }}</td>
-                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td>
+                        {% if row.komitmen_pct_ach is not None %}
+                            {% if row.komitmen_pct_ach > 100 %}
+                            <span class="achievement-indicator bg-success"></span>
+                            {% elif row.komitmen_pct_ach >= 95 %}
+                            <span class="achievement-indicator bg-warning"></span>
+                            {% else %}
+                            <span class="achievement-indicator bg-danger"></span>
+                            {% endif %}
+                            {{ row.komitmen_pct_ach|floatformat:1 }}%
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
                         {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|floatformat:0 }}){% else %}{{ row.komitmen_gab_real|floatformat:0 }}{% endif %}
                     </td>
                 {% else %}
                     <!-- OS komitmen in millions -->
                     <td>{{ row.komitmen|format_komitmen:0 }}</td>
-                    <td>{{ row.komitmen_pct_ach|floatformat:1 }}%</td>
+                    <td>
+                        {% if row.komitmen_pct_ach is not None %}
+                            {% if row.komitmen_pct_ach > 100 %}
+                            <span class="achievement-indicator bg-success"></span>
+                            {% elif row.komitmen_pct_ach >= 95 %}
+                            <span class="achievement-indicator bg-warning"></span>
+                            {% else %}
+                            <span class="achievement-indicator bg-danger"></span>
+                            {% endif %}
+                            {{ row.komitmen_pct_ach|floatformat:1 }}%
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td {% if row.komitmen_gab_real < 0 %}class="komitmen-gap-negative"{% else %}class="komitmen-gap-positive"{% endif %}>
                         {% if row.komitmen_gab_real < 0 %}({{ row.komitmen_gab_real|abs_value|format_komitmen:0 }}){% else %}{{ row.komitmen_gab_real|format_komitmen:0 }}{% endif %}
                     </td>
@@ -2800,6 +2938,9 @@ SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
                     <i class="fas fa-table me-2"></i>PERFORMANCE HIGHLIGHTS SME KONSOL
                 </h5>
                 <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-info btn-sm" onclick="exportSummaryToPNG()">
+                        <i class="fas fa-image"></i> Export PNG
+                    </button>
                     <button type="button" class="btn btn-success btn-sm" onclick="exportSummaryToExcel()">
                         <i class="fas fa-file-excel"></i> Export Excel
                     </button>
@@ -2858,10 +2999,89 @@ function exportSummaryToExcel() {
     XLSX.writeFile(wb, filename);
 }
 
+function exportSummaryToPNG() {
+    // Determine which table to export (from main page or modal)
+    const modalTable = document.getElementById('modal-summary-table');
+    const mainTable = document.querySelector('#summary-konsol-card .summary-table');
+    const table = modalTable || mainTable;
+    
+    if (!table) {
+        console.error('Summary table not found');
+        return;
+    }
+    
+    // Create a temporary container with proper styling for export
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.backgroundColor = 'white';
+    tempContainer.style.padding = '20px';
+    document.body.appendChild(tempContainer);
+    
+    // Clone the table
+    const tableClone = table.cloneNode(true);
+    tableClone.style.fontSize = '10px';
+    tableClone.style.width = 'auto';
+    
+    // Add title
+    const title = document.createElement('h3');
+    title.textContent = 'PERFORMANCE HIGHLIGHTS SME KONSOL';
+    title.style.textAlign = 'center';
+    title.style.marginBottom = '15px';
+    title.style.color = '#1e3a5f';
+    tempContainer.appendChild(title);
+    tempContainer.appendChild(tableClone);
+    
+    // Show loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.innerHTML = '<div class="alert alert-info position-fixed top-50 start-50 translate-middle" style="z-index: 9999;">Generating PNG... Please wait...</div>';
+    document.body.appendChild(loadingDiv);
+    
+    // Use html2canvas to capture the temporary container
+    html2canvas(tempContainer, {
+        scale: 2, // Higher quality
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        windowWidth: tempContainer.scrollWidth,
+        windowHeight: tempContainer.scrollHeight
+    }).then(canvas => {
+        // Remove loading indicator and temp container
+        loadingDiv.remove();
+        tempContainer.remove();
+        
+        // Convert canvas to blob and download
+        canvas.toBlob(blob => {
+            const date = new Date();
+            const filename = `Performance_Highlights_SME_Konsol_${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}.png`;
+            
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }).catch(error => {
+        loadingDiv.remove();
+        tempContainer.remove();
+        console.error('Error generating PNG:', error);
+        alert('Failed to generate PNG. Please try again.');
+    });
+}
+
 </script>
 
 <!-- Add XLSX library for Excel export -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- Add html2canvas library for PNG export -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 {% endif %}
 {% comment %}
@@ -2880,6 +3100,7 @@ END SECTION: SUMMARY KONSOL
 {% endif %} {# End of no_data check #}
 
 {% endblock %}
+
 
 
 

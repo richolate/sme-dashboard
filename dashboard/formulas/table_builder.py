@@ -1374,15 +1374,34 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
     """
     from dashboard.models import LW321
     from django.db.models import Sum, Count, Q
-    from dashboard.formulas.komitmen_helper import get_komitmen_for_month, get_komitmen_value
+    from dashboard.formulas.komitmen_helper import (
+        get_komitmen_for_month, 
+        get_komitmen_for_kanca_list,
+        get_komitmen_value,
+        aggregate_komitmen_regional
+    )
+    from dashboard.formulas.uker_mapping import KANCA_CODES
     
     rows = []
     
     # Get komitmen data for the selected month
-    komitmen_dict = get_komitmen_for_month(
-        date_columns['E']['date'].year,
-        date_columns['E']['date'].month
-    )
+    # Use KANCA-level aggregation for better performance
+    if kode_kanca_filter:
+        # Single KANCA - get KANCA level data
+        komitmen_kanca_dict = get_komitmen_for_kanca_list(
+            date_columns['E']['date'].year,
+            date_columns['E']['date'].month
+        )
+        komitmen_dict = {kode_kanca_filter: komitmen_kanca_dict.get(kode_kanca_filter, {})}
+    else:
+        # RO BANDUNG (ALL) - aggregate all KANCAs
+        komitmen_kanca_dict = get_komitmen_for_kanca_list(
+            date_columns['E']['date'].year,
+            date_columns['E']['date'].month
+        )
+        # Aggregate all KANCAs into one "RO_BANDUNG" entry
+        regional_komitmen = aggregate_komitmen_regional(komitmen_kanca_dict, list(KANCA_CODES))
+        komitmen_dict = {'RO_BANDUNG': regional_komitmen}
     
     # Define segment structure
     segments_config = [
@@ -1391,8 +1410,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'metric': 'os',
             'segments': [
                 ('Medium', 'MEDIUM', None),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], None),
+                ('Small', ['SMALL NCC', 'CC'], None),
                 ('- Small Non CC', 'SMALL NCC', None),
                 ('- CC', 'CC', None),
                 ('KUR', 'KUR', None),
@@ -1404,8 +1423,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'kol_filter': '2',
             'segments': [
                 ('Medium', 'MEDIUM', '2'),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], '2'),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], '2'),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], '2'),
+                ('Small', ['SMALL NCC', 'CC'], '2'),
                 ('- Small Non CC', 'SMALL NCC', '2'),
                 ('- CC', 'CC', '2'),
                 ('KUR', 'KUR', '2'),
@@ -1416,8 +1435,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'metric': 'kol2_pct',
             'segments': [
                 ('Medium', 'MEDIUM', None),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], None),
+                ('Small', ['SMALL NCC', 'CC'], None),
                 ('- Small Non CC', 'SMALL NCC', None),
                 ('- CC', 'CC', None),
                 ('KUR', 'KUR', None),
@@ -1429,8 +1448,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'kol_filter': ['3', '4', '5'],
             'segments': [
                 ('Medium', 'MEDIUM', ['3', '4', '5']),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], ['3', '4', '5']),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], ['3', '4', '5']),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], ['3', '4', '5']),
+                ('Small', ['SMALL NCC', 'CC'], ['3', '4', '5']),
                 ('- Small Non CC', 'SMALL NCC', ['3', '4', '5']),
                 ('- CC', 'CC', ['3', '4', '5']),
                 ('KUR', 'KUR', ['3', '4', '5']),
@@ -1441,8 +1460,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'metric': 'npl_pct',
             'segments': [
                 ('Medium', 'MEDIUM', None),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], None),
+                ('Small', ['SMALL NCC', 'CC'], None),
                 ('- Small Non CC', 'SMALL NCC', None),
                 ('- CC', 'CC', None),
                 ('KUR', 'KUR', None),
@@ -1455,8 +1474,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'flag_restruk': 'Y',
             'segments': [
                 ('Medium', 'MEDIUM', '1'),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], '1'),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], '1'),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], '1'),
+                ('Small', ['SMALL NCC', 'CC'], '1'),
                 ('- Small Non CC', 'SMALL NCC', '1'),
                 ('- CC', 'CC', '1'),
                 ('KUR', 'KUR', '1'),
@@ -1467,8 +1486,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'metric': 'lr_pct',
             'segments': [
                 ('Medium', 'MEDIUM', None),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], None),
+                ('Small', ['SMALL NCC', 'CC'], None),
                 ('KUR', 'KUR', None),
             ]
         },
@@ -1477,8 +1496,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'metric': 'lar',  # Special metric that calculates SML + NPL + LR
             'segments': [
                 ('Medium', 'MEDIUM', None),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], None),
+                ('Small', ['SMALL NCC', 'CC'], None),
                 ('- Small Non CC', 'SMALL NCC', None),
                 ('- CC', 'CC', None),
                 ('KUR', 'KUR', None),
@@ -1489,8 +1508,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'metric': 'lar_pct',
             'segments': [
                 ('Medium', 'MEDIUM', None),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], None),
+                ('Small', ['SMALL NCC', 'CC'], None),
                 ('KUR', 'KUR', None),
             ]
         },
@@ -1499,8 +1518,8 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             'metric': 'nasabah',
             'segments': [
                 ('Medium', 'MEDIUM', None),
-                ('Small + KUR', ['SMALL', 'SMALL NCC', 'KUR', 'CC'], None),
-                ('Small', ['SMALL', 'SMALL NCC', 'CC'], None),
+                ('Small + KUR', ['SMALL NCC', 'CC', 'KUR'], None),
+                ('Small', ['SMALL NCC', 'CC'], None),
                 ('- Small Non CC', 'SMALL NCC', None),
                 ('- CC', 'CC', None),
                 ('KUR', 'KUR', None),
@@ -1665,61 +1684,161 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             ytd_pct = (ytd / val_a * 100) if val_a else 0
             
             # Get komitmen data
-            # Map segment to komitmen metric
-            komitmen_metric_map = {
-                'os': 'os',
-                'kol2_pct': 'kol2_pct',
-                'npl_pct': 'npl_pct',
-                'lr_pct': 'lr_pct',
-                'lar_pct': 'lar_pct',
-                'nasabah': 'nasabah',
+            # Map segment to komitmen segments
+            segment_to_komitmen_map = {
+                'MEDIUM': [],  # Medium tidak ada di komitmen
+                'SMALL': ['small', 'ncc', 'cc'],  # Small = small + ncc + cc
+                'SMALL NCC': ['ncc'],
+                'CC': ['cc'],
+                'KUR': ['kur'],
             }
             
-            komitmen_metric = komitmen_metric_map.get(metric, 'os')
-            
-            # Get komitmen identifier
+            # Get komitmen identifier (kanca code or RO_BANDUNG)
             if kode_kanca_filter:
-                komitmen_identifier = str(kode_kanca_filter)
+                komitmen_identifier = kode_kanca_filter
             else:
                 komitmen_identifier = 'RO_BANDUNG'
             
-            # Get komitmen value
-            if metric in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
-                # For percentage metrics, calculate from raw values
-                komitmen_raw = get_komitmen_value(
-                    komitmen_dict,
-                    komitmen_identifier,
-                    segment_filter if not isinstance(segment_filter, list) else segment_filter[0],
-                    komitmen_metric.replace('_pct', '')
-                )
-                komitmen_os = get_komitmen_value(
-                    komitmen_dict,
-                    komitmen_identifier,
-                    segment_filter if not isinstance(segment_filter, list) else segment_filter[0],
-                    'os'
-                )
-                komitmen_value = calculate_percentage_metric(komitmen_raw, komitmen_os)
+            # Get komitmen segments to aggregate
+            if isinstance(segment_filter, list):
+                # Multiple segments (e.g., Small + KUR)
+                komitmen_segments = []
+                for seg in segment_filter:
+                    segments = segment_to_komitmen_map.get(seg, [])
+                    komitmen_segments.extend(segments)
+                # Remove duplicates
+                komitmen_segments = list(set(komitmen_segments))
             else:
-                komitmen_value = get_komitmen_value(
-                    komitmen_dict,
-                    komitmen_identifier,
-                    segment_filter if not isinstance(segment_filter, list) else segment_filter[0],
-                    komitmen_metric
-                )
+                # Single segment
+                komitmen_segments = segment_to_komitmen_map.get(segment_filter, [])
             
-            # Handle None komitmen value
+            # Calculate komitmen value by aggregating segments
+            komitmen_value = 0
+            komitmen_os_value = 0  # For percentage metrics calculation
+            komitmen_pct_ach = None  # Initialize to None (will be calculated if komitmen exists)
+            komitmen_in_millions = 0  # Initialize
+            komitmen_gab_real = 0  # Initialize
+            
+            if komitmen_segments and komitmen_identifier in komitmen_dict:
+                kanca_data = komitmen_dict[komitmen_identifier]
+                
+                # Map metric to komitmen field
+                # User clarification:
+                # - BD KOL 2 → DPK field (not PL)
+                # - BD NPL → NPL field
+                # - BD LR, LAR, NASABAH → 0 (no komitmen data yet)
+                if metric == 'os':
+                    komitmen_field = 'os'
+                elif metric == 'kol2':
+                    komitmen_field = 'dpk'  # BD KOL 2 uses DPK
+                elif metric == 'kol2_pct':
+                    komitmen_field = 'dpk'  # % KOL 2 also uses DPK for target
+                elif metric == 'npl':
+                    komitmen_field = 'npl'  # BD NPL uses NPL
+                elif metric == 'npl_pct':
+                    komitmen_field = 'npl'  # % NPL also uses NPL for target
+                elif metric in ['lr', 'lr_pct', 'lar', 'lar_pct', 'nasabah']:
+                    komitmen_field = None  # No komitmen data yet
+                else:
+                    komitmen_field = 'os'
+                
+                # Aggregate across segments
+                for seg in komitmen_segments:
+                    if seg in kanca_data and komitmen_field:
+                        value = kanca_data[seg].get(komitmen_field, 0)
+                        if value:
+                            komitmen_value += value
+                        
+                        # For percentage metrics, also get OS for calculation
+                        if metric in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
+                            os_value = kanca_data[seg].get('os', 0)
+                            if os_value:
+                                komitmen_os_value += os_value
+            
+            # Handle None or 0 komitmen value
             if komitmen_value is None:
                 komitmen_value = 0
             
-            # Calculate komitmen % achievement and gap
-            if metric in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
-                # For percentage metrics, use reversed formula
-                komitmen_pct_ach = (komitmen_value / val_e * 100) if val_e else 0
-            else:
-                # For absolute metrics, use normal formula
-                komitmen_pct_ach = (val_e / komitmen_value * 100) if komitmen_value else 0
+            # Check if we have komitmen field for this metric
+            has_komitmen_field = False
+            if metric == 'os':
+                has_komitmen_field = True
+            elif metric in ['kol2', 'kol2_pct']:
+                has_komitmen_field = True
+            elif metric in ['npl', 'npl_pct']:
+                has_komitmen_field = True
+            # lr, lr_pct, lar, lar_pct, nasabah don't have komitmen yet
             
-            komitmen_gab_real = val_e - komitmen_value
+            # Calculate komitmen % achievement and gap only if we have komitmen field
+            if has_komitmen_field:
+                # Calculate komitmen % achievement and gap using standard formula from other pages
+                if metric in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
+                    # For percentage metrics, calculate komitmen as percentage: (PL/NPL / OS) * 100
+                    # Both raw values are in thousands
+                    if komitmen_os_value and komitmen_os_value != 0:
+                        komitmen_pct = calculate_percentage_metric(
+                            Decimal(str(komitmen_value)),
+                            Decimal(str(komitmen_os_value))
+                        )
+                        komitmen_in_millions = float(komitmen_pct)  # Already a percentage, not in millions
+                    else:
+                        komitmen_in_millions = 0.0
+                    
+                    # Excel formula: =IFERROR(IF((Komitmen/Posisi)>1.1,110%,IF((Komitmen/Posisi)<0,0%,(Komitmen/Posisi))),110%)
+                    if val_e == 0:
+                        komitmen_pct_ach = 110.0  # IFERROR default when Posisi = 0
+                    else:
+                        ratio = komitmen_in_millions / val_e
+                        if ratio > 1.1:
+                            komitmen_pct_ach = 110.0
+                        elif ratio < 0:
+                            komitmen_pct_ach = 0.0
+                        else:
+                            komitmen_pct_ach = ratio * 100.0
+                    
+                    komitmen_gab_real = val_e - komitmen_in_millions
+                    
+                elif metric == 'nasabah':
+                    # For nasabah, komitmen is actual count (not in millions)
+                    komitmen_value_count = float(komitmen_value) if komitmen_value else 0.0
+                    
+                    # Excel formula: =IFERROR(IF((Komitmen/Posisi)>1.1,110%,IF((Komitmen/Posisi)<0,0%,(Komitmen/Posisi))),110%)
+                    if val_e == 0:
+                        komitmen_pct_ach = 110.0  # IFERROR default when Posisi = 0
+                    else:
+                        ratio = komitmen_value_count / val_e
+                        if ratio > 1.1:
+                            komitmen_pct_ach = 110.0
+                        elif ratio < 0:
+                            komitmen_pct_ach = 0.0
+                        else:
+                            komitmen_pct_ach = ratio * 100.0
+                    
+                    komitmen_gab_real = val_e - komitmen_value_count
+                    komitmen_in_millions = komitmen_value_count  # Override for display
+                    
+                else:
+                    # For absolute metrics (os, kol2, npl, lr, lar), use normal formula
+                    # komitmen value is already in millions (from database Decimal fields)
+                    # val_e is already in millions from get_data_for_segment
+                    komitmen_in_millions_calc = float(komitmen_value) if komitmen_value else 0.0
+                    
+                    # User revision: For END BAL, BD KOL 2, BD NPL - formula is (Posisi / Komitmen)
+                    # Excel formula: =IFERROR(IF((Posisi/Komitmen)>1.1,110%,IF((Posisi/Komitmen)<0,0%,(Posisi/Komitmen))),110%)
+                    if komitmen_in_millions_calc == 0:
+                        komitmen_pct_ach = 110.0  # IFERROR default when Komitmen = 0
+                    else:
+                        ratio = val_e / komitmen_in_millions_calc
+                        if ratio > 1.1:
+                            komitmen_pct_ach = 110.0
+                        elif ratio < 0:
+                            komitmen_pct_ach = 0.0
+                        else:
+                            komitmen_pct_ach = ratio * 100.0
+                    
+                    komitmen_gab_real = val_e - komitmen_in_millions_calc
+                    # For display, komitmen is already in millions
+                    komitmen_in_millions = komitmen_in_millions_calc
             
             row = {
                 'is_header': False,
@@ -1739,7 +1858,7 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
                 'MtD_pct': mtd_pct,
                 'YtD': ytd,
                 'YtD_pct': ytd_pct,
-                'komitmen': komitmen_value,
+                'komitmen': komitmen_in_millions,  # Use converted value for display
                 'komitmen_pct_ach': komitmen_pct_ach,
                 'komitmen_gab_real': komitmen_gab_real,
             }
@@ -1747,6 +1866,7 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
             segment_data.append(row)
             
             # Accumulate totals only for Medium, Small (aggregate), and KUR
+            # EXCLUDE "Small + KUR" to avoid double counting
             # These are the 3 main rows that will be summed for total
             if segment_name in ['Medium', 'Small', 'KUR']:
                 if metric not in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
@@ -1755,7 +1875,7 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
                     totals['C'] += val_c
                     totals['D'] += val_d
                     totals['E'] += val_e
-                    totals['komitmen'] += komitmen_value
+                    totals['komitmen'] += komitmen_in_millions
         
         # Calculate totals growth from Medium + Small (aggregate) + KUR
         total_dtd = totals['E'] - totals['D']
