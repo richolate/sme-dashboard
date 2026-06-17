@@ -34,10 +34,16 @@ def annotate_metrics(queryset):
         )
     )
 
+    # Include both clean ("2") and float-format ("2.0") variants to handle data uploaded
+    # before the _parse_string() fix, where pandas read numeric kol_adk as float.
+    NPL_CODES = ['3', '4', '5', '3.0', '4.0', '5.0']
+    DPK_CODES = ['2', '2.0']
+    LR_CODES  = ['1', '1.0']
+
     qs = qs.annotate(
         npl=Case(
-            When(kol_adk__in=['3', '4', '5'], val_os__gt=0, then=F('val_os')),
-            When(kol_adk__in=['3', '4', '5'], val_os=0, then=F('val_kl') + F('val_d') + F('val_m')),
+            When(kol_adk__in=NPL_CODES, val_os__gt=0, then=F('val_os')),
+            When(kol_adk__in=NPL_CODES, val_os=0, then=F('val_kl') + F('val_d') + F('val_m')),
             default=Value(0),
             output_field=DecimalField(max_digits=20, decimal_places=2)
         )
@@ -45,8 +51,8 @@ def annotate_metrics(queryset):
 
     qs = qs.annotate(
         sml=Case(
-            When(kol_adk='2', val_os__gt=0, then=F('val_os')),
-            When(kol_adk='2', val_os=0, then=F('val_dpk')),
+            When(kol_adk__in=DPK_CODES, val_os__gt=0, then=F('val_os')),
+            When(kol_adk__in=DPK_CODES, val_os=0, then=F('val_dpk')),
             default=Value(0),
             output_field=DecimalField(max_digits=20, decimal_places=2)
         )
@@ -54,7 +60,7 @@ def annotate_metrics(queryset):
 
     qs = qs.annotate(
         lr=Case(
-            When(kol_adk='1', flag_restruk='Y', then=F('val_lancar')),
+            When(kol_adk__in=LR_CODES, flag_restruk='Y', then=F('val_lancar')),
             default=Value(0),
             output_field=DecimalField(max_digits=20, decimal_places=2)
         )

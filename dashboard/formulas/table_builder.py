@@ -157,10 +157,15 @@ def get_base_queryset(target_date, segment_filter, metric_field='os', kol_adk_fi
         else:
             qs = qs.filter(segment=segment_filter)
     
-    # Apply kol_adk filter if specified (for DPK: kol_adk='2')
+    # Apply kol_adk filter — include ".0" variants for data uploaded before the
+    # _parse_string() fix (where "2" may have been stored as "2.0").
     if kol_adk_filter is not None:
-        qs = qs.filter(kol_adk=kol_adk_filter)
-    
+        if isinstance(kol_adk_filter, list):
+            float_variants = [f"{k}.0" for k in kol_adk_filter]
+            qs = qs.filter(kol_adk__in=kol_adk_filter + float_variants)
+        else:
+            qs = qs.filter(kol_adk__in=[kol_adk_filter, f"{kol_adk_filter}.0"])
+
     return qs
 
 
@@ -1349,7 +1354,7 @@ def build_metric_tables(selected_date, segment_filter='SMALL', metric_field='os'
     }
 
 
-def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
+def build_summary_konsol_table(date_columns, kode_kanca_filter=None, segment_type=None):
     """
     Build PERFORMANCE HIGHLIGHTS SME KONSOL summary table
     
@@ -1527,6 +1532,20 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
         },
     ]
     
+    # Filter segments_config based on segment_type parameter
+    if segment_type == 'medium':
+        for config in segments_config:
+            config['segments'] = [
+                (name, seg, kol) for name, seg, kol in config['segments']
+                if seg == 'MEDIUM'
+            ]
+    elif segment_type == 'small':
+        for config in segments_config:
+            config['segments'] = [
+                (name, seg, kol) for name, seg, kol in config['segments']
+                if seg != 'MEDIUM'
+            ]
+
     def get_data_for_segment(date, segment_filter, kol_filter=None, metric='os', flag_restruk_filter=None):
         """Get data for a specific segment and date"""
         from dashboard.formulas.segmentation import get_segment_annotation
@@ -1563,12 +1582,13 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
         else:
             qs = qs.filter(segment=segment_filter)
         
-        # Apply kol filter if specified (using kol_adk field)
+        # Apply kol filter — include ".0" variants for pre-fix uploaded data.
         if kol_filter:
             if isinstance(kol_filter, list):
-                qs = qs.filter(kol_adk__in=kol_filter)
+                float_variants = [f"{k}.0" for k in kol_filter]
+                qs = qs.filter(kol_adk__in=kol_filter + float_variants)
             else:
-                qs = qs.filter(kol_adk=kol_filter)
+                qs = qs.filter(kol_adk__in=[kol_filter, f"{kol_filter}.0"])
         
         # Apply flag_restruk filter for LR metric
         if flag_restruk_filter:
@@ -1895,8 +1915,13 @@ def build_summary_konsol_table(date_columns, kode_kanca_filter=None):
         
         # For percentage metrics, calculate totals differently
         if config['metric'] in ['kol2_pct', 'npl_pct', 'lr_pct', 'lar_pct']:
-            # Recalculate percentage from Medium + Small (all small segments) + KUR
-            all_segments = ['MEDIUM', 'SMALL', 'SMALL NCC', 'CC', 'KUR']
+            # Recalculate percentage from segments based on segment_type
+            if segment_type == 'medium':
+                all_segments = ['MEDIUM']
+            elif segment_type == 'small':
+                all_segments = ['SMALL', 'SMALL NCC', 'CC', 'KUR']
+            else:
+                all_segments = ['MEDIUM', 'SMALL', 'SMALL NCC', 'CC', 'KUR']
             kol_f = config.get('kol_filter')
             
             total_a = get_percentage_metric(date_columns['A']['date'], all_segments, kol_f, config['metric'])

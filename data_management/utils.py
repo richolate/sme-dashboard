@@ -89,7 +89,13 @@ def _parse_int(value):
 def _parse_string(value):
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return ''
-    result = str(value).strip()
+    # Pandas reads numeric Excel columns as float (e.g. 42210 → 42210.0).
+    # Convert integer-valued floats to clean integer strings so that code/kol_adk
+    # fields like "42210" are stored correctly instead of "42210.0".
+    if isinstance(value, float) and value == int(value):
+        result = str(int(value))
+    else:
+        result = str(value).strip()
     return '' if result in ['None', 'none', 'NONE'] else result
 
 

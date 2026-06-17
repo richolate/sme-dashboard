@@ -1655,22 +1655,34 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td class="{% if row.YtD == 0 %}{% else %}{% if metric_type in 'dpk,npl,lar,lr,dpk_pct,npl_pct' %}{% if row.YtD > 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD > 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}{% endif %}">{% if metric_type == 'nsb' %}{{ row.YtD|format_integer_parentheses:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{{ row.YtD|floatformat:2 }}%{% else %}{{ row.YtD|format_number_parentheses:0|default:"-" }}{% endif %}</td>
                         <td class="{% if row.YtD_pct == 0 %}{% else %}{% if metric_type in 'dpk,npl,lar,lr,dpk_pct,npl_pct' %}{% if row.YtD_pct > 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD_pct > 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}{% endif %}">{{ row.YtD_pct|floatformat:1 }}%</td>
                         <!-- Komitmen Columns -->
-                        <td>{% if metric_type == 'nsb' %}{{ row.komitmen|format_integer:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{{ row.komitmen|floatformat:2 }}%{% else %}{{ row.komitmen|format_komitmen:1|default:"-" }}{% endif %}</td>
+                        <td>{% if metric_type == 'nsb' %}{{ row.komitmen|format_integer:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen is not None %}{{ row.komitmen|floatformat:2 }}%{% else %}-{% endif %}{% else %}{{ row.komitmen|format_komitmen:1|default:"-" }}{% endif %}</td>
                         <td>
-                            {% if row.komitmen_pct_ach > 100 %}
-                            <span class="achievement-indicator bg-success"></span>
-                            {% elif row.komitmen_pct_ach >= 95 %}
-                            <span class="achievement-indicator bg-warning"></span>
+                            {% if row.komitmen is not None %}
+                                {% if row.komitmen_pct_ach > 100 %}
+                                <span class="achievement-indicator bg-success"></span>
+                                {% elif row.komitmen_pct_ach >= 95 %}
+                                <span class="achievement-indicator bg-warning"></span>
+                                {% else %}
+                                <span class="achievement-indicator bg-danger"></span>
+                                {% endif %}
+                                {{ row.komitmen_pct_ach|floatformat:1 }}%
                             {% else %}
-                            <span class="achievement-indicator bg-danger"></span>
+                                -
                             {% endif %}
-                            {{ row.komitmen_pct_ach|floatformat:1 }}%
                         </td>
                         <!-- Gap: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
-                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
-                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
-                                    {{ row.komitmen_gab_real|floatformat:2 }}%
+                        <td class="{% if row.komitmen is not None %}{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}{% endif %}">
+                            {% if row.komitmen is not None %}
+                                {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                        {{ row.komitmen_gab_real|floatformat:2 }}%
+                                    {% else %}
+                                        {% if row.komitmen_gab_real < 0 %}
+                                            ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                        {% else %}
+                                            {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                        {% endif %}
+                                    {% endif %}
                                 {% else %}
                                     {% if row.komitmen_gab_real < 0 %}
                                         ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
@@ -1679,11 +1691,7 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                                     {% endif %}
                                 {% endif %}
                             {% else %}
-                                {% if row.komitmen_gab_real < 0 %}
-                                    ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
-                                {% else %}
-                                    {{ row.komitmen_gab_real|format_komitmen:1 }}
-                                {% endif %}
+                                -
                             {% endif %}
                         </td>
                     </tr>
@@ -1827,22 +1835,34 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td class="{% if row.YtD == 0 %}{% else %}{% if metric_type in 'dpk,npl,lar,lr,dpk_pct,npl_pct' %}{% if row.YtD > 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD > 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}{% endif %}">{% if metric_type == 'nsb' %}{{ row.YtD|format_integer_parentheses:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{{ row.YtD|floatformat:2 }}%{% else %}{{ row.YtD|format_number_parentheses:0|default:"-" }}{% endif %}</td>
                         <td class="{% if row.YtD_pct == 0 %}{% else %}{% if metric_type in 'dpk,npl,lar,lr,dpk_pct,npl_pct' %}{% if row.YtD_pct > 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD_pct > 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}{% endif %}">{{ row.YtD_pct|floatformat:1 }}%</td>
                         <!-- Komitmen Columns -->
-                        <td>{% if metric_type == 'nsb' %}{{ row.komitmen|format_integer:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{{ row.komitmen|floatformat:2 }}%{% else %}{{ row.komitmen|format_komitmen:1|default:"-" }}{% endif %}</td>
+                        <td>{% if metric_type == 'nsb' %}{{ row.komitmen|format_integer:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen is not None %}{{ row.komitmen|floatformat:2 }}%{% else %}-{% endif %}{% else %}{{ row.komitmen|format_komitmen:1|default:"-" }}{% endif %}</td>
                         <td>
-                            {% if row.komitmen_pct_ach > 100 %}
-                            <span class="achievement-indicator bg-success"></span>
-                            {% elif row.komitmen_pct_ach >= 95 %}
-                            <span class="achievement-indicator bg-warning"></span>
+                            {% if row.komitmen is not None %}
+                                {% if row.komitmen_pct_ach > 100 %}
+                                <span class="achievement-indicator bg-success"></span>
+                                {% elif row.komitmen_pct_ach >= 95 %}
+                                <span class="achievement-indicator bg-warning"></span>
+                                {% else %}
+                                <span class="achievement-indicator bg-danger"></span>
+                                {% endif %}
+                                {{ row.komitmen_pct_ach|floatformat:1 }}%
                             {% else %}
-                            <span class="achievement-indicator bg-danger"></span>
+                                -
                             {% endif %}
-                            {{ row.komitmen_pct_ach|floatformat:1 }}%
                         </td>
                         <!-- Gap: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
-                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
-                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
-                                    {{ row.komitmen_gab_real|floatformat:2 }}%
+                        <td class="{% if row.komitmen is not None %}{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}{% endif %}">
+                            {% if row.komitmen is not None %}
+                                {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                        {{ row.komitmen_gab_real|floatformat:2 }}%
+                                    {% else %}
+                                        {% if row.komitmen_gab_real < 0 %}
+                                            ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                        {% else %}
+                                            {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                        {% endif %}
+                                    {% endif %}
                                 {% else %}
                                     {% if row.komitmen_gab_real < 0 %}
                                         ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
@@ -1851,11 +1871,7 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                                     {% endif %}
                                 {% endif %}
                             {% else %}
-                                {% if row.komitmen_gab_real < 0 %}
-                                    ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
-                                {% else %}
-                                    {{ row.komitmen_gab_real|format_komitmen:1 }}
-                                {% endif %}
+                                -
                             {% endif %}
                         </td>
                     </tr>
@@ -1999,22 +2015,34 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                         <td class="{% if row.YtD == 0 %}{% else %}{% if metric_type in 'dpk,npl,lar,lr,dpk_pct,npl_pct' %}{% if row.YtD > 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD > 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}{% endif %}">{% if metric_type == 'nsb' %}{{ row.YtD|format_integer_parentheses:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{{ row.YtD|floatformat:2 }}%{% else %}{{ row.YtD|format_number_parentheses:0|default:"-" }}{% endif %}</td>
                         <td class="{% if row.YtD_pct == 0 %}{% else %}{% if metric_type in 'dpk,npl,lar,lr,dpk_pct,npl_pct' %}{% if row.YtD_pct > 0 %}bg-negative{% else %}bg-positive{% endif %}{% else %}{% if row.YtD_pct > 0 %}bg-positive{% else %}bg-negative{% endif %}{% endif %}{% endif %}">{{ row.YtD_pct|floatformat:1 }}%</td>
                         <!-- Komitmen Columns -->
-                        <td>{% if metric_type == 'nsb' %}{{ row.komitmen|format_integer:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{{ row.komitmen|floatformat:2 }}%{% else %}{{ row.komitmen|format_komitmen:1|default:"-" }}{% endif %}</td>
+                        <td>{% if metric_type == 'nsb' %}{{ row.komitmen|format_integer:0|default:"-" }}{% elif metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen is not None %}{{ row.komitmen|floatformat:2 }}%{% else %}-{% endif %}{% else %}{{ row.komitmen|format_komitmen:1|default:"-" }}{% endif %}</td>
                         <td>
-                            {% if row.komitmen_pct_ach > 100 %}
-                            <span class="achievement-indicator bg-success"></span>
-                            {% elif row.komitmen_pct_ach >= 95 %}
-                            <span class="achievement-indicator bg-warning"></span>
+                            {% if row.komitmen is not None %}
+                                {% if row.komitmen_pct_ach > 100 %}
+                                <span class="achievement-indicator bg-success"></span>
+                                {% elif row.komitmen_pct_ach >= 95 %}
+                                <span class="achievement-indicator bg-warning"></span>
+                                {% else %}
+                                <span class="achievement-indicator bg-danger"></span>
+                                {% endif %}
+                                {{ row.komitmen_pct_ach|floatformat:1 }}%
                             {% else %}
-                            <span class="achievement-indicator bg-danger"></span>
+                                -
                             {% endif %}
-                            {{ row.komitmen_pct_ach|floatformat:1 }}%
                         </td>
                         <!-- Gap: For DPK/NPL reversed (positive=red/shortfall, negative=black/surplus), otherwise normal (negative=red/shortfall, positive=black/surplus) -->
-                        <td class="{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}">
-                            {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
-                                {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
-                                    {{ row.komitmen_gab_real|floatformat:2 }}%
+                        <td class="{% if row.komitmen is not None %}{% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}{% if row.komitmen_gab_real > 0 %}text-danger{% endif %}{% else %}{% if row.komitmen_gab_real < 0 %}text-danger{% endif %}{% endif %}{% endif %}">
+                            {% if row.komitmen is not None %}
+                                {% if metric_type == 'dpk' or metric_type == 'npl' or metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                    {% if metric_type == 'dpk_pct' or metric_type == 'npl_pct' %}
+                                        {{ row.komitmen_gab_real|floatformat:2 }}%
+                                    {% else %}
+                                        {% if row.komitmen_gab_real < 0 %}
+                                            ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
+                                        {% else %}
+                                            {{ row.komitmen_gab_real|format_komitmen:1 }}
+                                        {% endif %}
+                                    {% endif %}
                                 {% else %}
                                     {% if row.komitmen_gab_real < 0 %}
                                         ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
@@ -2023,11 +2051,7 @@ SECTION: OS Tables (KONSOL, KANCA ONLY, KCP ONLY)
                                     {% endif %}
                                 {% endif %}
                             {% else %}
-                                {% if row.komitmen_gab_real < 0 %}
-                                    ({{ row.komitmen_gab_real|abs_value|format_komitmen:1 }})
-                                {% else %}
-                                    {{ row.komitmen_gab_real|format_komitmen:1 }}
-                                {% endif %}
+                                -
                             {% endif %}
                         </td>
                     </tr>

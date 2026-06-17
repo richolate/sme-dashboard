@@ -1036,17 +1036,10 @@ def metric_page_view(request, slug):
         
         # 1. Handle date filter
         selected_date_str = request.GET.get('selected_date', '')
-        if selected_date_str:
-            try:
-                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                selected_date = date.today()
-        else:
-            selected_date = date.today()
-        
-        # 2. Get available dates from database
+
+        # 2. Get available dates from database (used both for default date and dropdown)
         from django.db.models.functions import ExtractYear, ExtractMonth, ExtractDay
-        
+
         qs_base = LW321.objects.annotate(
             periode_iso=Concat(
                 Substr('periode', 7, 4),  # YYYY
@@ -1058,13 +1051,22 @@ def metric_page_view(request, slug):
         ).annotate(
             periode_date=Cast('periode_iso', output_field=DateField())
         )
-        
+
         available_dates = list(
             qs_base.values_list('periode_date', flat=True)
             .distinct()
             .order_by('-periode_date')[:100]  # Last 100 dates
         )
-        
+
+        # Resolve selected_date: use request param if given, else latest from DB
+        if selected_date_str:
+            try:
+                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = available_dates[0] if available_dates else datetime.now().date()
+        else:
+            selected_date = available_dates[0] if available_dates else datetime.now().date()
+
         # 3. Get date columns info
         date_cols = get_date_columns(selected_date)
         
@@ -1531,6 +1533,152 @@ def metric_page_view(request, slug):
     # END SECTION: LR MEDIUM Tables
     # =================================================================================
     
+    # =================================================================================
+    # SECTION: SUMMARY MEDIUM ONLY
+    # =================================================================================
+    elif slug == 'summary-medium-only':
+        from .formulas.table_builder import build_summary_konsol_table, get_date_columns
+        from dashboard.formulas.uker_mapping import KANCA_CODES, KANCA_MASTER
+
+        available_dates_qs = LW321.objects.annotate(
+            periode_iso=Concat(
+                Substr('periode', 7, 4),
+                Value('-'),
+                Substr('periode', 4, 2),
+                Value('-'),
+                Substr('periode', 1, 2),
+            ),
+        ).annotate(
+            periode_date=Cast('periode_iso', output_field=DateField())
+        ).values_list('periode_date', flat=True).distinct().order_by('-periode_date')
+
+        available_dates = list(available_dates_qs)
+
+        selected_date_str = request.GET.get('selected_date') or request.GET.get('date')
+        if selected_date_str:
+            try:
+                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = available_dates[0] if available_dates else None
+        else:
+            selected_date = available_dates[0] if available_dates else None
+
+        kanca_filter = request.GET.get('kanca', 'RO_BANDUNG')
+        if kanca_filter == 'RO_BANDUNG':
+            kode_kanca_filter = None
+        else:
+            try:
+                kode_kanca_filter = int(kanca_filter)
+            except ValueError:
+                kode_kanca_filter = None
+
+        date_cols = get_date_columns(selected_date)
+        summary_rows = build_summary_konsol_table(date_cols, kode_kanca_filter, segment_type='medium')
+
+        kanca_options = [{'code': 'RO_BANDUNG', 'name': 'RO BANDUNG (ALL)'}]
+        for kode in sorted(KANCA_CODES):
+            nama = KANCA_MASTER.get(kode, f"KANCA {kode}")
+            kanca_options.append({'code': str(kode), 'name': nama})
+
+        month_names = {
+            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+            7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+        }
+        selected_date_obj = date_cols['E']['date']
+        komitmen_label = f"{month_names[selected_date_obj.month]}'{str(selected_date_obj.year)[2:]}"
+
+        context.update({
+            'show_summary_table': True,
+            'summary_rows': summary_rows,
+            'kanca_options': kanca_options,
+            'selected_kanca': kanca_filter,
+            'selected_date': selected_date,
+            'selected_date_str': selected_date.strftime('%Y-%m-%d') if selected_date else '',
+            'available_dates': available_dates,
+            'date_columns': date_cols,
+            'komitmen_label': komitmen_label,
+            'dtd_header': f"{date_cols['E']['label']} - {date_cols['D']['label']}",
+            'mom_header': f"{date_cols['E']['label']} - {date_cols['B']['label']}",
+            'mtd_header': f"{date_cols['E']['label']} - {date_cols['C']['label']}",
+            'ytd_header': f"{date_cols['E']['label']} - {date_cols['A']['label']}",
+        })
+    # =================================================================================
+    # END SECTION: SUMMARY MEDIUM ONLY
+    # =================================================================================
+
+    # =================================================================================
+    # SECTION: SUMMARY ONLY
+    # =================================================================================
+    elif slug == 'summary-only':
+        from .formulas.table_builder import build_summary_konsol_table, get_date_columns
+        from dashboard.formulas.uker_mapping import KANCA_CODES, KANCA_MASTER
+
+        available_dates_qs = LW321.objects.annotate(
+            periode_iso=Concat(
+                Substr('periode', 7, 4),
+                Value('-'),
+                Substr('periode', 4, 2),
+                Value('-'),
+                Substr('periode', 1, 2),
+            ),
+        ).annotate(
+            periode_date=Cast('periode_iso', output_field=DateField())
+        ).values_list('periode_date', flat=True).distinct().order_by('-periode_date')
+
+        available_dates = list(available_dates_qs)
+
+        selected_date_str = request.GET.get('selected_date') or request.GET.get('date')
+        if selected_date_str:
+            try:
+                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = available_dates[0] if available_dates else None
+        else:
+            selected_date = available_dates[0] if available_dates else None
+
+        kanca_filter = request.GET.get('kanca', 'RO_BANDUNG')
+        if kanca_filter == 'RO_BANDUNG':
+            kode_kanca_filter = None
+        else:
+            try:
+                kode_kanca_filter = int(kanca_filter)
+            except ValueError:
+                kode_kanca_filter = None
+
+        date_cols = get_date_columns(selected_date)
+        summary_rows = build_summary_konsol_table(date_cols, kode_kanca_filter, segment_type='small')
+
+        kanca_options = [{'code': 'RO_BANDUNG', 'name': 'RO BANDUNG (ALL)'}]
+        for kode in sorted(KANCA_CODES):
+            nama = KANCA_MASTER.get(kode, f"KANCA {kode}")
+            kanca_options.append({'code': str(kode), 'name': nama})
+
+        month_names = {
+            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+            7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+        }
+        selected_date_obj = date_cols['E']['date']
+        komitmen_label = f"{month_names[selected_date_obj.month]}'{str(selected_date_obj.year)[2:]}"
+
+        context.update({
+            'show_summary_table': True,
+            'summary_rows': summary_rows,
+            'kanca_options': kanca_options,
+            'selected_kanca': kanca_filter,
+            'selected_date': selected_date,
+            'selected_date_str': selected_date.strftime('%Y-%m-%d') if selected_date else '',
+            'available_dates': available_dates,
+            'date_columns': date_cols,
+            'komitmen_label': komitmen_label,
+            'dtd_header': f"{date_cols['E']['label']} - {date_cols['D']['label']}",
+            'mom_header': f"{date_cols['E']['label']} - {date_cols['B']['label']}",
+            'mtd_header': f"{date_cols['E']['label']} - {date_cols['C']['label']}",
+            'ytd_header': f"{date_cols['E']['label']} - {date_cols['A']['label']}",
+        })
+    # =================================================================================
+    # END SECTION: SUMMARY ONLY
+    # =================================================================================
+
     # =================================================================================
     # SECTION: SUMMARY KONSOL - Performance Highlights SME Konsol
     #       - Comprehensive summary table with all major segments and metrics
